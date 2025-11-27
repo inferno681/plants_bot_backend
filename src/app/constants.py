@@ -10,3 +10,4 @@ INIT_DATA_EXPIRED_MESSAGE = 'init_data expired'
 USER_ID_MISSED_INIT_DATA_MSG = 'user.id missing in init_data'
 INVALID_AUTH_DATE_MESSAGE = 'Invalid auth_date'
 REQUIRED_INIT_DATA_FIELDS = ('hash', 'auth_date', 'user')
+INIT_DATA_MAX_AGE_SECONDS = 86400

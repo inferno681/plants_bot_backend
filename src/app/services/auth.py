@@ -16,6 +16,7 @@ from app.constants import (
     INVALID_AUTH_DATE_MESSAGE,
     INVALID_INIT_DATA_FORMAT_MESSAGE,
     INVALID_INIT_DATA_USER_DATA_MSG,
+    INIT_DATA_MAX_AGE_SECONDS,
     INVALID_SIGNATURE_MESSAGE,
     INVALID_TOKEN_MESSAGE,
     LOGOUT_MESSAGE,
@@ -194,7 +195,7 @@ class AuthService:
                 detail=INVALID_AUTH_DATE_MESSAGE,
             )
 
-        if int(time.time()) - auth_date > 60:
+        if int(time.time()) - auth_date > INIT_DATA_MAX_AGE_SECONDS:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
                 detail=INIT_DATA_EXPIRED_MESSAGE,
@@ -228,8 +229,10 @@ class AuthService:
             f"{k}={v}" for k, v in sorted(signing_data.items())
         )
 
-        secret_key = hashlib.sha256(
-            config.secrets.bot_token.get_secret_value().encode()
+        secret_key = hmac.new(
+            key=b'WebAppData',
+            msg=config.secrets.bot_token.get_secret_value().encode(),
+            digestmod=hashlib.sha256,
         ).digest()
 
         calculated_hash = hmac.new(
