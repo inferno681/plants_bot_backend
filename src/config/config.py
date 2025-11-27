@@ -19,6 +19,9 @@ class ServiceSettings(BaseModel):
     debug: bool
     access_token_ttl: int
     refresh_token_ttl: int
+
+    init_data_max_age: int
+
     tag_metadata_auth: dict[str, str]
     tag_metadata_plant: dict[str, str]
     tag_metadata_health: dict[str, str]
@@ -130,20 +133,20 @@ class AppConfig(BaseSettings):
         return cls(**yaml_config, secrets=Secrets())
 
     @property
-    def mongo_url(self):
-        """Mongo URL."""
-        return (
-            f'mongodb+srv://{self.secrets.mongo_user.get_secret_value()}:'
-            f'{self.secrets.mongo_password.get_secret_value()}@'
-            f'{self.mongodb.host}/'
+    def mongo_url(self) -> str:
+        return 'mongodb+srv://{user}:{pwd}@{host}/'.format(
+            user=self.secrets.mongo_user.get_secret_value(),
+            pwd=self.secrets.mongo_password.get_secret_value(),
+            host=self.mongodb.host,
         )
 
     @property
-    def redis_url(self):
-        """Redis URL."""
-        return (
-            f'redis://:{self.secrets.redis_password.get_secret_value()}'
-            f'@{self.redis.host}:{self.redis.port}/{self.redis.db}'
+    def redis_url(self) -> str:
+        return 'redis://:{pwd}@{host}:{port}/{db}'.format(
+            pwd=self.secrets.redis_password.get_secret_value(),
+            host=self.redis.host,
+            port=self.redis.port,
+            db=self.redis.db,
         )
 
 

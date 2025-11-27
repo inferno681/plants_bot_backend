@@ -1,7 +1,7 @@
 from fastapi import HTTPException, status
 from pydantic import BaseModel, Field, field_validator
 
-from app.constants import INVALID_INIT_DATA_FORMAT_MESSAGE
+from app.constants.auth import INVALID_INIT_DATA_FORMAT_MESSAGE
 
 
 class Tokens(BaseModel):

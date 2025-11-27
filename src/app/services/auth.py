@@ -10,21 +10,7 @@ import jwt
 from fastapi import HTTPException, status
 from redis.asyncio.client import Redis
 
-from app.constants import (
-    EXPIRED_TOKEN_MESSAGE,
-    INIT_DATA_EXPIRED_MESSAGE,
-    INVALID_AUTH_DATE_MESSAGE,
-    INVALID_INIT_DATA_FORMAT_MESSAGE,
-    INVALID_INIT_DATA_USER_DATA_MSG,
-    INIT_DATA_MAX_AGE_SECONDS,
-    INVALID_SIGNATURE_MESSAGE,
-    INVALID_TOKEN_MESSAGE,
-    LOGOUT_MESSAGE,
-    MISSING_FIELDS_INIT_DATA_MSG,
-    REQUIRED_INIT_DATA_FIELDS,
-    UNREGISTERED_USER_MESSAGE,
-    USER_ID_MISSED_INIT_DATA_MSG,
-)
+from app.constants import auth
 from app.log_messages import (
     AUTH_SERVICE_START_LOG,
     TOKEN_SERVICE_START_LOG,
@@ -99,7 +85,7 @@ class TokenService:
             return user_id
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=INVALID_TOKEN_MESSAGE,
+            detail=auth.INVALID_TOKEN_MESSAGE,
         )
 
     def generate_jwt_token(
@@ -137,9 +123,9 @@ class TokenService:
                 algorithms=['HS256'],
             )
         except jwt.ExpiredSignatureError:
-            raise jwt.ExpiredSignatureError(EXPIRED_TOKEN_MESSAGE)
+            raise jwt.ExpiredSignatureError(auth.EXPIRED_TOKEN_MESSAGE)
         except jwt.InvalidTokenError:
-            raise jwt.InvalidTokenError(INVALID_TOKEN_MESSAGE)
+            raise jwt.InvalidTokenError(auth.INVALID_TOKEN_MESSAGE)
 
     async def delete_tokens(self, token: str) -> None:
         """Delete tokens from Redis."""
@@ -171,79 +157,33 @@ class AuthService:
         self.log = logging.getLogger(__name__)
         self.log.info(AUTH_SERVICE_START_LOG)
 
-    def _parse_init_data(self, init_data: str) -> dict:
-        try:
-            parsed_raw = urllib.parse.parse_qs(init_data, strict_parsing=True)
-        except Exception:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail=INVALID_INIT_DATA_FORMAT_MESSAGE,
-            )
-        return {k: v[0] for k, v in parsed_raw.items()}
-
-    def _check_init_data(self, parsed: dict) -> int:
-        if not all(key in parsed for key in REQUIRED_INIT_DATA_FIELDS):
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=MISSING_FIELDS_INIT_DATA_MSG,
-            )
-        try:
-            auth_date = int(parsed['auth_date'])
-        except ValueError:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail=INVALID_AUTH_DATE_MESSAGE,
-            )
-
-        if int(time.time()) - auth_date > INIT_DATA_MAX_AGE_SECONDS:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=INIT_DATA_EXPIRED_MESSAGE,
-            )
-
-        try:
-            user_data = json.loads(parsed['user'])
-        except Exception:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail=INVALID_INIT_DATA_USER_DATA_MSG,
-            )
-
-        if 'id' not in user_data:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail=USER_ID_MISSED_INIT_DATA_MSG,
-            )
-        return user_data['id']
-
     def verify_telegram_init_data(self, init_data: str) -> int:
         parsed = self._parse_init_data(init_data)
         user_id = self._check_init_data(parsed)
 
-        hash_from_telegram = parsed['hash']
-
-        signing_data = parsed.copy()
-        signing_data.pop('hash')
-
-        data_check_string = '\n'.join(
-            f"{k}={v}" for k, v in sorted(signing_data.items())
-        )
-
-        secret_key = hmac.new(
-            key=b'WebAppData',
-            msg=config.secrets.bot_token.get_secret_value().encode(),
-            digestmod=hashlib.sha256,
-        ).digest()
-
         calculated_hash = hmac.new(
-            secret_key, data_check_string.encode(), hashlib.sha256
+            hmac.new(
+                key=b'WebAppData',
+                msg=config.secrets.bot_token.get_secret_value().encode(),
+                digestmod=hashlib.sha256,
+            ).digest(),
+            '\n'.join(
+                f'{key}={value}'
+                for key, value in sorted(
+                    (key, value)
+                    for key, value in parsed.items()
+                    if key != 'hash'
+                )
+            ).encode(),
+            hashlib.sha256,
         ).hexdigest()
 
-        if calculated_hash != hash_from_telegram:
+        if calculated_hash != parsed['hash']:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=INVALID_SIGNATURE_MESSAGE,
+                detail=auth.INVALID_SIGNATURE_MESSAGE,
             )
+
         return user_id
 
     async def login_user(self, init_data: str) -> Tokens:
@@ -254,7 +194,7 @@ class AuthService:
             self.log.info(UNREGISTERED_USER_LOG, user_id)
             raise HTTPException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail=UNREGISTERED_USER_MESSAGE,
+                detail=auth.UNREGISTERED_USER_MESSAGE,
             )
         self.log.info(USER_LOGIN_LOG, user_id)
         return await self.token_service.create_and_put_tokens(user_id)
@@ -262,7 +202,57 @@ class AuthService:
     async def logout_user(self, token: str) -> str:
         """User logout."""
         await self.token_service.delete_tokens(token)
-        return LOGOUT_MESSAGE
+        return auth.LOGOUT_MESSAGE
+
+    def _parse_init_data(self, init_data: str) -> dict:
+        try:
+            parsed_raw = urllib.parse.parse_qs(init_data, strict_parsing=True)
+        except Exception:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail=auth.INVALID_INIT_DATA_FORMAT_MESSAGE,
+            )
+        return {key: value[0] for key, value in parsed_raw.items()}
+
+    def _check_init_data(self, parsed: dict) -> int:
+        errors = []
+
+        missing = [
+            field
+            for field in auth.REQUIRED_INIT_DATA_FIELDS
+            if field not in parsed
+        ]
+        if missing:
+            errors.append(
+                auth.MISSED_FIELDS_MSG.format(fields=', '.join(missing))
+            )
+
+        auth_date = None
+        try:
+            auth_date = int(parsed.get('auth_date', 0))
+        except ValueError:
+            errors.append(auth.INVALID_AUTH_DATE_MESSAGE)
+
+        if auth_date is not None:
+            if int(time.time()) - auth_date > config.service.init_data_max_age:
+                errors.append(auth.INIT_DATA_EXPIRED_MESSAGE)
+        try:
+            user_data = json.loads(parsed.get('user', '{}'))
+        except Exception:
+            errors.append(auth.INVALID_INIT_DATA_USER_DATA_MSG)
+        if not user_data:
+            errors.append(auth.NO_USER_DATA_MSG)
+        user_id = user_data.get('id')
+        if not user_id:
+            errors.append(auth.USER_ID_MISSED_INIT_DATA_MSG)
+
+        if errors:
+            raise HTTPException(
+                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                detail=errors,
+            )
+
+        return user_id
 
 
 redis = Redis.from_url(

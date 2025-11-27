@@ -4,12 +4,14 @@ from enum import StrEnum, auto
 from beanie import Document
 from pydantic import BaseModel, Field
 
+from app.constants.general import DAYS_IN_MONTH, MONTHS_IN_YEAR
+
 
 class MonthDay(BaseModel):
     """Class for date data."""
 
-    day: int = Field(ge=1, le=31)
-    month: int = Field(ge=1, le=12)
+    day: int = Field(ge=1, le=MONTHS_IN_YEAR)
+    month: int = Field(ge=1, le=DAYS_IN_MONTH)
 
     def as_date(self, year: int) -> date:
         """As date method."""

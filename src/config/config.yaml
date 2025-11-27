@@ -10,6 +10,8 @@ service:
   access_token_ttl: 3600
   refresh_token_ttl: 14400
 
+  init_data_max_age: 86400
+
   tag_metadata_auth:
     name: "Auth"
     description: "Registration and authentication"

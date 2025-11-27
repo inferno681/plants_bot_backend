@@ -1,7 +1,7 @@
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter
 
 from app.schemes import InitData, Tokens
-from app.security import oauth2_scheme
+from app.security import oauth2_dependency
 from app.services import auth_service
 
 router = APIRouter()
@@ -14,5 +14,5 @@ async def login(init: InitData):
 
 
 @router.post('/logout')
-async def logout(token: str = Depends(oauth2_scheme)):
+async def logout(token: str = oauth2_dependency):
     return {'message': await auth_service.logout_user(token)}

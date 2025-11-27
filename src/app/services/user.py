@@ -3,7 +3,7 @@ from logging import getLogger
 from fastapi import Depends
 
 from app.log_messages import USER_SERVICE_START_LOG
-from app.security import oauth2_scheme
+from app.security import oauth2_dependency
 from app.services.auth import auth_service
 
 
@@ -14,10 +14,9 @@ class UserService:
         """User service initialization."""
         self.log = getLogger(__name__)
         self.log.info(USER_SERVICE_START_LOG)
+        self.current_user_id_dependency = Depends(self.get_current_user_id)
 
-    async def get_current_user_id(
-        self, token: str = Depends(oauth2_scheme)
-    ) -> int:
+    async def get_current_user_id(self, token: str = oauth2_dependency) -> int:
         """Get current user method."""
         return await auth_service.token_service.check_token(token)
 
