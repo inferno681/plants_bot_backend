@@ -1,16 +1,19 @@
 from datetime import date
 
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict, field_validator
 
 from app.models.plant import FertilizingPeriod, WateringPeriod
 
 
 class PlantReadScheme(BaseModel):
+    model_config = ConfigDict(from_attributes=True)
+
     id: str
     name: str
     scientific_name: str | None = None
     description: str | None = None
     image: str | None = None
+    image_url: str | None = None
 
     warm_period: WateringPeriod | None = None
     cold_period: WateringPeriod | None = None
@@ -21,3 +24,8 @@ class PlantReadScheme(BaseModel):
 
     next_watering_at: date | None = None
     next_fertilizing_at: date | None = None
+
+    @field_validator('id', mode='before')
+    @classmethod
+    def cast_id(cls, id):
+        return str(id)

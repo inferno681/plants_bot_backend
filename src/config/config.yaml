@@ -39,3 +39,7 @@ logger:
     - "/api/v1/healthz"
   date_format: "%Y-%m-%d %H:%M:%S"
   level: "INFO"
+
+storage:
+  bucket: plants
+  endpoint_url: https://storage-wagonbid.ddns.net

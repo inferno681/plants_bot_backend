@@ -97,7 +97,12 @@ class Secrets(BaseSettings):
     verification_token_secret: SecretStr = Field(
         default=SecretStr('secret'), alias='VERIFICATION_TOKEN_SECRET'
     )
-
+    aws_access_key: SecretStr = Field(
+        default=SecretStr('minioadmin'), alias='AWS_ACCESS_KEY'
+    )
+    aws_secret_key: SecretStr = Field(
+        default=SecretStr('minioadmin'), alias='AWS_SECRET_KEY'
+    )
     redis_password: SecretStr = Field(
         default=SecretStr('secret_password'), alias='REDIS_PASSWORD'
     )
@@ -107,12 +112,20 @@ class Secrets(BaseSettings):
     )
 
 
+class StorageS3(BaseModel):
+    """S3 settings."""
+
+    bucket: str
+    endpoint_url: str
+
+
 class AppConfig(BaseSettings):
     """Main configuration class."""
 
     service: ServiceSettings
     mongodb: MongoSettings
     redis: RedisSettings
+    storage: StorageS3
     secrets: Secrets
 
     logger: Logger

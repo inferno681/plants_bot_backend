@@ -10,8 +10,8 @@ from app.constants.general import DAYS_IN_MONTH, MONTHS_IN_YEAR
 class MonthDay(BaseModel):
     """Class for date data."""
 
-    day: int = Field(ge=1, le=MONTHS_IN_YEAR)
-    month: int = Field(ge=1, le=DAYS_IN_MONTH)
+    day: int = Field(ge=1, le=DAYS_IN_MONTH)
+    month: int = Field(ge=1, le=MONTHS_IN_YEAR)
 
     def as_date(self, year: int) -> date:
         """As date method."""
@@ -70,6 +70,7 @@ class Plant(Document):
     scientific_name: str | None = None
     description: str | None = None
     image: str | None = None
+    storage_key: str | None = None
 
     warm_period: WateringPeriod | None = Field(default_factory=WateringPeriod)
     cold_period: WateringPeriod | None = Field(default_factory=WateringPeriod)
@@ -89,3 +90,6 @@ class Plant(Document):
     @classmethod
     async def get_plants(cls, user_id: int) -> list['Plant']:
         return await cls.find(cls.user_id == user_id).sort('+_id').to_list()
+
+    class Settings:
+        name = 'plants'
