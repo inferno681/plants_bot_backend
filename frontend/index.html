@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Plants Bot — дашборд</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="page">
+    <section class="hero">
+      <div>
+        <p class="eyebrow">Plants bot</p>
+        <h1>Дашборд растений</h1>
+        <p class="lede">Следите за поливом и удобрениями, отмечайте теплый и холодный периоды и не пропускайте задачи на ближайшие дни.</p>
+        <div class="hero__actions">
+          <button class="button button--primary">Добавить растение</button>
+          <button class="button button--ghost">Экспорт PDF</button>
+        </div>
+      </div>
+      <div class="stats-grid" id="stats"></div>
+    </section>
+
+    <div class="filters">
+      <div class="search">
+        <input id="search" type="search" placeholder="Найти растение или латинское имя" />
+      </div>
+      <button class="pill is-active" data-filter="all">Все</button>
+      <button class="pill" data-filter="due">Требуют внимания</button>
+      <button class="pill" data-filter="warm">Тёплый период</button>
+      <button class="pill" data-filter="cold">Холодный период</button>
+    </div>
+
+    <div class="section-title">Карточки растений</div>
+    <div class="cards" id="cards"></div>
+
+    <div class="section-title">Ближайшие задачи</div>
+    <div class="timeline" aria-live="polite">
+      <ul class="timeline__list" id="timeline"></ul>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>

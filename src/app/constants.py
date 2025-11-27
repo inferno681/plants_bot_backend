@@ -1,0 +1,12 @@
+INVALID_TOKEN_MESSAGE = 'Invalid token'
+EXPIRED_TOKEN_MESSAGE = 'Token expired'
+MISSING_FIELDS_INIT_DATA_MSG = 'Missing fields in init_data'
+INVALID_SIGNATURE_MESSAGE = 'Invalid signature'
+UNREGISTERED_USER_MESSAGE = 'User is not registered.'
+LOGOUT_MESSAGE = 'logout successful'
+INVALID_INIT_DATA_FORMAT_MESSAGE = 'Invalid init_data format'
+INVALID_INIT_DATA_USER_DATA_MSG = 'Invalid user JSON in init_data'
+INIT_DATA_EXPIRED_MESSAGE = 'init_data expired'
+USER_ID_MISSED_INIT_DATA_MSG = 'user.id missing in init_data'
+INVALID_AUTH_DATE_MESSAGE = 'Invalid auth_date'
+REQUIRED_INIT_DATA_FIELDS = ('hash', 'auth_date', 'user')

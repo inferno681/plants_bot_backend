@@ -1,0 +1,39 @@
+service:
+  title: Plants bot info
+  description: Show plants info
+  host: "0.0.0.0"
+  port: 8000
+  timeout: 60
+  workers: 4
+
+  debug: false
+  access_token_ttl: 3600
+  refresh_token_ttl: 14400
+
+  tag_metadata_auth:
+    name: "Auth"
+    description: "Registration and authentication"
+  tag_metadata_plant:
+    name: "Plant"
+    description: "Plants info"
+  tag_metadata_health:
+    name: "Health"
+    description: "Health endpoints. For services only!"
+
+redis:
+  host: localhost
+  port: 6379
+  db: 7
+  decode_responses: true
+
+mongodb:
+  host: "swissbro.y9tkger.mongodb.net"
+  port: 27017
+  db: "plants_bot"
+
+logger:
+  format: "[%(asctime)s.%(msecs)03d] PID:%(process)-5d %(funcName)-35s %(module)-12s:%(lineno)-4d %(levelname)-7s - %(message)s"
+  exclude:
+    - "/api/v1/healthz"
+  date_format: "%Y-%m-%d %H:%M:%S"
+  level: "INFO"
