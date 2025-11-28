@@ -10,12 +10,13 @@
   <div class="page">
     <section class="hero">
       <div>
-        <p class="eyebrow">Plants bot</p>
-        <h1>Plant dashboard</h1>
-        <p class="lede">Track watering and fertilizing tasks, keep schedules in one place, and share notes about every plant.</p>
+        <p class="eyebrow">Бот растений</p>
+        <h1>Дашборд растений</h1>
+        <p class="lede">Следите за поливом и подкормкой, держите расписание под рукой и сохраняйте заметки по каждому растению.</p>
         <div class="hero__actions">
-          <button class="button button--primary" id="refresh">Refresh data</button>
-          <button class="button button--ghost" type="button">Export PDF</button>
+          <button class="button button--primary" id="refresh">Обновить данные</button>
+          <button class="button button--ghost" type="button">Экспорт</button>
+          <button class="button button--ghost" type="button" id="theme-toggle">Тема</button>
         </div>
       </div>
       <div class="stats-grid" id="stats"></div>
@@ -23,18 +24,18 @@
 
     <div class="filters">
       <div class="search">
-        <input id="search" type="search" placeholder="Search by name or latin name" />
+        <input id="search" type="search" placeholder="Поиск по имени или латинскому названию" />
       </div>
-      <button class="pill is-active" data-filter="all">All</button>
-      <button class="pill" data-filter="due">Need attention</button>
-      <button class="pill" data-filter="warm">Warm period</button>
-      <button class="pill" data-filter="cold">Cold period</button>
+      <button class="pill is-active" data-filter="all">Все</button>
+      <button class="pill" data-filter="due">Требуют внимания</button>
+      <button class="pill" data-filter="warm">Тёплый период</button>
+      <button class="pill" data-filter="cold">Холодный период</button>
     </div>
 
-    <div class="section-title">Your plants</div>
+    <div class="section-title">Ваши растения</div>
     <div class="cards" id="cards"></div>
 
-    <div class="section-title">Upcoming tasks</div>
+    <div class="section-title">Ближайшие задачи</div>
     <div class="timeline" aria-live="polite">
       <ul class="timeline__list" id="timeline"></ul>
     </div>

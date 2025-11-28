@@ -1,0 +1,33 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Растение — детали</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="page">
+    <header class="detail-header">
+      <button class="button button--ghost" id="back-btn" type="button">← Назад</button>
+      <button class="button button--ghost" id="theme-toggle" type="button">Тема</button>
+    </header>
+
+    <section class="detail-hero" aria-live="polite">
+      <div class="detail-hero__image" id="hero-image"></div>
+      <div class="detail-hero__meta">
+        <p class="eyebrow">Растение</p>
+        <h1 id="plant-name">Загрузка...</h1>
+        <div class="card__subtitle" id="plant-scientific"></div>
+        <p class="lede" id="plant-description">Загружаем описание...</p>
+        <div class="badges" id="plant-badges"></div>
+      </div>
+    </section>
+
+    <section class="detail-grid" id="detail-grid"></section>
+    <section id="detail-note" class="detail-note" hidden></section>
+  </div>
+
+  <script src="plant.js"></script>
+</body>
+</html>

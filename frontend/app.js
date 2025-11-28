@@ -1,9 +1,125 @@
-const apiBase = 'http://localhost:8000';
+const apiBase = (window.API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
 const API_URL = `${apiBase}/api/v1/plants`;
+const LOGIN_URL = `${apiBase}/api/auth/login_doc`;
+const REFRESH_URL = `${apiBase}/api/auth/refresh`;
 
 let plants = [];
 const filters = { text: '', mode: 'all' };
 const state = { loading: true, error: null };
+const auth = { accessToken: null, refreshToken: null };
+
+const loadTokens = () => {
+  try {
+    const stored = localStorage.getItem('authTokens');
+    if (!stored) return;
+    const parsed = JSON.parse(stored);
+    auth.accessToken = parsed?.accessToken || null;
+    auth.refreshToken = parsed?.refreshToken || null;
+  } catch (error) {
+    console.warn('Не удалось загрузить токены', error);
+  }
+};
+
+const saveTokens = () => {
+  try {
+    localStorage.setItem(
+      'authTokens',
+      JSON.stringify({ accessToken: auth.accessToken, refreshToken: auth.refreshToken }),
+    );
+  } catch (error) {
+    console.warn('Не удалось сохранить токены', error);
+  }
+};
+
+const setTokens = (accessToken, refreshToken) => {
+  auth.accessToken = accessToken || null;
+  auth.refreshToken = refreshToken || null;
+  saveTokens();
+};
+
+const authHeaders = () => {
+  if (!auth.accessToken) return {};
+  return { Authorization: `Bearer ${auth.accessToken}` };
+};
+
+const loginDoc = async () => {
+  try {
+    const formData = new URLSearchParams();
+    formData.append('username', 'doc');
+    formData.append('password', '123');
+
+    const response = await fetch(LOGIN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: formData,
+    });
+
+    if (!response.ok) {
+      throw new Error(`Auth failed with status ${response.status}`);
+    }
+
+    const data = await response.json();
+    setTokens(data.access_token || data.accessToken, data.refresh_token || data.refreshToken);
+    return true;
+  } catch (error) {
+    console.error('Auth error', error);
+    state.error = 'Не удалось авторизоваться. Обновите страницу.';
+    return false;
+  }
+};
+
+const refreshTokens = async () => {
+  if (!auth.refreshToken) return false;
+
+  try {
+    const response = await fetch(REFRESH_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ refresh_token: auth.refreshToken }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Refresh failed with status ${response.status}`);
+    }
+
+    const data = await response.json();
+    setTokens(data.access_token || data.accessToken, data.refresh_token || data.refreshToken);
+    return true;
+  } catch (error) {
+    console.error('Refresh error', error);
+    setTokens(null, null);
+    return false;
+  }
+};
+
+const ensureAuth = async () => {
+  if (auth.accessToken) return true;
+  if (await refreshTokens()) return true;
+  return loginDoc();
+};
+
+const authFetch = async (url, options = {}) => {
+  const makeRequest = () =>
+    fetch(url, { ...options, headers: { ...(options.headers || {}), ...authHeaders() } });
+
+  await ensureAuth();
+  let response = await makeRequest();
+
+  if (response.status !== 401) return response;
+
+  const refreshed = await refreshTokens();
+  if (refreshed) {
+    response = await makeRequest();
+    if (response.status !== 401) return response;
+  }
+
+  const loggedIn = await loginDoc();
+  if (loggedIn) {
+    response = await makeRequest();
+  }
+
+  return response;
+};
 
 const elements = {
   stats: document.getElementById('stats'),
@@ -12,6 +128,20 @@ const elements = {
   search: document.getElementById('search'),
   filterPills: document.querySelectorAll('.pill'),
   refresh: document.getElementById('refresh'),
+  themeToggle: document.getElementById('theme-toggle'),
+};
+
+const THEMES = { LIGHT: 'light', DARK: 'dark' };
+
+const applyTheme = (theme) => {
+  document.body.classList.toggle('theme-dark', theme === THEMES.DARK);
+  localStorage.setItem('theme', theme);
+};
+
+const initTheme = () => {
+  const stored = localStorage.getItem('theme');
+  const theme = stored === THEMES.DARK ? THEMES.DARK : THEMES.LIGHT;
+  applyTheme(theme);
 };
 
 const formatDate = (value) => {
@@ -34,9 +164,9 @@ const daysUntil = (value) => {
 };
 
 const statusBadge = (status) => {
-  if (status === 'due') return { text: 'Needs action', cls: 'badge--due' };
-  if (status === 'soon') return { text: 'Coming up soon', cls: 'badge--soon' };
-  return { text: 'All good', cls: 'badge--ok' };
+  if (status === 'due') return { text: 'Нужно действие', cls: 'badge--due' };
+  if (status === 'soon') return { text: 'Скоро', cls: 'badge--soon' };
+  return { text: 'Все ок', cls: 'badge--ok' };
 };
 
 const formatMonthDay = (value) => {
@@ -52,8 +182,8 @@ const formatPeriod = (period) => {
   const end = formatMonthDay(period.end);
 
   if (start && end) return `${start} - ${end}`;
-  if (start) return `from ${start}`;
-  if (end) return `until ${end}`;
+  if (start) return `с ${start}`;
+  if (end) return `до ${end}`;
   return null;
 };
 
@@ -75,7 +205,7 @@ const mapPlantFromApi = (plant) => {
 
   return {
     id: plant.id,
-    name: plant.name || 'No name',
+    name: plant.name || 'Без имени',
     scientificName: plant.scientific_name || '',
     description: plant.description || '',
     imageUrl: plant.image_url || null,
@@ -104,10 +234,10 @@ const buildStats = () => {
     (p) => daysUntil(p.nextWateringAt) <= 7 || daysUntil(p.nextFertilizingAt) <= 7,
   ).length;
   const blocks = [
-    { label: 'Plants total', value: total },
-    { label: 'Need attention', value: dueToday },
-    { label: 'This week', value: weekTasks },
-    { label: 'Data source', value: 'backend' },
+    { label: 'Всего растений', value: total },
+    { label: 'Требуют внимания', value: dueToday },
+    { label: 'Задач на неделю', value: weekTasks },
+    { label: 'Синхронизация', value: 'Онлайн' },
   ];
 
   elements.stats.innerHTML = blocks
@@ -120,7 +250,7 @@ const buildStats = () => {
 
 const renderCards = () => {
   if (state.loading) {
-    showNotice(elements.cards, 'Loading plants...', 'muted');
+    showNotice(elements.cards, 'Загрузка растений...', 'muted');
     return;
   }
 
@@ -140,7 +270,7 @@ const renderCards = () => {
   });
 
   if (!visible.length) {
-    showNotice(elements.cards, 'Nothing matches the current filters.', 'muted');
+    showNotice(elements.cards, 'Ничего не найдено по текущим фильтрам.', 'muted');
     return;
   }
 
@@ -148,13 +278,10 @@ const renderCards = () => {
 
   visible.forEach((plant) => {
     const { text, cls } = statusBadge(plant.status);
-    const daysToWater = daysUntil(plant.nextWateringAt);
-    const daysToFert = daysUntil(plant.nextFertilizingAt);
-    const soon = Math.min(daysToWater, daysToFert) <= 2;
-    const alertBadge = soon && plant.status === 'ok' ? 'badge--soon' : cls;
+    const alertBadge = cls;
     const image = plant.imageUrl
       ? `<div class="card__image has-image" style="background-image: url('${plant.imageUrl}')"></div>`
-      : '<div class="card__image"><span>No photo yet</span></div>';
+      : '<div class="card__image"></div>';
 
     const card = document.createElement('article');
     card.className = 'card';
@@ -165,28 +292,26 @@ const renderCards = () => {
         <div class="card__subtitle">${plant.scientificName || '-'}</div>
         <div class="badges">
           <span class="badge ${alertBadge}">${text}</span>
-          <span class="badge badge--ok">Watering: ${formatDate(plant.nextWateringAt)}</span>
-          <span class="badge badge--soon">Fertilizing: ${formatDate(plant.nextFertilizingAt)}</span>
+          <span class="badge badge--ok">Полив: ${formatDate(plant.nextWateringAt)}</span>
+          <span class="badge badge--soon">Подкормка: ${formatDate(plant.nextFertilizingAt)}</span>
         </div>
-      </div>
-      <div class="card__details">
-        <div class="meta-grid">
-          <div class="meta"><span class="label">Last watering</span>${formatDate(plant.lastWateredAt)}</div>
-          <div class="meta"><span class="label">Last fertilizing</span>${formatDate(plant.lastFertilizedAt)}</div>
-          <div class="meta"><span class="label">Warm period</span>${plant.warmPeriod || '-'}</div>
-          <div class="meta"><span class="label">Cold period</span>${plant.coldPeriod || '-'}</div>
+        <div class="card__dates">
+          <div class="date-chip">Полив: ${formatDate(plant.nextWateringAt)}</div>
+          <div class="date-chip">Подкормка: ${formatDate(plant.nextFertilizingAt)}</div>
         </div>
-        <p class="note">${plant.description || 'Description will be added later.'}</p>
-        ${plant.note ? `<p class="note">${plant.note}</p>` : ''}
       </div>
     `;
+    card.dataset.id = plant.id;
+    card.addEventListener('click', () => {
+      window.location.href = `plant.html?id=${encodeURIComponent(plant.id)}`;
+    });
     elements.cards.appendChild(card);
   });
 };
 
 const buildTimelineFromPlants = () => {
   if (state.loading) {
-    showNotice(elements.timeline, 'Building schedule...', 'muted');
+    showNotice(elements.timeline, 'Составление расписания...', 'muted');
     return;
   }
 
@@ -194,16 +319,16 @@ const buildTimelineFromPlants = () => {
   plants.forEach((p) => {
     if (p.nextWateringAt) {
       items.push({
-        title: `${p.name}: watering`,
-        meta: `Next watering - ${formatDate(p.nextWateringAt)}`,
+        title: `${p.name}: полив`,
+        meta: `Следующий полив — ${formatDate(p.nextWateringAt)}`,
         date: p.nextWateringAt,
         type: 'watering',
       });
     }
     if (p.nextFertilizingAt) {
       items.push({
-        title: `${p.name}: fertilizing`,
-        meta: `Next fertilizing - ${formatDate(p.nextFertilizingAt)}`,
+        title: `${p.name}: подкормка`,
+        meta: `Следующая подкормка — ${formatDate(p.nextFertilizingAt)}`,
         date: p.nextFertilizingAt,
         type: 'fertilizing',
       });
@@ -211,7 +336,7 @@ const buildTimelineFromPlants = () => {
   });
 
   if (!items.length || state.error) {
-    showNotice(elements.timeline, state.error || 'No scheduled tasks yet.', 'muted');
+    showNotice(elements.timeline, state.error || 'Пока нет запланированных задач.', 'muted');
     return;
   }
 
@@ -242,7 +367,7 @@ const fetchPlants = async () => {
   buildTimelineFromPlants();
 
   try {
-    const response = await fetch(API_URL);
+    const response = await authFetch(API_URL);
     if (!response.ok) {
       throw new Error(`Request failed with status ${response.status}`);
     }
@@ -251,7 +376,7 @@ const fetchPlants = async () => {
     plants = Array.isArray(data) ? data.map(mapPlantFromApi) : [];
   } catch (error) {
     console.error(error);
-    state.error = 'Could not load data. Please check that the backend is running.';
+    state.error = 'Не удалось загрузить данные. Проверьте, что бэкенд запущен.';
     plants = [];
   } finally {
     state.loading = false;
@@ -279,7 +404,24 @@ elements.refresh?.addEventListener('click', () => {
   fetchPlants();
 });
 
-buildStats();
-renderCards();
-buildTimelineFromPlants();
-fetchPlants();
+elements.themeToggle?.addEventListener('click', () => {
+  const current = document.body.classList.contains('theme-dark') ? THEMES.DARK : THEMES.LIGHT;
+  applyTheme(current === THEMES.DARK ? THEMES.LIGHT : THEMES.DARK);
+});
+
+const bootstrap = async () => {
+  initTheme();
+  loadTokens();
+  const ok = await ensureAuth();
+  if (!ok) {
+    renderCards();
+    buildTimelineFromPlants();
+    return;
+  }
+  buildStats();
+  renderCards();
+  buildTimelineFromPlants();
+  fetchPlants();
+};
+
+bootstrap();
