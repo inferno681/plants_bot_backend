@@ -6,7 +6,6 @@ from app.models.plant import FertilizingPeriod, WateringPeriod
 
 
 class PlantReadScheme(BaseModel):
-    model_config = ConfigDict(from_attributes=True)
 
     id: str
     name: str
@@ -24,6 +23,28 @@ class PlantReadScheme(BaseModel):
 
     next_watering_at: date | None = None
     next_fertilizing_at: date | None = None
+
+    model_config = ConfigDict(from_attributes=True)
+
+    @field_validator('id', mode='before')
+    @classmethod
+    def cast_id(cls, id):
+        return str(id)
+
+
+class PlantReadSchemeShort(BaseModel):
+
+    id: str
+    name: str
+    image_url: str | None = None
+
+    last_watered_at: date | None = None
+    last_fertilized_at: date | None = None
+
+    next_watering_at: date | None = None
+    next_fertilizing_at: date | None = None
+
+    model_config = ConfigDict(from_attributes=True)
 
     @field_validator('id', mode='before')
     @classmethod

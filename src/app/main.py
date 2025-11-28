@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 
 import uvicorn
 from fastapi import FastAPI, Request
+from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.auth import router as auth_router
 from app.api.v1 import v1_router
@@ -34,6 +35,14 @@ app = FastAPI(
     lifespan=lifespan,
     openapi_tags=config.service.tags_metadata,
     debug=config.service.debug,
+)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=['*'],
+    allow_credentials=True,
+    allow_methods=['*'],
+    allow_headers=['*'],
 )
 
 

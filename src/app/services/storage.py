@@ -1,9 +1,11 @@
+import os
 from contextlib import asynccontextmanager
 from logging import getLogger
 
 from aioboto3 import Session  # type: ignore
 
 from app.log_messages import STORAGE_UTIL_STARTED_LOG
+from app.models import Plant
 from config import config
 
 
@@ -43,6 +45,18 @@ class S3StorageService:
                 },
                 ExpiresIn=expires,
             )
+
+    async def presigned_url_for_plant(self, plant: Plant) -> str | None:
+        if not plant.storage_key:
+            return None
+
+        ext = os.path.splitext(plant.storage_key)[1] or '.jpg'
+        filename = f"{plant.name}{ext}"
+
+        return await self.generate_presigned_url(
+            storage_key=plant.storage_key,
+            filename=filename,
+        )
 
     @asynccontextmanager
     async def _s3_client(self):

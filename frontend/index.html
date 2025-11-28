@@ -1,9 +1,9 @@
 <!DOCTYPE html>
-<html lang="ru">
+<html lang="en">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Plants Bot — дашборд</title>
+  <title>Plants Bot - Dashboard</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -11,11 +11,11 @@
     <section class="hero">
       <div>
         <p class="eyebrow">Plants bot</p>
-        <h1>Дашборд растений</h1>
-        <p class="lede">Следите за поливом и удобрениями, отмечайте теплый и холодный периоды и не пропускайте задачи на ближайшие дни.</p>
+        <h1>Plant dashboard</h1>
+        <p class="lede">Track watering and fertilizing tasks, keep schedules in one place, and share notes about every plant.</p>
         <div class="hero__actions">
-          <button class="button button--primary">Добавить растение</button>
-          <button class="button button--ghost">Экспорт PDF</button>
+          <button class="button button--primary" id="refresh">Refresh data</button>
+          <button class="button button--ghost" type="button">Export PDF</button>
         </div>
       </div>
       <div class="stats-grid" id="stats"></div>
@@ -23,18 +23,18 @@
 
     <div class="filters">
       <div class="search">
-        <input id="search" type="search" placeholder="Найти растение или латинское имя" />
+        <input id="search" type="search" placeholder="Search by name or latin name" />
       </div>
-      <button class="pill is-active" data-filter="all">Все</button>
-      <button class="pill" data-filter="due">Требуют внимания</button>
-      <button class="pill" data-filter="warm">Тёплый период</button>
-      <button class="pill" data-filter="cold">Холодный период</button>
+      <button class="pill is-active" data-filter="all">All</button>
+      <button class="pill" data-filter="due">Need attention</button>
+      <button class="pill" data-filter="warm">Warm period</button>
+      <button class="pill" data-filter="cold">Cold period</button>
     </div>
 
-    <div class="section-title">Карточки растений</div>
+    <div class="section-title">Your plants</div>
     <div class="cards" id="cards"></div>
 
-    <div class="section-title">Ближайшие задачи</div>
+    <div class="section-title">Upcoming tasks</div>
     <div class="timeline" aria-live="polite">
       <ul class="timeline__list" id="timeline"></ul>
     </div>

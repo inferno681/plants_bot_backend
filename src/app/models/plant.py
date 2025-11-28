@@ -91,5 +91,10 @@ class Plant(Document):
     async def get_plants(cls, user_id: int) -> list['Plant']:
         return await cls.find(cls.user_id == user_id).sort('+_id').to_list()
 
+    async def get_plant_by_id(
+        cls, plant_id: str, user_id: int
+    ) -> 'Plant | None':
+        return await cls.find_one(Plant.id == plant_id, user_id == user_id)
+
     class Settings:
         name = 'plants'
