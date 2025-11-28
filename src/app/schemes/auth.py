@@ -22,3 +22,9 @@ class InitData(BaseModel):
                 detail=INVALID_INIT_DATA_FORMAT_MESSAGE,
             )
         return init_data
+
+
+class RefreshRequest(BaseModel):
+    """Refresh token request scheme."""
+
+    refresh_token: str

@@ -199,6 +199,10 @@ class AuthService:
         self.log.info(USER_LOGIN_LOG, user_id)
         return await self.token_service.create_and_put_tokens(user_id)
 
+    async def refresh_user_tokens(self, refresh_token: str) -> Tokens:
+        """Refresh user tokens."""
+        return await self.token_service.refresh_tokens(refresh_token)
+
     async def logout_user(self, token: str) -> str:
         """User logout."""
         await self.token_service.delete_tokens(token)
