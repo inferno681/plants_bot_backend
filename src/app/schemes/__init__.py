@@ -1,4 +1,4 @@
-from app.schemes.auth import InitData, Tokens, RefreshRequest
+from app.schemes.auth import InitData, RefreshRequest, Tokens
 from app.schemes.plant import PlantReadScheme, PlantReadSchemeShort
 
 __all__ = [

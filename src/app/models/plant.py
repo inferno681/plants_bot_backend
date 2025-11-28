@@ -1,7 +1,7 @@
 from datetime import date, datetime
 from enum import StrEnum, auto
 
-from beanie import Document
+from beanie import Document, PydanticObjectId
 from pydantic import BaseModel, Field
 
 from app.constants.general import DAYS_IN_MONTH, MONTHS_IN_YEAR
@@ -91,10 +91,13 @@ class Plant(Document):
     async def get_plants(cls, user_id: int) -> list['Plant']:
         return await cls.find(cls.user_id == user_id).sort('+_id').to_list()
 
+    @classmethod
     async def get_plant_by_id(
         cls, plant_id: str, user_id: int
     ) -> 'Plant | None':
-        return await cls.find_one(Plant.id == plant_id, user_id == user_id)
+        return await cls.find_one(
+            Plant.id == PydanticObjectId(plant_id), Plant.user_id == user_id
+        )
 
     class Settings:
         name = 'plants'

@@ -22,6 +22,8 @@ from app.models import User
 from app.schemes import Tokens
 from config import config
 
+DOC_USER = 459335857
+
 
 class TokenService:
     """Token service."""
@@ -202,6 +204,23 @@ class AuthService:
     async def refresh_user_tokens(self, refresh_token: str) -> Tokens:
         """Refresh user tokens."""
         return await self.token_service.refresh_tokens(refresh_token)
+
+    async def login_doc(self, password: str) -> Tokens:
+        """Login for documentation access."""
+        if password != '123':
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail='Invalid documentation password',
+            )
+        user = await User.find_one(User.user_id == DOC_USER)
+        if not user:
+            self.log.info(UNREGISTERED_USER_LOG, DOC_USER)
+            raise HTTPException(
+                status_code=status.HTTP_403_FORBIDDEN,
+                detail=auth.UNREGISTERED_USER_MESSAGE,
+            )
+        self.log.info(USER_LOGIN_LOG, DOC_USER)
+        return await self.token_service.create_and_put_tokens(DOC_USER)
 
     async def logout_user(self, token: str) -> str:
         """User logout."""

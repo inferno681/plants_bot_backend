@@ -1,6 +1,9 @@
-from fastapi import APIRouter
+from typing import Annotated
 
-from app.schemes import InitData, Tokens, RefreshRequest
+from fastapi import APIRouter, Depends
+from fastapi.security import OAuth2PasswordRequestForm
+
+from app.schemes import InitData, RefreshRequest, Tokens
 from app.security import oauth2_dependency
 from app.services import auth_service
 
@@ -22,3 +25,11 @@ async def logout(token: str = oauth2_dependency):
 async def refresh_tokens(refresh_token: RefreshRequest):
     """Refresh tokens endpoint."""
     return await auth_service.refresh_user_tokens(refresh_token.refresh_token)
+
+
+@router.post('/login_doc', response_model=Tokens)
+async def doc_login(
+    form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
+):
+    """Documentation user login endpoint."""
+    return await auth_service.login_doc(form_data.password)
