@@ -1,4 +1,5 @@
 from enum import StrEnum
+from typing import Any, Iterable, Tuple
 
 from fastapi import HTTPException, status
 from pydantic import BaseModel, Field, field_validator
@@ -11,6 +12,10 @@ class OrderDirection(StrEnum):
     @property
     def sign(self) -> str:
         return '+' if self == OrderDirection.ASC else '-'
+
+    @property
+    def sort_direction(self) -> int:
+        return 1 if self == OrderDirection.ASC else -1
 
 
 class OrderField(StrEnum):
@@ -31,6 +36,10 @@ class OrderItem(BaseModel):
     def sort_string(self) -> str:
         return f'{self.direction.sign}{self.field.value}'
 
+    @property
+    def sort_tuple(self) -> Tuple[str, int]:
+        return self.field.value, self.direction.sort_direction
+
 
 class OrderParams(BaseModel):
     """Ordering params separated from pagination, supports multiple fields."""
@@ -40,7 +49,8 @@ class OrderParams(BaseModel):
     )
 
     @field_validator('order', mode='before')
-    def parse_order(cls, value):
+    @classmethod
+    def parse_order(cls, value: Any) -> list['OrderItem']:
         if value is None:
             return [OrderItem(field=OrderField.ID)]
 
@@ -49,7 +59,7 @@ class OrderParams(BaseModel):
         if isinstance(value, str):
             value = value.split(',')
 
-        if isinstance(value, list):
+        if isinstance(value, Iterable):
             for raw in value:
                 if isinstance(raw, OrderItem):
                     items.append(raw)
@@ -104,3 +114,7 @@ class OrderParams(BaseModel):
     @property
     def sort_strings(self) -> list[str]:
         return [item.sort_string for item in self.with_tie_breaker()]
+
+    @property
+    def sort_tuples(self) -> list[Tuple[str, int]]:
+        return [item.sort_tuple for item in self.with_tie_breaker()]

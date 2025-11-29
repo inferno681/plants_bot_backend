@@ -1,5 +1,6 @@
 from datetime import date, datetime
 from enum import StrEnum, auto
+from typing import Any, cast
 
 from beanie import Document, PydanticObjectId
 from pydantic import BaseModel, Field
@@ -123,7 +124,7 @@ class Plant(Document):
 
         items = (
             await cls.find(*query)
-            .sort(ordering.sort_strings)
+            .sort(cast(Any, ordering.sort_tuples))
             .limit(paginator.limit + 1)
             .to_list()
         )

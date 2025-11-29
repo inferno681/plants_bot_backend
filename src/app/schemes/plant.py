@@ -25,7 +25,6 @@ class PlantReadSchemeShort(BaseModel):
         return str(id)
 
     @computed_field
-    @property
     def status(self) -> str:
         today = date.today()
         if self.next_watering_at:

@@ -17,7 +17,7 @@ from app.utils import CursorPaginatorParams, OrderParams, PlantFilter
 def ordering_params(
     order: Annotated[list[str] | None, Query(alias='order')] = None,
 ) -> OrderParams:
-    return OrderParams(order=order)
+    return OrderParams(order=order)  # type: ignore[arg-type]
 
 
 router = APIRouter()
