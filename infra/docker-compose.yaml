@@ -1,0 +1,17 @@
+networks:
+  wagon_bid:
+    external: true
+
+services:
+  wagon_bid:
+    container_name: wagon_bid_bot
+    image: inferno681/plants_back:latest
+    restart: always
+    volumes:
+      - ./config.yaml:/app/src/config/config.yaml
+    env_file:
+      - .env
+    ports:
+      - 9080:8000
+    networks:
+      - wagon_bid
