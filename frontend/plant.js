@@ -1,14 +1,14 @@
-const apiBase = (window.API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
-const API_URL = `${apiBase}/api/v1/plants`;
-const LOGIN_URL = `${apiBase}/api/auth/login_doc`;
-const REFRESH_URL = `${apiBase}/api/auth/refresh`;
+const { ENDPOINTS, STORAGE_KEYS, THEMES } = window.CONFIG;
+const API_URL = ENDPOINTS.PLANTS;
+const LOGIN_URL = ENDPOINTS.LOGIN;
+const REFRESH_URL = ENDPOINTS.REFRESH;
 
 const state = { loading: true, error: null, plant: null };
 const auth = { accessToken: null, refreshToken: null };
 
 const loadTokens = () => {
   try {
-    const stored = localStorage.getItem('authTokens');
+    const stored = localStorage.getItem(STORAGE_KEYS.AUTH);
     if (!stored) return;
     const parsed = JSON.parse(stored);
     auth.accessToken = parsed?.accessToken || null;
@@ -21,7 +21,7 @@ const loadTokens = () => {
 const saveTokens = () => {
   try {
     localStorage.setItem(
-      'authTokens',
+      STORAGE_KEYS.AUTH,
       JSON.stringify({ accessToken: auth.accessToken, refreshToken: auth.refreshToken }),
     );
   } catch (error) {
@@ -115,15 +115,13 @@ const authFetch = async (url, options = {}) => {
   return response;
 };
 
-const THEMES = { LIGHT: 'light', DARK: 'dark' };
-
 const applyTheme = (theme) => {
   document.body.classList.toggle('theme-dark', theme === THEMES.DARK);
-  localStorage.setItem('theme', theme);
+  localStorage.setItem(STORAGE_KEYS.THEME, theme);
 };
 
 const initTheme = () => {
-  const stored = localStorage.getItem('theme');
+  const stored = localStorage.getItem(STORAGE_KEYS.THEME);
   const theme = stored === THEMES.DARK ? THEMES.DARK : THEMES.LIGHT;
   applyTheme(theme);
 };

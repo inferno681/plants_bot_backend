@@ -1,19 +1,20 @@
-const apiBase = (window.API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
-const API_URL = `${apiBase}/api/v1/plants`;
-const STATS_URL = `${API_URL}/stats`;
-const TG_LOGIN_URL = `${apiBase}/api/auth/login`;
-const LOGIN_URL = `${apiBase}/api/auth/login_doc`;
-const REFRESH_URL = `${apiBase}/api/auth/refresh`;
+const { ENDPOINTS, STORAGE_KEYS, THEMES } = window.CONFIG;
+const API_URL = ENDPOINTS.PLANTS;
+const STATS_URL = ENDPOINTS.STATS;
+const TG_LOGIN_URL = ENDPOINTS.TG_LOGIN;
+const LOGIN_URL = ENDPOINTS.LOGIN;
+const REFRESH_URL = ENDPOINTS.REFRESH;
 
 let plants = [];
 const filters = { text: '', mode: 'all' };
 const state = { loading: true, error: null, stats: null };
 const auth = { accessToken: null, refreshToken: null };
+let telegramLoginAttempted = false;
 const pagination = { cursor: null, hasMore: true, loading: false };
 
 const loadTokens = () => {
   try {
-    const stored = localStorage.getItem('authTokens');
+    const stored = localStorage.getItem(STORAGE_KEYS.AUTH);
     if (!stored) return;
     const parsed = JSON.parse(stored);
     auth.accessToken = parsed?.accessToken || null;
@@ -26,7 +27,7 @@ const loadTokens = () => {
 const saveTokens = () => {
   try {
     localStorage.setItem(
-      'authTokens',
+      STORAGE_KEYS.AUTH,
       JSON.stringify({ accessToken: auth.accessToken, refreshToken: auth.refreshToken }),
     );
   } catch (error) {
@@ -70,6 +71,7 @@ const refreshTokens = async () => {
 };
 
 const ensureAuth = async () => {
+  if (await loginWithTelegram()) return true;
   if (auth.accessToken) return true;
   if (await refreshTokens()) return true;
   if (await loginWithTelegram()) return true;
@@ -103,13 +105,23 @@ const authFetch = async (url, options = {}) => {
   return response;
 };
 
-const getTelegramInitData = () =>
-  window.Telegram?.WebApp?.initData ||
-  new URLSearchParams(window.location.search).get('init_data');
+const getTelegramInitData = () => {
+  const sdkData = window.Telegram?.WebApp?.initData;
+  if (sdkData) return sdkData;
+
+  const params = new URLSearchParams(window.location.search);
+  return (
+    params.get('tgWebAppData') ||
+    params.get('tgwebappdata') ||
+    params.get('init_data')
+  );
+};
 
 const loginWithTelegram = async () => {
+  if (telegramLoginAttempted) return false;
   const initData = getTelegramInitData();
   if (!initData) return false;
+  telegramLoginAttempted = true;
 
   try {
     const response = await fetch(TG_LOGIN_URL, {
@@ -185,15 +197,13 @@ const elements = {
   loginPassword: document.getElementById('login-password'),
 };
 
-const THEMES = { LIGHT: 'light', DARK: 'dark' };
-
 const applyTheme = (theme) => {
   document.body.classList.toggle('theme-dark', theme === THEMES.DARK);
-  localStorage.setItem('theme', theme);
+  localStorage.setItem(STORAGE_KEYS.THEME, theme);
 };
 
 const initTheme = () => {
-  const stored = localStorage.getItem('theme');
+  const stored = localStorage.getItem(STORAGE_KEYS.THEME);
   const theme = stored === THEMES.DARK ? THEMES.DARK : THEMES.LIGHT;
   applyTheme(theme);
 };
@@ -510,6 +520,9 @@ cardsContainer?.addEventListener('scroll', () => {
 });
 
 const bootstrap = async () => {
+  if (window.Telegram?.WebApp?.ready) {
+    window.Telegram.WebApp.ready();
+  }
   initTheme();
   loadTokens();
   const ok = await ensureAuth();
