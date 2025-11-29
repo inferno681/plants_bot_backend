@@ -44,6 +44,28 @@
     </div>
   </div>
 
+  <div class="modal" id="login-modal" hidden>
+    <div class="modal__dialog">
+      <h3>Вход</h3>
+      <p class="modal__note">Введите логин и пароль, если вы не авторизованы через Telegram.</p>
+      <form id="login-form">
+        <label class="modal__field">
+          <span>Логин</span>
+          <input type="text" id="login-username" name="username" autocomplete="username" required />
+        </label>
+        <label class="modal__field">
+          <span>Пароль</span>
+          <input type="password" id="login-password" name="password" autocomplete="current-password" required />
+        </label>
+        <div class="modal__actions">
+          <button type="submit" class="button button--primary">Войти</button>
+          <button type="button" class="button button--ghost" id="login-cancel">Отмена</button>
+        </div>
+        <div class="modal__error" id="login-error" hidden></div>
+      </form>
+    </div>
+  </div>
+
   <script src="app.js"></script>
 </body>
 </html>

@@ -1,6 +1,7 @@
 const apiBase = (window.API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
 const API_URL = `${apiBase}/api/v1/plants`;
 const STATS_URL = `${API_URL}/stats`;
+const TG_LOGIN_URL = `${apiBase}/api/auth/login`;
 const LOGIN_URL = `${apiBase}/api/auth/login_doc`;
 const REFRESH_URL = `${apiBase}/api/auth/refresh`;
 
@@ -44,32 +45,6 @@ const authHeaders = () => {
   return { Authorization: `Bearer ${auth.accessToken}` };
 };
 
-const loginDoc = async () => {
-  try {
-    const formData = new URLSearchParams();
-    formData.append('username', 'doc');
-    formData.append('password', '123');
-
-    const response = await fetch(LOGIN_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: formData,
-    });
-
-    if (!response.ok) {
-      throw new Error(`Auth failed with status ${response.status}`);
-    }
-
-    const data = await response.json();
-    setTokens(data.access_token || data.accessToken, data.refresh_token || data.refreshToken);
-    return true;
-  } catch (error) {
-    console.error('Auth error', error);
-    state.error = 'Не удалось авторизоваться. Обновите страницу.';
-    return false;
-  }
-};
-
 const refreshTokens = async () => {
   if (!auth.refreshToken) return false;
 
@@ -97,7 +72,9 @@ const refreshTokens = async () => {
 const ensureAuth = async () => {
   if (auth.accessToken) return true;
   if (await refreshTokens()) return true;
-  return loginDoc();
+  if (await loginWithTelegram()) return true;
+  showLoginModal();
+  return false;
 };
 
 const authFetch = async (url, options = {}) => {
@@ -115,12 +92,80 @@ const authFetch = async (url, options = {}) => {
     if (response.status !== 401) return response;
   }
 
-  const loggedIn = await loginDoc();
+  const loggedIn = await loginWithTelegram();
   if (loggedIn) {
     response = await makeRequest();
+    if (response.status !== 401) return response;
   }
 
+  setTokens(null, null);
+  showLoginModal();
   return response;
+};
+
+const getTelegramInitData = () =>
+  window.Telegram?.WebApp?.initData ||
+  new URLSearchParams(window.location.search).get('init_data');
+
+const loginWithTelegram = async () => {
+  const initData = getTelegramInitData();
+  if (!initData) return false;
+
+  try {
+    const response = await fetch(TG_LOGIN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ init_data: initData }),
+    });
+    if (!response.ok) throw new Error(`Status ${response.status}`);
+    const data = await response.json();
+    setTokens(data.access_token || data.accessToken, data.refresh_token || data.refreshToken);
+    return true;
+  } catch (error) {
+    console.error('Telegram login failed', error);
+    return false;
+  }
+};
+
+const showLoginModal = () => {
+  if (!elements.loginModal) return;
+  elements.loginModal.hidden = false;
+  if (elements.loginError) {
+    elements.loginError.hidden = true;
+    elements.loginError.textContent = '';
+  }
+  elements.loginUsername?.focus();
+};
+
+const hideLoginModal = () => {
+  if (!elements.loginModal) return;
+  elements.loginModal.hidden = true;
+};
+
+const loginWithCredentials = async (username, password) => {
+  try {
+    const formData = new URLSearchParams();
+    formData.append('username', username);
+    formData.append('password', password);
+
+    const response = await fetch(LOGIN_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: formData,
+    });
+    if (!response.ok) throw new Error(`Status ${response.status}`);
+    const data = await response.json();
+    setTokens(data.access_token || data.accessToken, data.refresh_token || data.refreshToken);
+    hideLoginModal();
+    return true;
+  } catch (error) {
+    console.error('Manual login failed', error);
+    if (elements.loginError) {
+      elements.loginError.hidden = false;
+      elements.loginError.textContent = 'Неверный логин или пароль';
+    }
+    return false;
+  }
 };
 
 const elements = {
@@ -132,6 +177,12 @@ const elements = {
   refresh: document.getElementById('refresh'),
   themeToggle: document.getElementById('theme-toggle'),
   loadMore: document.getElementById('load-more'),
+  loginModal: document.getElementById('login-modal'),
+  loginForm: document.getElementById('login-form'),
+  loginError: document.getElementById('login-error'),
+  loginCancel: document.getElementById('login-cancel'),
+  loginUsername: document.getElementById('login-username'),
+  loginPassword: document.getElementById('login-password'),
 };
 
 const THEMES = { LIGHT: 'light', DARK: 'dark' };
@@ -432,6 +483,22 @@ elements.themeToggle?.addEventListener('click', () => {
 
 elements.loadMore?.addEventListener('click', () => {
   fetchPlants();
+});
+
+elements.loginForm?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const username = elements.loginUsername?.value?.trim() || '';
+  const password = elements.loginPassword?.value || '';
+  if (!username || !password) return;
+  const ok = await loginWithCredentials(username, password);
+  if (ok) {
+    fetchStats();
+    fetchPlants(true);
+  }
+});
+
+elements.loginCancel?.addEventListener('click', () => {
+  hideLoginModal();
 });
 
 const cardsContainer = elements.cards?.parentElement;
