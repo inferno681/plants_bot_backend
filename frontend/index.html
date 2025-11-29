@@ -33,9 +33,12 @@
     </div>
 
     <div class="section-title">Ваши растения</div>
-    <div class="cards" id="cards"></div>
+    <div class="cards-panel">
+      <div class="cards" id="cards" aria-live="polite"></div>
+      <button class="load-more" id="load-more" type="button" hidden>Загрузить ещё</button>
+    </div>
 
-    <div class="section-title">Ближайшие задачи</div>
+    <div class="section-title" id="tasks-section">Ближайшие задачи</div>
     <div class="timeline" aria-live="polite">
       <ul class="timeline__list" id="timeline"></ul>
     </div>

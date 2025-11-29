@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, timedelta
 from enum import StrEnum, auto
 from typing import Any, cast
 
@@ -142,6 +142,68 @@ class Plant(Document):
         return await cls.find_one(
             Plant.id == PydanticObjectId(plant_id), Plant.user_id == user_id
         )
+
+    @classmethod
+    async def get_stats(cls, user_id: int) -> dict[str, Any]:
+        """Aggregate basic dashboard stats."""
+        plants = await cls.find(cls.user_id == user_id).to_list()
+
+        total = len(plants)
+
+        today = date.today()
+        week_limit = today + timedelta(days=7)
+
+        attention = 0
+        watering_week = 0
+
+        tasks: list[dict[str, Any]] = []
+
+        for plant in plants:
+            next_water: date | None = plant.next_watering_at
+            next_fert: date | None = plant.next_fertilizing_at
+
+            min_diff = min(
+                Plant.days_until(next_water, today),
+                Plant.days_until(next_fert, today),
+            )
+            if min_diff <= 0:
+                attention += 1
+
+            if next_water and today <= next_water <= week_limit:
+                watering_week += 1
+
+            if next_water:
+                task_type = (
+                    'watering_with_fertilizing'
+                    if next_fert and next_fert == next_water
+                    else 'watering'
+                )
+                tasks.append(
+                    {
+                        'plant_id': str(plant.id),
+                        'name': plant.name,
+                        'date': next_water,
+                        'type': task_type,
+                    }
+                )
+
+        tasks.sort(key=lambda task: task['date'])
+
+        return {
+            'total': total,
+            'watering_week': watering_week,
+            'attention': attention,
+            'tasks': tasks[:10],
+        }
+
+    @staticmethod
+    def days_until(value: date | None, today: date | None = None) -> int:
+        """Return days between value and today (default: current date)."""
+        if today is None:
+            today = date.today()
+        if value is None:
+            return 10**9
+        return (value - today).days
 
     @classmethod
     def _build_cursor_filter(

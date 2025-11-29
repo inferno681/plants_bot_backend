@@ -9,6 +9,7 @@ from app.schemes import (
     CursorPaginatedResponse,
     PlantReadScheme,
     PlantReadSchemeShort,
+    PlantStatsScheme,
 )
 from app.services import storage_service, user_service
 from app.utils import CursorPaginatorParams, OrderParams, PlantFilter
@@ -53,6 +54,13 @@ async def get_plants(
         has_more=has_more,
         limit=paginator.limit,
     )
+
+
+@router.get('/stats', response_model=PlantStatsScheme)
+async def get_plants_stats(
+    user_id: int = user_service.current_user_id_dependency,
+):
+    return PlantStatsScheme.model_validate(await Plant.get_stats(user_id))
 
 
 @router.get('/{plant_id}', response_model=PlantReadScheme)

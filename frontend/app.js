@@ -1,12 +1,14 @@
 const apiBase = (window.API_BASE_URL || 'http://localhost:8000').replace(/\/$/, '');
 const API_URL = `${apiBase}/api/v1/plants`;
+const STATS_URL = `${API_URL}/stats`;
 const LOGIN_URL = `${apiBase}/api/auth/login_doc`;
 const REFRESH_URL = `${apiBase}/api/auth/refresh`;
 
 let plants = [];
 const filters = { text: '', mode: 'all' };
-const state = { loading: true, error: null };
+const state = { loading: true, error: null, stats: null };
 const auth = { accessToken: null, refreshToken: null };
+const pagination = { cursor: null, hasMore: true, loading: false };
 
 const loadTokens = () => {
   try {
@@ -129,6 +131,7 @@ const elements = {
   filterPills: document.querySelectorAll('.pill'),
   refresh: document.getElementById('refresh'),
   themeToggle: document.getElementById('theme-toggle'),
+  loadMore: document.getElementById('load-more'),
 };
 
 const THEMES = { LIGHT: 'light', DARK: 'dark' };
@@ -226,17 +229,13 @@ const showNotice = (target, message, tone = 'muted') => {
 };
 
 const buildStats = () => {
-  const total = plants.length;
-  const dueToday = plants.filter(
-    (p) => daysUntil(p.nextWateringAt) <= 0 || daysUntil(p.nextFertilizingAt) <= 0,
-  ).length;
-  const weekTasks = plants.filter(
-    (p) => daysUntil(p.nextWateringAt) <= 7 || daysUntil(p.nextFertilizingAt) <= 7,
-  ).length;
+  const total = state.stats?.total ?? plants.length;
+  const attention = state.stats?.attention ?? 0;
+  const weekTasks = state.stats?.watering_week ?? 0;
   const blocks = [
     { label: 'Всего растений', value: total },
-    { label: 'Требуют внимания', value: dueToday },
-    { label: 'Задач на неделю', value: weekTasks },
+    { label: 'Требуют внимания', value: attention },
+    { label: 'Полив на неделю', value: weekTasks },
     { label: 'Синхронизация', value: 'Онлайн' },
   ];
 
@@ -309,80 +308,99 @@ const renderCards = () => {
   });
 };
 
-const buildTimelineFromPlants = () => {
-  if (state.loading) {
-    showNotice(elements.timeline, 'Составление расписания...', 'muted');
+const renderTasks = () => {
+  const tasks = state.stats?.tasks || [];
+  if (!tasks.length) {
+    showNotice(elements.timeline, 'Пока нет запланированных задач.', 'muted');
     return;
   }
-
-  const items = [];
-  plants.forEach((p) => {
-    if (p.nextWateringAt) {
-      items.push({
-        title: `${p.name}: полив`,
-        meta: `Следующий полив — ${formatDate(p.nextWateringAt)}`,
-        date: p.nextWateringAt,
-        type: 'watering',
-      });
-    }
-    if (p.nextFertilizingAt) {
-      items.push({
-        title: `${p.name}: подкормка`,
-        meta: `Следующая подкормка — ${formatDate(p.nextFertilizingAt)}`,
-        date: p.nextFertilizingAt,
-        type: 'fertilizing',
-      });
-    }
-  });
-
-  if (!items.length || state.error) {
-    showNotice(elements.timeline, state.error || 'Пока нет запланированных задач.', 'muted');
-    return;
-  }
-
-  items.sort((a, b) => new Date(a.date) - new Date(b.date));
-  const upcoming = items.slice(0, 6);
 
   elements.timeline.innerHTML = '';
-  upcoming.forEach((item) => {
+  tasks.slice(0, 10).forEach((task) => {
     const li = document.createElement('li');
     li.className = 'timeline__item';
     li.innerHTML = `
       <div>
-        <div class="title">${item.title}</div>
-        <div class="note">${item.meta}</div>
+        <div class="title">${task.name}</div>
+        <div class="note">${task.type === 'watering_with_fertilizing' ? 'Полив + подкормка' : 'Полив'}</div>
       </div>
-      <div class="pill pill--small ${item.type === 'watering' ? 'is-active' : ''}">
-        ${formatDate(item.date)}
+      <div class="pill pill--small ${task.type === 'watering' ? 'is-active' : ''}">
+        ${formatDate(task.date)}
       </div>
     `;
+    li.addEventListener('click', () => {
+      window.location.href = `plant.html?id=${encodeURIComponent(task.plant_id)}`;
+    });
     elements.timeline.appendChild(li);
   });
 };
 
-const fetchPlants = async () => {
-  state.loading = true;
+const updateLoadMoreVisibility = () => {
+  if (!elements.loadMore) return;
+  elements.loadMore.hidden = !pagination.hasMore;
+  elements.loadMore.disabled = pagination.loading;
+  elements.loadMore.textContent = pagination.loading ? 'Загрузка...' : 'Загрузить ещё';
+};
+
+const fetchPlants = async (reset = false) => {
+  if (pagination.loading) return;
+  pagination.loading = true;
   state.error = null;
-  renderCards();
-  buildTimelineFromPlants();
+  if (reset) {
+    state.loading = true;
+    plants = [];
+    pagination.cursor = null;
+    pagination.hasMore = true;
+    renderCards();
+  }
+  updateLoadMoreVisibility();
 
   try {
-    const response = await authFetch(API_URL);
+    const url = new URL(API_URL);
+    url.searchParams.set('limit', '20');
+    url.searchParams.set('order', 'name');
+    if (pagination.cursor) {
+      url.searchParams.set('cursor', pagination.cursor);
+    }
+
+    const response = await authFetch(url.toString());
     if (!response.ok) {
       throw new Error(`Request failed with status ${response.status}`);
     }
 
     const data = await response.json();
-    plants = Array.isArray(data) ? data.map(mapPlantFromApi) : [];
+    const items = Array.isArray(data?.items) ? data.items : [];
+    const mapped = items.map(mapPlantFromApi);
+    plants = reset ? mapped : [...plants, ...mapped];
+    pagination.cursor = data?.next_cursor || null;
+    pagination.hasMore = Boolean(data?.has_more);
   } catch (error) {
     console.error(error);
     state.error = 'Не удалось загрузить данные. Проверьте, что бэкенд запущен.';
     plants = [];
+    pagination.cursor = null;
+    pagination.hasMore = false;
   } finally {
     state.loading = false;
     buildStats();
     renderCards();
-    buildTimelineFromPlants();
+    renderTasks();
+    updateLoadMoreVisibility();
+    pagination.loading = false;
+  }
+};
+
+const fetchStats = async () => {
+  try {
+    const response = await authFetch(STATS_URL);
+    if (!response.ok) throw new Error(`Status ${response.status}`);
+    state.stats = await response.json();
+  } catch (error) {
+    console.error('Stats error', error);
+    state.stats = null;
+  } finally {
+    buildStats();
+    renderTasks();
   }
 };
 
@@ -401,12 +419,27 @@ elements.filterPills.forEach((pill) => {
 });
 
 elements.refresh?.addEventListener('click', () => {
-  fetchPlants();
+  pagination.cursor = null;
+  pagination.hasMore = true;
+  fetchStats();
+  fetchPlants(true);
 });
 
 elements.themeToggle?.addEventListener('click', () => {
   const current = document.body.classList.contains('theme-dark') ? THEMES.DARK : THEMES.LIGHT;
   applyTheme(current === THEMES.DARK ? THEMES.LIGHT : THEMES.DARK);
+});
+
+elements.loadMore?.addEventListener('click', () => {
+  fetchPlants();
+});
+
+const cardsContainer = elements.cards?.parentElement;
+cardsContainer?.addEventListener('scroll', () => {
+  if (!pagination.hasMore || pagination.loading) return;
+  if (cardsContainer.scrollTop + cardsContainer.clientHeight >= cardsContainer.scrollHeight - 80) {
+    fetchPlants();
+  }
 });
 
 const bootstrap = async () => {
@@ -415,13 +448,14 @@ const bootstrap = async () => {
   const ok = await ensureAuth();
   if (!ok) {
     renderCards();
-    buildTimelineFromPlants();
+    renderTasks();
     return;
   }
   buildStats();
   renderCards();
-  buildTimelineFromPlants();
-  fetchPlants();
+  renderTasks();
+  fetchStats();
+  fetchPlants(true);
 };
 
 bootstrap();
