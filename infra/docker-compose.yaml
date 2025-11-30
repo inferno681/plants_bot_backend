@@ -3,8 +3,8 @@ networks:
     external: true
 
 services:
-  wagon_bid:
-    container_name: wagon_bid_bot
+  plants_back:
+    container_name: plants_back
     image: inferno681/plants_back:latest
     restart: always
     volumes:
