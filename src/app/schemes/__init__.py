@@ -5,6 +5,7 @@ from app.schemes.plant import (
     PlantReadSchemeShort,
     PlantStatsScheme,
     PlantTaskScheme,
+    PlantUpdateScheme,
 )
 
 __all__ = [
@@ -16,4 +17,5 @@ __all__ = [
     'PlantTaskScheme',
     'RefreshRequest',
     'CursorPaginatedResponse',
+    'PlantUpdateScheme',
 ]

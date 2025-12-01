@@ -6,6 +6,7 @@ from app.utils.ordering import (
     OrderParams,
 )
 from app.utils.pagination import CursorPaginatorParams
+from app.utils.telegram import send_photo_to_telegram
 
 __all__ = [
     'PlantFilter',
@@ -14,4 +15,5 @@ __all__ = [
     'OrderField',
     'OrderDirection',
     'OrderItem',
+    'send_photo_to_telegram',
 ]

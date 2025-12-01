@@ -16,6 +16,8 @@ class ServiceSettings(BaseModel):
     timeout: int
     workers: int
 
+    service_chat_id: 123
+
     debug: bool
     access_token_ttl: int
     refresh_token_ttl: int
@@ -160,6 +162,12 @@ class AppConfig(BaseSettings):
             host=self.redis.host,
             port=self.redis.port,
             db=self.redis.db,
+        )
+
+    @property
+    def send_photo_link(self) -> str:
+        return 'https://api.telegram.org/bot{token}/sendPhoto'.format(
+            token=self.secrets.bot_token.get_secret_value()
         )
 
 

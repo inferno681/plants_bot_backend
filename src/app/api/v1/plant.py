@@ -1,7 +1,15 @@
 import asyncio
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    HTTPException,
+    Query,
+    UploadFile,
+    status,
+)
 
 from app.constants.plant import PLANT_NOT_FOUND_MSG
 from app.models import Plant
@@ -10,9 +18,15 @@ from app.schemes import (
     PlantReadScheme,
     PlantReadSchemeShort,
     PlantStatsScheme,
+    PlantUpdateScheme,
 )
 from app.services import storage_service, user_service
-from app.utils import CursorPaginatorParams, OrderParams, PlantFilter
+from app.utils import (
+    CursorPaginatorParams,
+    OrderParams,
+    PlantFilter,
+    send_photo_to_telegram,
+)
 
 
 def ordering_params(
@@ -63,6 +77,30 @@ async def get_plants_stats(
     return PlantStatsScheme.model_validate(await Plant.get_stats(user_id))
 
 
+@router.post("/{plant_id}/image", response_model=PlantReadScheme)
+async def update_plant_image(
+    plant_id: str,
+    image: Annotated[UploadFile, File(...)],
+    user_id: int = user_service.current_user_id_dependency,
+):
+    plant = await Plant.get_plant_by_id(plant_id, user_id)
+    if plant is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=PLANT_NOT_FOUND_MSG
+        )
+
+    file_id = await send_photo_to_telegram(image)
+    plant.image = file_id
+    await plant.save()
+
+    scheme = PlantReadScheme.model_validate(plant)
+    url = await storage_service.presigned_url_for_plant(plant)
+    if isinstance(url, str):
+        scheme.image_url = url
+
+    return scheme
+
+
 @router.get('/{plant_id}', response_model=PlantReadScheme)
 async def get_plant(
     plant_id: str,
@@ -73,6 +111,29 @@ async def get_plant(
         raise HTTPException(
             status_code=status.HTTP_404_NOT_FOUND, detail=PLANT_NOT_FOUND_MSG
         )
+    scheme = PlantReadScheme.model_validate(plant)
+
+    url = await storage_service.presigned_url_for_plant(plant)
+    if isinstance(url, str):
+        scheme.image_url = url
+
+    return scheme
+
+
+@router.patch('/{plant_id}', response_model=PlantReadScheme)
+async def update_plant(
+    plant_id: str,
+    plant_update: PlantUpdateScheme,
+    user_id: int = user_service.current_user_id_dependency,
+):
+    plant = await Plant.get_plant_by_id(plant_id, user_id)
+    if plant is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=PLANT_NOT_FOUND_MSG
+        )
+    for key, new_value in plant_update.model_dump(exclude_unset=True).items():
+        setattr(plant, key, new_value)
+    await plant.save()
     scheme = PlantReadScheme.model_validate(plant)
 
     url = await storage_service.presigned_url_for_plant(plant)

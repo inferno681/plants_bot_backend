@@ -72,3 +72,14 @@ class PlantReadScheme(PlantReadSchemeShort):
     next_fertilizing_at: date | None = None
 
     model_config = ConfigDict(from_attributes=True)
+
+
+class PlantUpdateScheme(BaseModel):
+
+    name: str | None = None
+    scientific_name: str | None = None
+    description: str | None = None
+
+    warm_period: WateringPeriod | None = None
+    cold_period: WateringPeriod | None = None
+    fertilizing: FertilizingPeriod | None = None
