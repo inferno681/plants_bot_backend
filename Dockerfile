@@ -1,4 +1,4 @@
-FROM python:3.12-slim
+FROM python:3.12-slim AS builder
 
 WORKDIR /app
 
@@ -12,12 +12,16 @@ COPY pyproject.toml uv.lock* /app/
 
 RUN uv sync --no-dev --frozen --no-cache --no-install-project
 
-RUN mkdir -p ./src
+FROM python:3.12-slim AS final
 
-COPY ./src/config  ./src/config
+WORKDIR /app
 
-COPY ./src/app  ./src/app
+ENV PYTHONDONTWRITEBYTECODE=1 \
+    PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app/src/
 
-ENV PYTHONPATH=/app/src/
+COPY --from=builder /usr/local /usr/local
+
+COPY ./src /app/src
 
 CMD ["python", "src/app/run_main.py"]
