@@ -14,7 +14,6 @@ const elements = {
   description: document.getElementById('plant-description'),
   badges: document.getElementById('plant-badges'),
   grid: document.getElementById('detail-grid'),
-  note: document.getElementById('detail-note'),
   back: document.getElementById('back-btn'),
   themeToggle: document.getElementById('theme-toggle'),
   editToggle: document.getElementById('edit-toggle'),
@@ -49,7 +48,7 @@ const loadTokens = () => {
     auth.accessToken = parsed?.accessToken || null;
     auth.refreshToken = parsed?.refreshToken || null;
   } catch (error) {
-    console.warn('�� 㤠���� ������ ⮪���', error);
+    console.warn('Не удалось прочитать токены', error);
   }
 };
 
@@ -60,7 +59,7 @@ const saveTokens = () => {
       JSON.stringify({ accessToken: auth.accessToken, refreshToken: auth.refreshToken }),
     );
   } catch (error) {
-    console.warn('�� 㤠���� ��࠭��� ⮪���', error);
+    console.warn('Не удалось сохранить токены', error);
   }
 };
 
@@ -93,7 +92,7 @@ const loginDoc = async () => {
     return true;
   } catch (error) {
     console.error('Auth error', error);
-    state.error = '�� 㤠���� ���ਧ�������. ������� ��࠭���.';
+    state.error = 'Не удалось авторизоваться. Попробуйте позже.';
     return false;
   }
 };
@@ -157,7 +156,7 @@ const applyTheme = (theme) => {
 
 const initTheme = () => {
   const stored = localStorage.getItem(STORAGE_KEYS.THEME);
-  const theme = stored === THEMES.DARK ? THEMES.DARK : THEMES.LIGHT;
+  const theme = stored === THEMES.LIGHT ? THEMES.LIGHT : THEMES.DARK;
   applyTheme(theme);
 };
 
@@ -179,8 +178,8 @@ const formatPeriod = (period) => {
   const end = formatMonthDay(period.end);
 
   if (start && end) return `${start} - ${end}`;
-  if (start) return `� ${start}`;
-  if (end) return `�� ${end}`;
+  if (start) return `с ${start}`;
+  if (end) return `до ${end}`;
   return null;
 };
 
@@ -201,16 +200,16 @@ const statusBadge = (plant) => {
   const fertilizing = daysUntil(plant.next_fertilizing_at);
   const minDiff = Math.min(watering, fertilizing);
 
-  if (minDiff <= 0) return { text: '�㦭� ��������', cls: 'badge--due' };
-  if (minDiff <= 2) return { text: '���� �����', cls: 'badge--soon' };
-  return { text: '��� ���', cls: 'badge--ok' };
+  if (minDiff <= 0) return { text: 'Срочный уход', cls: 'badge--due' };
+  if (minDiff <= 2) return { text: 'Скоро полив', cls: 'badge--soon' };
+  return { text: 'Все спокойно', cls: 'badge--ok' };
 };
 
 const renderBadges = (plant) => {
   const badges = [];
   badges.push(statusBadge(plant));
-  badges.push({ text: `�����: ${formatDate(plant.next_watering_at)}`, cls: 'badge--ok' });
-  badges.push({ text: `�����ପ�: ${formatDate(plant.next_fertilizing_at)}`, cls: 'badge--soon' });
+  badges.push({ text: `Полив: ${formatDate(plant.next_watering_at)}`, cls: 'badge--ok' });
+  badges.push({ text: `Подкормка: ${formatDate(plant.next_fertilizing_at)}`, cls: 'badge--soon' });
 
   elements.badges.innerHTML = badges
     .map((b) => `<span class="badge ${b.cls}">${b.text}</span>`)
@@ -223,15 +222,15 @@ const renderGrid = (plant) => {
   const coldPeriod = formatPeriod(plant.cold_period);
 
   const items = [
-    { label: '������騩 �����', value: formatDate(plant.next_watering_at) },
-    { label: '�������� �����ପ�', value: formatDate(plant.next_fertilizing_at) },
-    { label: '��᫥���� �����', value: formatDate(plant.last_watered_at) },
-    { label: '��᫥���� �����ପ�', value: formatDate(plant.last_fertilized_at) },
-    { label: '��� ��ਮ�', value: warmPeriod || '-' },
-    { label: '������� ��ਮ�', value: coldPeriod || '-' },
-    { label: '��ਮ� �����ପ�', value: fertilizingPeriod || '-' },
+    { label: 'Следующий полив', value: formatDate(plant.next_watering_at) },
+    { label: 'Следующая подкормка', value: formatDate(plant.next_fertilizing_at) },
+    { label: 'Последний полив', value: formatDate(plant.last_watered_at) },
+    { label: 'Последняя подкормка', value: formatDate(plant.last_fertilized_at) },
+    { label: 'Тёплый период', value: warmPeriod || '-' },
+    { label: 'Холодный период', value: coldPeriod || '-' },
+    { label: 'Период подкормок', value: fertilizingPeriod || '-' },
     {
-      label: '����� �����ପ�',
+      label: 'Частота подкормок',
       value:
         plant.fertilizing?.frequency && plant.fertilizing?.type
           ? `${plant.fertilizing.frequency} ${plant.fertilizing.type}`
@@ -350,13 +349,28 @@ const toggleEditPanel = (open) => {
   if (!elements.editPanel || !elements.editToggle) return;
   const shouldOpen = typeof open === 'boolean' ? open : elements.editPanel.hidden;
   elements.editPanel.hidden = !shouldOpen;
+  elements.editPanel.classList.toggle('is-open', shouldOpen);
+  elements.editPanel.setAttribute('aria-hidden', String(!shouldOpen));
   elements.editToggle.textContent = shouldOpen ? 'Свернуть' : 'Редактировать';
+  elements.editToggle.setAttribute('aria-expanded', String(shouldOpen));
+  if (shouldOpen) {
+    elements.editPanel.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  }
+};
+
+const ensureEditPanelClosed = () => {
+  if (!elements.editPanel || !elements.editToggle) return;
+  elements.editPanel.hidden = true;
+  elements.editPanel.classList.remove('is-open');
+  elements.editPanel.setAttribute('aria-hidden', 'true');
+  elements.editToggle.textContent = 'Редактировать';
+  elements.editToggle.setAttribute('aria-expanded', 'false');
 };
 
 const renderPlant = (plant) => {
-  elements.name.textContent = plant.name || '��� ��������';
+  elements.name.textContent = plant.name || 'Без названия';
   elements.scientific.textContent = plant.scientific_name || '';
-  elements.description.textContent = plant.description || '���ᠭ�� ���������.';
+  elements.description.textContent = plant.description || 'Описание отсутствует.';
 
   if (plant.image_url) {
     elements.heroImage.classList.add('has-image');
@@ -370,25 +384,13 @@ const renderPlant = (plant) => {
   renderGrid(plant);
   fillEditForm(plant);
 
-  const note =
-    plant.warm_period?.note ||
-    plant.cold_period?.note ||
-    plant.fertilizing?.note ||
-    '';
-  if (note) {
-    elements.note.hidden = false;
-    elements.note.textContent = note;
-  } else {
-    elements.note.hidden = true;
-  }
 };
 
 const showError = (message) => {
-  elements.name.textContent = '�訡��';
+  elements.name.textContent = 'Ошибка';
   elements.description.textContent = message;
   elements.badges.innerHTML = '';
   elements.grid.innerHTML = `<div class="detail-empty">${message}</div>`;
-  elements.note.hidden = true;
   setEditStatus(message, 'error');
 };
 
@@ -407,7 +409,7 @@ const fetchPlant = async () => {
     setEditStatus('');
   } catch (error) {
     console.error(error);
-    state.error = '�� 㤠���� ����㧨�� ��⥭��.';
+    state.error = 'Не удалось загрузить растение.';
     showError(state.error);
   } finally {
     state.loading = false;
@@ -540,11 +542,12 @@ const handleUploadImage = async () => {
 const bootstrap = async () => {
   initTheme();
   loadTokens();
+  ensureEditPanelClosed();
 
   const params = new URLSearchParams(window.location.search);
   plantId = params.get('id');
   if (!plantId) {
-    showError('�� 㪠��� �����䨪��� ��⥭��.');
+    showError('Не указан идентификатор растения.');
     return;
   }
 

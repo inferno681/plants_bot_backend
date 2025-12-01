@@ -16,6 +16,7 @@
   --shadow: 0 16px 40px rgba(12, 52, 90, 0.08);
   --radius: 16px;
   --placeholder-img: url("./assests/light_ph.png");
+  --input-bg: rgba(255, 255, 255, 0.9);
   font-family: "DM Sans", "Inter", "Segoe UI", -apple-system, sans-serif;
 }
 
@@ -36,6 +37,7 @@
   --border: rgba(255, 255, 255, 0.08);
   --shadow: 0 20px 60px rgba(0, 0, 0, 0.35);
   --placeholder-img: url("./assests/dark_ph.png");
+  --input-bg: rgba(255, 255, 255, 0.08);
 }
 
 * {
@@ -640,6 +642,10 @@ h1 {
   gap: 14px;
 }
 
+.edit-panel[hidden] {
+  display: none !important;
+}
+
 .edit-panel__header {
   display: flex;
   align-items: center;
@@ -705,7 +711,7 @@ h1 {
   padding: 10px 12px;
   border-radius: 10px;
   border: 1px solid var(--border);
-  background: rgba(255, 255, 255, 0.8);
+  background: var(--input-bg);
   color: var(--text);
   font-size: 14px;
 }

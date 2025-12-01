@@ -204,7 +204,7 @@ const applyTheme = (theme) => {
 
 const initTheme = () => {
   const stored = localStorage.getItem(STORAGE_KEYS.THEME);
-  const theme = stored === THEMES.DARK ? THEMES.DARK : THEMES.LIGHT;
+  const theme = stored === THEMES.LIGHT ? THEMES.LIGHT : THEMES.DARK;
   applyTheme(theme);
 };
 
