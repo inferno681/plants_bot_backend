@@ -3,14 +3,19 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Растение — детали</title>
+  <title>Карточка растения</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
   <div class="page">
     <header class="detail-header">
-      <button class="button button--ghost" id="back-btn" type="button">← Назад</button>
-      <button class="button button--ghost" id="theme-toggle" type="button">Тема</button>
+      <div class="detail-header__group">
+        <button class="button button--ghost" id="back-btn" type="button">↩ Назад</button>
+      </div>
+      <div class="detail-header__group">
+        <button class="button button--ghost" id="theme-toggle" type="button">Тема</button>
+        <button class="button button--primary" id="edit-toggle" type="button">Редактировать</button>
+      </div>
     </header>
 
     <section class="detail-hero" aria-live="polite">
@@ -19,13 +24,157 @@
         <p class="eyebrow">Растение</p>
         <h1 id="plant-name">Загрузка...</h1>
         <div class="card__subtitle" id="plant-scientific"></div>
-        <p class="lede" id="plant-description">Загружаем описание...</p>
+        <p class="lede" id="plant-description">Собираем сведения...</p>
         <div class="badges" id="plant-badges"></div>
       </div>
     </section>
 
     <section class="detail-grid" id="detail-grid"></section>
     <section id="detail-note" class="detail-note" hidden></section>
+
+    <section class="edit-panel" id="edit-panel" hidden>
+      <div class="edit-panel__header">
+        <div>
+          <p class="eyebrow">Редактирование</p>
+          <h2 class="section-title">Данные растения</h2>
+        </div>
+        <div class="edit-status" id="edit-status" aria-live="polite"></div>
+      </div>
+
+      <form id="edit-form" class="edit-form" novalidate>
+        <div class="form-grid">
+          <article class="form-card">
+            <div class="form-card__header">
+              <div>
+                <div class="eyebrow">Основное</div>
+                <h3 class="form-card__title">Название и описание</h3>
+              </div>
+            </div>
+
+            <label class="form-field">
+              <span class="form-label">Название</span>
+              <input type="text" id="field-name" name="name" placeholder="Например, Фикус" />
+            </label>
+
+            <label class="form-field">
+              <span class="form-label">Латинское название</span>
+              <input type="text" id="field-scientific" name="scientific_name" placeholder="Ficus lyrata" />
+            </label>
+
+            <label class="form-field">
+              <span class="form-label">Описание</span>
+              <textarea id="field-description" name="description" rows="4" placeholder="Краткая памятка"></textarea>
+            </label>
+          </article>
+
+          <article class="form-card">
+            <div class="form-card__header">
+              <div>
+                <div class="eyebrow">Тёплый период</div>
+                <h3 class="form-card__title">Полив и заметка</h3>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <label class="form-field">
+                <span class="form-label">Начало, дд.мм</span>
+                <input type="text" inputmode="numeric" id="field-warm-start" placeholder="01.04" />
+              </label>
+              <label class="form-field">
+                <span class="form-label">Конец, дд.мм</span>
+                <input type="text" inputmode="numeric" id="field-warm-end" placeholder="01.10" />
+              </label>
+            </div>
+
+            <label class="form-field">
+              <span class="form-label">Заметка</span>
+              <textarea id="field-warm-note" rows="2" placeholder="Напоминания по поливу"></textarea>
+            </label>
+          </article>
+
+          <article class="form-card">
+            <div class="form-card__header">
+              <div>
+                <div class="eyebrow">Холодный период</div>
+                <h3 class="form-card__title">Полив и заметка</h3>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <label class="form-field">
+                <span class="form-label">Начало, дд.мм</span>
+                <input type="text" inputmode="numeric" id="field-cold-start" placeholder="01.10" />
+              </label>
+              <label class="form-field">
+                <span class="form-label">Конец, дд.мм</span>
+                <input type="text" inputmode="numeric" id="field-cold-end" placeholder="01.04" />
+              </label>
+            </div>
+
+            <label class="form-field">
+              <span class="form-label">Заметка</span>
+              <textarea id="field-cold-note" rows="2" placeholder="Что учесть в холодное время"></textarea>
+            </label>
+          </article>
+
+          <article class="form-card">
+            <div class="form-card__header">
+              <div>
+                <div class="eyebrow">Подкормки</div>
+                <h3 class="form-card__title">Частота и сроки</h3>
+              </div>
+            </div>
+
+            <div class="form-row">
+              <label class="form-field">
+                <span class="form-label">Начало, дд.мм</span>
+                <input type="text" inputmode="numeric" id="field-fert-start" placeholder="01.03" />
+              </label>
+              <label class="form-field">
+                <span class="form-label">Конец, дд.мм</span>
+                <input type="text" inputmode="numeric" id="field-fert-end" placeholder="01.09" />
+              </label>
+            </div>
+
+            <div class="form-row">
+              <label class="form-field">
+                <span class="form-label">Каждые</span>
+                <input type="number" min="1" step="1" id="field-fert-frequency" placeholder="2" />
+              </label>
+              <label class="form-field">
+                <span class="form-label">Единица</span>
+                <select id="field-fert-type">
+                  <option value="days">дней</option>
+                  <option value="weeks">недель</option>
+                  <option value="months">месяцев</option>
+                </select>
+              </label>
+            </div>
+
+            <label class="form-field">
+              <span class="form-label">Заметка</span>
+              <textarea id="field-fert-note" rows="2" placeholder="Особенности подкормки"></textarea>
+            </label>
+          </article>
+        </div>
+
+        <div class="form-actions">
+          <button class="button button--primary" type="submit" id="save-plant">Сохранить</button>
+          <button class="button button--ghost" type="button" id="hide-edit">Скрыть</button>
+        </div>
+      </form>
+
+      <article class="form-card form-card--inline">
+        <div>
+          <div class="eyebrow">Фото</div>
+          <h3 class="form-card__title">Обновить изображение</h3>
+        </div>
+        <div class="upload">
+          <input type="file" id="field-image" accept="image/*" />
+          <button class="button button--ghost" type="button" id="upload-image">Загрузить</button>
+        </div>
+      </article>
+    </section>
   </div>
 
   <script src="constants.js"></script>
