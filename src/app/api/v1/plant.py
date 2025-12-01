@@ -13,7 +13,7 @@ from fastapi import (
     status,
 )
 
-from app.constants.plant import PLANT_NOT_FOUND_MSG
+from app.constants.plant import NO_FILENAME_MSG, PLANT_NOT_FOUND_MSG
 from app.models import Plant
 from app.schemes import (
     CursorPaginatedResponse,
@@ -91,13 +91,21 @@ async def update_plant_image(
             status_code=status.HTTP_404_NOT_FOUND, detail=PLANT_NOT_FOUND_MSG
         )
 
-    file_id = await send_photo_to_telegram(image)
-    await image.seek(0)
+    if not image.filename:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail=NO_FILENAME_MSG
+        )
+    file_bytes = await image.read()
+    file_id = await send_photo_to_telegram(
+        file_bytes=file_bytes,
+        filename=image.filename,
+        content_type=image.content_type,
+    )
     ext = Path(image.filename).suffix.lstrip('.')
     storage_key = f'{user_id}/{uuid4()}.{ext}'
     if plant.storage_key:
         await storage_service.delete_file(plant.storage_key or '')
-    await storage_service.upload_file(storage_key, await image.read())
+    await storage_service.upload_file(storage_key, file_bytes)
     plant.storage_key = storage_key
     plant.image = file_id
     await plant.save()
