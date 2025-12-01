@@ -1,5 +1,7 @@
 import asyncio
+from pathlib import Path
 from typing import Annotated
+from uuid import uuid4
 
 from fastapi import (
     APIRouter,
@@ -90,6 +92,12 @@ async def update_plant_image(
         )
 
     file_id = await send_photo_to_telegram(image)
+    ext = Path(image.filename).suffix.lstrip('.')
+    storage_key = f'{user_id}/{uuid4()}.{ext}'
+    if plant.storage_key:
+        await storage_service.delete_file(plant.storage_key or '')
+    await storage_service.upload_file(storage_key, await image.read())
+    plant.storage_key = storage_key
     plant.image = file_id
     await plant.save()
 

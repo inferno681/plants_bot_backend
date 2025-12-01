@@ -58,6 +58,18 @@ class S3StorageService:
             filename=filename,
         )
 
+    async def upload_file(self, storage_key: str, file_bytes: bytes):
+        """Upload a file to S3 storage."""
+        async with self._s3_client() as s3:
+            await s3.put_object(
+                Bucket=self.bucket, Key=storage_key, Body=file_bytes
+            )
+
+    async def delete_file(self, storage_key: str):
+        """Delete a file from S3 storage."""
+        async with self._s3_client() as s3:
+            await s3.delete_object(Bucket=self.bucket, Key=storage_key)
+
     @asynccontextmanager
     async def _s3_client(self):
         async with self.session.client(

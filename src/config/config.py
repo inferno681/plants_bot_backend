@@ -16,7 +16,7 @@ class ServiceSettings(BaseModel):
     timeout: int
     workers: int
 
-    service_chat_id: 123
+    service_chat_id: int
 
     debug: bool
     access_token_ttl: int

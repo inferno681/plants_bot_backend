@@ -6,7 +6,7 @@ service:
   timeout: 60
   workers: 4
 
-  service_chat_id: int
+  service_chat_id: 459335857
 
   debug: false
   access_token_ttl: 3600
