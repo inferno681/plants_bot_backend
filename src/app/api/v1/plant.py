@@ -92,6 +92,7 @@ async def update_plant_image(
         )
 
     file_id = await send_photo_to_telegram(image)
+    await image.seek(0)
     ext = Path(image.filename).suffix.lstrip('.')
     storage_key = f'{user_id}/{uuid4()}.{ext}'
     if plant.storage_key:
