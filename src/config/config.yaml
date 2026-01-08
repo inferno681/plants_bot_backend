@@ -11,6 +11,7 @@ service:
   debug: false
   access_token_ttl: 3600
   refresh_token_ttl: 14400
+  max_sessions_per_user: 10
 
   init_data_max_age: 86400
 
@@ -34,6 +35,9 @@ mongodb:
   host: "swissbro.y9tkger.mongodb.net"
   port: 27017
   db: "plants_bot"
+  max_retries: 3
+  backoff_base: 0.05
+  backoff_jitter: 0.05
 
 logger:
   format: "[%(asctime)s.%(msecs)03d] PID:%(process)-5d %(funcName)-35s %(module)-12s:%(lineno)-4d %(levelname)-7s - %(message)s"

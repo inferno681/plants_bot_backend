@@ -1,5 +1,6 @@
 TOKEN_SERVICE_START_LOG = 'Token service started'
 USER_LOGOUT_LOG = 'User %s logged out'
+USER_LOGOUT_OTHERS_LOG = 'User %s logged out from other sessions'
 AUTH_SERVICE_START_LOG = 'Auth service started'
 UNREGISTERED_USER_LOG = 'Unregistered user %s'
 USER_LOGIN_LOG = 'User %s logged in'

@@ -6,6 +6,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from app.schemes import InitData, RefreshRequest, Tokens
 from app.security import oauth2_dependency
 from app.services import auth_service
+from app.db import db_helper
 
 router = APIRouter()
 
@@ -13,7 +14,15 @@ router = APIRouter()
 @router.post('/login', response_model=Tokens)
 async def login(init: InitData):
     """Login endpoint."""
-    return await auth_service.login_user(init.init_data)
+    return await auth_service.login_telegram_user(init.init_data)
+
+
+@router.post('/register')
+async def register(session=Depends(db_helper.transaction)):
+    """Registration endpoint."""
+    return await auth_service.registration_web_user(
+        email='123', password='123', session=session
+    )
 
 
 @router.post('/logout')

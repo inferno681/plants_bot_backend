@@ -15,6 +15,7 @@ class ServiceSettings(BaseModel):
     port: int
     timeout: int
     workers: int
+    max_sessions_per_user: int
 
     service_chat_id: int
 
@@ -56,6 +57,9 @@ class MongoSettings(BaseModel):
     host: str
     port: int
     db: str
+    max_retries: int
+    backoff_base: float
+    backoff_jitter: float
 
 
 class RedisSettings(BaseModel):

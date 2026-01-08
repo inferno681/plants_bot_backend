@@ -2,24 +2,31 @@ import hashlib
 import hmac
 import json
 import logging
+from importlib.resources import files
+from pymongo.errors import DuplicateKeyError
 import time
 import urllib
 from datetime import datetime, timedelta, timezone
-
+from uuid import uuid4
 import jwt
 from fastapi import HTTPException, status
 from redis.asyncio.client import Redis
+from pwdlib import PasswordHash
 
 from app.constants import auth
+from app.exception import UserAlreadyExistsError
 from app.log_messages import (
     AUTH_SERVICE_START_LOG,
     TOKEN_SERVICE_START_LOG,
     UNREGISTERED_USER_LOG,
     USER_LOGIN_LOG,
     USER_LOGOUT_LOG,
+    USER_LOGOUT_OTHERS_LOG,
 )
-from app.models import User
+from app.models import User, WebAccount, TelegramAccount
+from app.redis_service import redis
 from app.schemes import Tokens
+from redis.exceptions import NoScriptError
 from config import config
 
 DOC_USER = 459335857
@@ -32,68 +39,22 @@ class TokenService:
         """Class constructor."""
         self.redis = redis
         self.log = logging.getLogger(__name__)
+        self.refresh_lua_sha: str | None = None
+        self.refresh_lua = (
+            files('app.redis_service.scripts')
+            .joinpath('token_refresh.lua')
+            .read_text()
+        )
         self.log.info(TOKEN_SERVICE_START_LOG)
 
-    async def get_token_redis(
-        self, user_id: int, is_access_token: bool = True
-    ) -> str | None:
-        """Get token from Redis."""
-        if is_access_token:
-            key_word = 'access_token'
-        else:
-            key_word = 'refresh_token'
-        return await self.redis.get(f'{key_word}:{user_id}')
-
-    async def store_token_in_redis(
-        self, user_id: int, access_token: str, refresh_token: str
-    ) -> None:
-        """Store access and refresh tokens in Redis."""
-        async with self.redis.pipeline() as pipe:
-            pipe.setex(
-                f'access_token:{user_id}',
-                config.service.access_token_ttl,
-                access_token,
-            )
-            pipe.setex(
-                f'refresh_token:{user_id}',
-                config.service.refresh_token_ttl,
-                refresh_token,
-            )
-            await pipe.execute()
-
-    async def create_and_put_tokens(self, user_id: int) -> Tokens:
-        """Create JWT access and refresh tokens and store them in Redis."""
-        access_token = self.generate_jwt_token(user_id)
-        refresh_token = self.generate_jwt_token(user_id, False)
-        await self.store_token_in_redis(user_id, access_token, refresh_token)
-        return Tokens(access_token=access_token, refresh_token=refresh_token)
-
-    async def check_token(
-        self, token: str, is_access_token: bool = True
-    ) -> int:
-        """Validate access token."""
-        try:
-            user_id = self.decode_jwt_token(token, is_access_token)['id']
-        except (jwt.ExpiredSignatureError, jwt.InvalidTokenError) as exc:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=str(exc),
-            )
-        if is_access_token:
-            redis_token = await self.get_token_redis(user_id)
-        else:
-            redis_token = await self.get_token_redis(user_id, False)
-        if user_id and token == redis_token:
-            return user_id
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=auth.INVALID_TOKEN_MESSAGE,
-        )
+    async def load_lua_scripts(self) -> None:
+        self.refresh_lua_sha = await self.redis.script_load(self.refresh_lua)
+        self.log.info("Refresh Lua script loaded: %s", self.refresh_lua_sha)
 
     def generate_jwt_token(
-        self, user_id: int, is_access_token: bool = True
+        self, user_id: int, sid: str, is_access_token: bool = True
     ) -> str:
-        """Generate JWT access token."""
+        """Generate JWT tokens."""
         if is_access_token:
             exp = self._get_expiration_time(config.service.access_token_ttl)
             secret = config.secrets.verification_token_secret
@@ -101,14 +62,78 @@ class TokenService:
             exp = self._get_expiration_time(config.service.refresh_token_ttl)
             secret = config.secrets.reset_token_secret
         payload = {
-            'id': user_id,
+            'sub': user_id,
             'exp': exp,
+            'sid': sid,
         }
         return jwt.encode(
             payload,
             secret.get_secret_value(),
             algorithm='HS256',
         )
+
+    async def create_and_put_tokens(
+        self, user_id: int, ip: str, user_agent: str
+    ) -> Tokens:
+        """Create JWT access and refresh tokens and store them in Redis."""
+        sid = str(uuid4())
+        access_token = self.generate_jwt_token(user_id, sid)
+        refresh_token = self.generate_jwt_token(user_id, sid, False)
+        await self.store_sid_in_redis(user_id, sid, ip, user_agent)
+        return Tokens(access_token=access_token, refresh_token=refresh_token)
+
+    async def store_sid_in_redis(
+        self, user_id: int, sid: str, ip: str, user_agent: str
+    ) -> None:
+        """Store access and refresh sid in Redis."""
+        sessions_key = f'user_sessions:{user_id}'
+
+        async with self.redis.pipeline() as pipe:
+
+            pipe.hsetex(
+                f'session:{sid}',
+                ex=config.service.refresh_token_ttl,
+                mapping={
+                    'uid': user_id,
+                    'ip': ip or 'uknown',
+                    'user_agent': user_agent or 'uknown',
+                    'created_at': int(time.time()),
+                },
+            )
+            pipe.zadd(
+                sessions_key,
+                {sid: int(time.time())},
+            )
+
+            await pipe.execute()
+
+    async def check_token(
+        self, token: str, is_access_token: bool = True
+    ) -> dict:
+        """Token validation."""
+        try:
+            payload = self.decode_jwt_token(token, is_access_token)
+        except (jwt.ExpiredSignatureError, jwt.InvalidTokenError) as exc:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=str(exc),
+            )
+        sid = payload.get('sid')
+        user_id = payload.get('sub')
+
+        if not sid or not user_id:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=auth.INVALID_TOKEN_MESSAGE,
+            )
+
+        stored_uid = await self.redis.hget(f'session:{sid}', 'uid')
+        if not stored_uid or int(stored_uid) != int(user_id):
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=auth.INVALID_TOKEN_MESSAGE,
+            )
+        return payload
 
     def decode_jwt_token(
         self, token: str, is_access_token: bool = True
@@ -129,25 +154,95 @@ class TokenService:
         except jwt.InvalidTokenError:
             raise jwt.InvalidTokenError(auth.INVALID_TOKEN_MESSAGE)
 
-    async def delete_tokens(self, token: str) -> None:
-        """Delete tokens from Redis."""
-        user_id = await self.check_token(token)
-        await self.redis.delete(
-            f'access_token:{user_id}', f'refresh_token:{user_id}'
-        )
+    async def delete_sid(self, sid: str, user_id: int) -> None:
+        """Delete sid from Redis."""
+        async with self.redis.pipeline() as pipe:
+            pipe.delete(f'session:{sid}')
+            pipe.zrem(f'user_sessions:{user_id}', sid)
+            await pipe.execute()
         self.log.info(USER_LOGOUT_LOG, user_id)
 
-    async def refresh_tokens(self, token: str) -> Tokens:
-        """Refresh tokens."""
-        user_id = await self.check_token(token, False)
-        return await self.create_and_put_tokens(user_id)
+    async def delete_sids(self, user_id: int, current_sid: str) -> None:
+        """Delete other sids from Redis."""
+        sids = await self.redis.zrange(f'user_sessions:{user_id}', 0, -1)
+        async with redis.pipeline() as pipe:
+            for sid in sids:
+                if sid != current_sid:
+                    pipe.delete(f'session:{sid}')
+                    pipe.zrem(f'user_sessions:{user_id}', sid)
+            await pipe.execute()
+        self.log.info(USER_LOGOUT_OTHERS_LOG, user_id)
+
+    async def refresh_tokens(
+        self,
+        token: str,
+        ip: str,
+        user_agent: str,
+    ) -> Tokens:
+        payload = await self.check_token(token, is_access_token=False)
+
+        old_sid = payload["sid"]
+        user_id = str(payload["sub"])
+        new_sid = str(uuid4())
+        now = int(time.time())
+
+        try:
+            await self.redis.evalsha(
+                self.refresh_lua_sha,
+                keys=[
+                    f"session:{old_sid}",
+                    f"user_sessions:{user_id}",
+                ],
+                args=[
+                    old_sid,
+                    new_sid,
+                    user_id,
+                    config.service.refresh_token_ttl,
+                    now,
+                    ip or "unknown",
+                    user_agent or "unknown",
+                ],
+            )
+        except NoScriptError:
+            self.refresh_lua_sha = await self.redis.script_load(
+                self.refresh_lua
+            )
+            await self.redis.evalsha(
+                self.refresh_lua_sha,
+                keys=[
+                    f"session:{old_sid}",
+                    f"user_sessions:{user_id}",
+                ],
+                args=[
+                    old_sid,
+                    new_sid,
+                    user_id,
+                    config.service.refresh_token_ttl,
+                    now,
+                    ip or "unknown",
+                    user_agent or "unknown",
+                ],
+            )
+        except Exception:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail=auth.INVALID_TOKEN_MESSAGE,
+            )
+
+        access_token = self.generate_jwt_token(user_id, new_sid)
+        refresh_token = self.generate_jwt_token(user_id, new_sid, False)
+
+        return Tokens(
+            access_token=access_token,
+            refresh_token=refresh_token,
+        )
 
     @staticmethod
-    def _get_expiration_time(delta: int) -> float:
+    def _get_expiration_time(delta: int) -> int:
         """Generate expiration timestamp for access token."""
-        return (
-            datetime.now(timezone.utc) + timedelta(seconds=delta)
-        ).timestamp()
+        return int(
+            (datetime.now(timezone.utc) + timedelta(seconds=delta)).timestamp()
+        )
 
 
 class AuthService:
@@ -157,6 +252,7 @@ class AuthService:
         """Class constructor."""
         self.token_service = TokenService(redis)
         self.log = logging.getLogger(__name__)
+        self.password_hasher = PasswordHash.recommended()
         self.log.info(AUTH_SERVICE_START_LOG)
 
     def verify_telegram_init_data(self, init_data: str) -> int:
@@ -188,8 +284,8 @@ class AuthService:
 
         return user_id
 
-    async def login_user(self, init_data: str) -> Tokens:
-        """Authenticate user and return JWT access and refresh tokens."""
+    async def login_telegram_user(self, init_data: str) -> Tokens:
+        """Authenticate telegram user and return JWT tokens."""
         user_id = self.verify_telegram_init_data(init_data)
         user = await User.find_one(User.user_id == user_id)
         if not user:
@@ -222,10 +318,41 @@ class AuthService:
         self.log.info(USER_LOGIN_LOG, DOC_USER)
         return await self.token_service.create_and_put_tokens(DOC_USER)
 
-    async def logout_user(self, token: str) -> str:
+    async def logout_user(self, sid: str, user_id: int) -> str:
         """User logout."""
-        await self.token_service.delete_tokens(token)
+        await self.token_service.delete_sid(sid, user_id)
         return auth.LOGOUT_MESSAGE
+
+    async def logout_others_sessions(
+        self, current_sid: str, user_id: int
+    ) -> str:
+        """Logout other user sessions."""
+        await self.token_service.delete_sids(user_id, current_sid)
+        return auth.LOGOUT_OTHERS_MESSAGE
+
+    async def registration_web_user(self, email: str, password: str, session):
+        """User registration."""
+        user = User()
+        await user.insert(session=session)
+
+        try:
+            web_account = WebAccount(
+                user_id=user.id,
+                email=email,
+                hashed_password=self.password_hasher.hash(password),
+            )
+            await web_account.insert(session=session)
+
+        except DuplicateKeyError:
+            raise UserAlreadyExistsError()
+
+        return user
+
+    async def registration_telegram_user(
+        self,
+    ):
+        """Telegram user registration."""
+        pass
 
     def _parse_init_data(self, init_data: str) -> dict:
         try:
@@ -278,10 +405,4 @@ class AuthService:
         return user_id
 
 
-redis = Redis.from_url(
-    config.redis_url,
-    db=config.redis.db,
-    decode_responses=config.redis.decode_responses,
-    password=config.secrets.redis_password.get_secret_value(),
-)
 auth_service = AuthService(redis)

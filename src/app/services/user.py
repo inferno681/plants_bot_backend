@@ -18,7 +18,7 @@ class UserService:
 
     async def get_current_user_id(self, token: str = oauth2_dependency) -> int:
         """Get current user method."""
-        return await auth_service.token_service.check_token(token)
+        return (await auth_service.token_service.check_token(token))['sub']
 
 
 user_service = UserService()
