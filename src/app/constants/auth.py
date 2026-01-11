@@ -8,6 +8,7 @@ UNREGISTERED_USER_MESSAGE = 'User is not registered.'
 LOGOUT_MESSAGE = 'logout successful'
 USER_ALREADY_EXISTS_MESSAGE = 'User with this email already exists.'
 LOGOUT_OTHERS_MESSAGE = 'other sessions logged out successfully'
+LOGOUT_ALL_MESSAGE = 'all sessions logged out successfully'
 INVALID_INIT_DATA_FORMAT_MESSAGE = 'Invalid init_data format'
 INVALID_INIT_DATA_USER_DATA_MSG = 'Invalid user JSON in init_data'
 INIT_DATA_EXPIRED_MESSAGE = 'init_data expired'
@@ -16,6 +17,7 @@ INVALID_AUTH_DATE_MESSAGE = 'Invalid auth_date'
 REQUIRED_INIT_DATA_FIELDS = ('hash', 'auth_date', 'user')
 MISSED_FIELDS_MSG = 'Missing fields: {fields}'
 NO_USER_DATA_MSG = 'No user data in init data'
+INVALID_DOC_PASSWORD_MESSAGE = 'Invalid documentation password'
 
 PASSWORD_REGEX = re.compile(
     r'^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$'

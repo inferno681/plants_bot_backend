@@ -360,6 +360,15 @@ class TokenService:
             refresh_token=self.provider.issue_refresh(user_id, new_sid),
         )
 
+    async def delete_sessions(
+        self,
+        user_id: str,
+        sid: str | None = None,
+        current_sid: str | None = None,
+    ) -> None:
+        """Delete sessions."""
+        return await self.store.delete_sessions(user_id, sid, current_sid)
+
 
 token_service = TokenService(
     provider=TokenProvider(

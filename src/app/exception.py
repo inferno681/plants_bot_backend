@@ -4,3 +4,15 @@ class UserAlreadyExistsError(Exception):
 
 class InvalidTokenError(Exception):
     """The provided token is invalid or has expired."""
+
+
+class PermissionDeniedError(Exception):
+    """The user does not have permission to perform this action."""
+
+
+class InvalidCredentialsError(Exception):
+    """The provided credentials are invalid."""
+
+
+class UserNotFoundError(Exception):
+    """The specified user was not found."""
