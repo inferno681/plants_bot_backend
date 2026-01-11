@@ -1,6 +1,7 @@
 from typing import Annotated
 
 from beanie import Document, Indexed, PydanticObjectId
+
 from app.models.mixin import TimestampMixin
 
 

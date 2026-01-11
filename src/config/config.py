@@ -97,11 +97,11 @@ class Secrets(BaseSettings):
     mongo_password: SecretStr = Field(
         default=SecretStr('password'), alias='MONGO_INITDB_ROOT_PASSWORD'
     )
-    reset_token_secret: SecretStr = Field(
-        default=SecretStr('secret'), alias='RESET_TOKEN_SECRET'
+    refresh_token_secret: SecretStr = Field(
+        default=SecretStr('secret'), alias='REFRESH_TOKEN_SECRET'
     )
-    verification_token_secret: SecretStr = Field(
-        default=SecretStr('secret'), alias='VERIFICATION_TOKEN_SECRET'
+    access_token_secret: SecretStr = Field(
+        default=SecretStr('secret'), alias='ACCESS_TOKEN_SECRET'
     )
     aws_access_key: SecretStr = Field(
         default=SecretStr('minioadmin'), alias='AWS_ACCESS_KEY'

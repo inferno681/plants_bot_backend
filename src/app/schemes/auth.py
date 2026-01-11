@@ -1,7 +1,17 @@
 from fastapi import HTTPException, status
-from pydantic import BaseModel, Field, field_validator
+from pydantic import (
+    BaseModel,
+    EmailStr,
+    Field,
+    field_validator,
+    model_validator,
+)
 
-from app.constants.auth import INVALID_INIT_DATA_FORMAT_MESSAGE
+from app.constants.auth import (
+    INVALID_INIT_DATA_FORMAT_MESSAGE,
+    PASSWORD_CHANGE_SAME_AS_OLD,
+)
+from app.schemes.validator import PasswordStr
 
 
 class Tokens(BaseModel):
@@ -28,3 +38,29 @@ class RefreshRequest(BaseModel):
     """Refresh token request scheme."""
 
     refresh_token: str
+
+
+class WebAccountLogin(BaseModel):
+    """Web account login scheme."""
+
+    email: EmailStr
+    password: PasswordStr
+
+
+class WebAccountRegistration(WebAccountLogin):
+    """Web account registration scheme."""
+
+    language_code: str | None = None
+
+
+class WebAccountPasswordChange(BaseModel):
+    """Web account password change scheme."""
+
+    old_password: PasswordStr
+    new_password: PasswordStr
+
+    @model_validator(mode='after')
+    def check_diff(self):
+        if self.old_password == self.new_password:
+            raise ValueError(PASSWORD_CHANGE_SAME_AS_OLD)
+        return self

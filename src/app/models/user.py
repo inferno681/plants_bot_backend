@@ -1,5 +1,6 @@
 from beanie import Document
 from pymongo import ASCENDING, IndexModel
+
 from app.models.mixin import TimestampMixin
 
 

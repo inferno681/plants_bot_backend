@@ -1,12 +1,6 @@
 from datetime import datetime, timezone
 
-
-from beanie import (
-    Insert,
-    before_event,
-    Replace,
-    SaveChanges,
-)
+from beanie import Insert, Replace, SaveChanges, before_event
 
 
 class TimestampMixin:

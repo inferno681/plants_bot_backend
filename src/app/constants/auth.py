@@ -1,3 +1,5 @@
+import re
+
 INVALID_TOKEN_MESSAGE = 'Invalid token'
 EXPIRED_TOKEN_MESSAGE = 'Token expired'
 MISSING_FIELDS_INIT_DATA_MSG = 'Missing fields in init_data'
@@ -14,3 +16,15 @@ INVALID_AUTH_DATE_MESSAGE = 'Invalid auth_date'
 REQUIRED_INIT_DATA_FIELDS = ('hash', 'auth_date', 'user')
 MISSED_FIELDS_MSG = 'Missing fields: {fields}'
 NO_USER_DATA_MSG = 'No user data in init data'
+
+PASSWORD_REGEX = re.compile(
+    r'^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$'
+)
+WEAK_PASSWORD = (
+    'Password requirements: min length=8, at least one: '
+    'uppercase character, lowercase character, digit and special character.'
+)
+PASSWORD_CHANGE_SAME_AS_OLD = 'New password must be different'
+SESSION_PREFIX = 'session:'
+USER_SESSIONS_PREFIX = 'user_sessions:'
+UNKNOWN_LITERAL = 'unknown'

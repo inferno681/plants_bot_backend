@@ -3,11 +3,11 @@ import random
 from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
+from beanie import init_beanie
 from pymongo import AsyncMongoClient
 from pymongo.errors import PyMongoError
-from beanie import init_beanie
 
-from app.models import User, WebAccount, TelegramAccount, Plant
+from app.models import Plant, TelegramAccount, User, WebAccount
 from config import config
 
 
