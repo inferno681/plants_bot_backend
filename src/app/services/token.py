@@ -2,7 +2,6 @@ import time
 from datetime import datetime, timezone
 from importlib.resources import files
 from logging import getLogger
-from typing import Awaitable, cast
 from uuid import uuid4
 
 import jwt
@@ -20,6 +19,8 @@ SUB = 'sub'
 EXP = 'exp'
 SID = 'sid'
 IAT = 'iat'
+TYPE = 'type'
+USER = 'user'
 
 logger = getLogger(__name__)
 
@@ -43,7 +44,9 @@ class TokenProvider:
         self.log = logger
         self.log.info(token_logs.TOKEN_PROVIDER_START_LOG)
 
-    def issue_access(self, user_id: str, sid: str) -> str:
+    def issue_access(
+        self, user_id: str, sid: str, user_type: str = USER
+    ) -> str:
         """Issue access token."""
         now = int(datetime.now(timezone.utc).timestamp())
         return jwt.encode(
@@ -52,12 +55,15 @@ class TokenProvider:
                 EXP: now + self.access_ttl,
                 SID: sid,
                 IAT: now,
+                TYPE: user_type,
             },
             self.access_secret,
             algorithm=self.algorithm,
         )
 
-    def issue_refresh(self, user_id: str, sid: str) -> str:
+    def issue_refresh(
+        self, user_id: str, sid: str, user_type: str = USER
+    ) -> str:
         """Issue refresh token."""
         now = int(datetime.now(timezone.utc).timestamp())
         return jwt.encode(
@@ -66,6 +72,7 @@ class TokenProvider:
                 EXP: now + self.refresh_ttl,
                 SID: sid,
                 IAT: now,
+                TYPE: user_type,
             },
             self.refresh_secret,
             algorithm=self.algorithm,
@@ -127,28 +134,34 @@ class SessionStore:
         """Load Lua scripts into Redis."""
         self.refresh_script = self._load_script(refresh_filename)
         self.log.info(
-            token_logs.TOKEN_REFRESH_SCRIPT_LOADED_LOG, self.refresh_script.sha
+            token_logs.TOKEN_REFRESH_SCRIPT_LOADED_LOG,
+            self.refresh_script.sha,  # type: ignore[attr-defined]
         )
         self.session_create_script = self._load_script(session_create_filename)
         self.log.info(
             token_logs.SESSION_CREATE_SCRIPT_LOADED_LOG,
-            self.session_create_script.sha,
+            self.session_create_script.sha,  # type: ignore[attr-defined]
         )
 
     async def create_session(
-        self, user_id: str, sid: str, client_info: ClientInfo
+        self,
+        user_id: str,
+        sid: str,
+        client_info: ClientInfo,
+        user_type: str = USER,
     ) -> None:
         """Store access and refresh sid in Redis."""
         dropped = await self.session_create_script(
             keys=[f'{auth.USER_SESSIONS_PREFIX}{user_id}'],
             args=[
-                self.max_sessions,
+                self.max_sessions if user_type == USER else 1,
                 self.refresh_ttl,
                 int(time.time()),
                 sid,
                 client_info.ip,
                 client_info.ua,
                 user_id,
+                user_type,
             ],
         )
 
@@ -162,16 +175,22 @@ class SessionStore:
                     session['user_agent'],
                     session['created_at'],
                     session['ttl'],
+                    session['type'],
                 )
 
-    async def check_sid(self, user_id: str, sid: str) -> bool:
+    async def check_sid(
+        self, user_id: str, sid: str, user_type: str = USER
+    ) -> bool:
         """Check sid in storage."""
 
-        stored_uid = await cast(
-            'Awaitable[str | None]',
-            self.redis.hget(f'{auth.SESSION_PREFIX}{sid}', 'uid'),
+        stored_uid, stored_type = await self.redis.hmget(
+            f'{auth.SESSION_PREFIX}{sid}', ['uid', 'type']
         )
+
         if not stored_uid or str(stored_uid) != str(user_id):
+            return False
+
+        if not stored_type or user_type != stored_type:
             return False
         return True
 
@@ -205,7 +224,11 @@ class SessionStore:
         self.log.info(log_text, user_id)
 
     async def refresh_sessions(
-        self, user_id: str, sid: str, client_info: ClientInfo
+        self,
+        user_id: str,
+        sid: str,
+        client_info: ClientInfo,
+        user_type: str = USER,
     ) -> str:
         """Refresh sids in storage."""
 
@@ -225,6 +248,7 @@ class SessionStore:
                     int(time.time()),
                     client_info.ip,
                     client_info.ua,
+                    user_type,
                 ],
             )
         except Exception as exc:
@@ -236,7 +260,7 @@ class SessionStore:
             raise InvalidTokenError(auth.INVALID_TOKEN_MESSAGE)
         if isinstance(script_result, dict) and 'err' in script_result:
             self._handle_refresh_error(
-                script_result['err'], user_id, client_info
+                script_result['err'], user_id, client_info, user_type
             )
         return new_sid
 
@@ -246,7 +270,11 @@ class SessionStore:
         )
 
     def _handle_refresh_error(
-        self, err: str, user_id: str, client_info: ClientInfo
+        self,
+        err: str,
+        user_id: str,
+        client_info: ClientInfo,
+        user_type: str = USER,
     ) -> None:
         if err == 'SESSION_NOT_FOUND':
             self.log.error(
@@ -254,6 +282,7 @@ class SessionStore:
                 user_id,
                 client_info.ip,
                 client_info.ua,
+                user_type,
             )
         elif err == 'INVALID_OWNER':
             self.log.error(
@@ -261,6 +290,7 @@ class SessionStore:
                 user_id,
                 client_info.ip,
                 client_info.ua,
+                user_type,
             )
         else:
             self.log.error(
@@ -311,13 +341,13 @@ class TokenService:
         self.log.info(token_logs.TOKEN_SERVICE_START_LOG)
 
     async def create_and_put_tokens(
-        self, user_id: str, client_info: ClientInfo
+        self, user_id: str, client_info: ClientInfo, user_type: str = USER
     ) -> Tokens:
         """Create JWT access and refresh tokens and store them in Redis."""
         sid = str(uuid4())
-        access_token = self.provider.issue_access(user_id, sid)
-        refresh_token = self.provider.issue_refresh(user_id, sid)
-        await self.store.create_session(user_id, sid, client_info)
+        access_token = self.provider.issue_access(user_id, sid, user_type)
+        refresh_token = self.provider.issue_refresh(user_id, sid, user_type)
+        await self.store.create_session(user_id, sid, client_info, user_type)
         return Tokens(access_token=access_token, refresh_token=refresh_token)
 
     async def check_token(
@@ -329,7 +359,9 @@ class TokenService:
             if is_access_token
             else self.provider.decode_refresh(token)
         )
-        if not await self.store.check_sid(payload[SUB], payload[SID]):
+        if not await self.store.check_sid(
+            payload[SUB], payload[SID], payload[TYPE]
+        ):
             raise InvalidTokenError(auth.INVALID_TOKEN_MESSAGE)
 
         return payload
@@ -341,16 +373,21 @@ class TokenService:
         payload = await self.check_token(token, is_access_token=False)
         user_id = payload[SUB]
         old_sid = payload[SID]
+        user_type = payload[TYPE]
         new_sid = await self.store.refresh_sessions(
-            user_id, old_sid, client_info
+            user_id, old_sid, client_info, user_type
         )
         self.log.info(
             token_logs.TOKEN_REFRESHED_LOG,
             user_id,
         )
         return Tokens(
-            access_token=self.provider.issue_access(user_id, new_sid),
-            refresh_token=self.provider.issue_refresh(user_id, new_sid),
+            access_token=self.provider.issue_access(
+                user_id, new_sid, user_type
+            ),
+            refresh_token=self.provider.issue_refresh(
+                user_id, new_sid, user_type
+            ),
         )
 
     async def delete_sessions(

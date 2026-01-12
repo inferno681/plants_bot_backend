@@ -9,6 +9,7 @@
 -- 5 = ip
 -- 6 = user_agent
 -- 7 = user_id
+-- 8 = user_type
 
 local key = KEYS[1]
 local max = tonumber(ARGV[1])
@@ -18,6 +19,7 @@ local sid = ARGV[4]
 local ip = ARGV[5]
 local ua = ARGV[6]
 local uid = ARGV[7]
+local user_type = ARGV[8]
 
 redis.call(
     "HSETEX",
@@ -26,6 +28,7 @@ redis.call(
     "uid", uid,
     "ip", ip,
     "user_agent", ua,
+    "type", user_type,
     "created_at", now
 )
 redis.call("ZADD", key, now, sid)

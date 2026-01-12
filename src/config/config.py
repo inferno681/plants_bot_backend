@@ -24,6 +24,7 @@ class ServiceSettings(BaseModel):
     refresh_token_ttl: int
 
     init_data_max_age: int
+    bot_init_data_max_age: int
 
     tag_metadata_auth: dict[str, str]
     tag_metadata_plant: dict[str, str]

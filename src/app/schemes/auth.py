@@ -20,15 +20,14 @@ class Tokens(BaseModel):
 
 
 class InitData(BaseModel):
-    init_data: str = Field(
-        ..., description='Signed initData string from Telegram WebApp'
-    )
+    init_data: str = Field(..., description='Signed initData string.')
 
     @field_validator('init_data')
     def validate_format(cls, init_data: str):
-        if not init_data or '&' not in init_data or '=' not in init_data:
+        parts = init_data.split('&')
+        if any('=' not in part for part in parts):
             raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
+                status.HTTP_422_UNPROCESSABLE_CONTENT,
                 detail=INVALID_INIT_DATA_FORMAT_MESSAGE,
             )
         return init_data

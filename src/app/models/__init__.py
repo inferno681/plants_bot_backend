@@ -1,3 +1,4 @@
+from app.models.bot import Bot
 from app.models.plant import FertilizingPeriod, Plant, WateringPeriod
 from app.models.telegram_acc import TelegramAccount
 from app.models.user import User
@@ -10,4 +11,5 @@ __all__ = [
     'User',
     'TelegramAccount',
     'WebAccount',
+    'Bot',
 ]

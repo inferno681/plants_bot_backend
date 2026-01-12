@@ -20,6 +20,7 @@ class LoginType(StrEnum):
     doc = auto()
     telegram = auto()
     web = auto()
+    bot = auto()
 
 
 class BaseAuthService:
@@ -71,7 +72,3 @@ class BaseAuthService:
         """Logout all user sessions."""
         await self.token_service.delete_sessions(user_id=user_id)
         return LOGOUT_ALL_MESSAGE
-
-    async def check_token(self, token: str) -> dict:
-        """Check token."""
-        return await self.token_service.check_token(token=token)

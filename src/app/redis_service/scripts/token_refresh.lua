@@ -10,6 +10,7 @@
 -- 5 = now
 -- 6 = ip
 -- 7 = user_agent
+-- 8 = user_type
 
 if redis.call("EXISTS", KEYS[1]) == 0 then
     return { err = "SESSION_NOT_FOUND" }
@@ -27,6 +28,7 @@ redis.call(
     "HSET",
     "session:" .. ARGV[2],
     "uid", ARGV[3],
+    "type", ARGV[8],
     "ip", ARGV[6],
     "user_agent", ARGV[7],
     "created_at", ARGV[5]

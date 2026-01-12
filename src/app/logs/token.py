@@ -11,12 +11,14 @@ SESSION_DELETED_OTHERS_LOG = 'All sessions deleted for user %s except current'
 REFRESH_REJECTED_LOG = 'Refresh token rejected for user %s due to %s'
 TOKEN_REFRESHED_LOG = 'Tokens refreshed for user %s'
 REFRESH_REPLAY_DETECTED_LOG = (
-    'Refresh replay detected for user %s, IP: %s, ua=%s'
+    'Refresh replay detected for user %s, IP: %s, ua=%s, user_type=%s'
 )
 REFRESH_INVALID_OWNER_LOG = (
-    'Invalid owner detected during token refresh for user %s, IP: %s, ua=%s'
+    'Invalid owner detected during token refresh for '
+    'user %s, IP: %s, ua=%s, user_type=%s'
 )
 REFRESH_UNKNOWN_ERROR_LOG = 'Unknown error during token refresh: %s'
 SESSIONS_EVICTED_LOG = (
-    'Sessions evicted: uid=%s,sid=%s, ip=%s, ua=%s, created_at=%s, ttl=%s'
+    'Sessions evicted: '
+    'uid=%s,sid=%s, ip=%s, ua=%s, created_at=%s, ttl=%s, user_type=%s'
 )

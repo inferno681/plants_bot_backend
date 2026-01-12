@@ -35,3 +35,5 @@ UNKNOWN_LITERAL = 'unknown'
 
 
 DOC_USER = ObjectId('68fdd756d174872a92b7e87d')
+
+REQUIRED_FIELDS_BOT_INIT_DATA = ('bot_id', 'auth_date', 'hash')
