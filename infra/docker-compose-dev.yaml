@@ -1,0 +1,19 @@
+services:
+  mongo:
+    image: mongo:latest
+    container_name: mongo
+    entrypoint: ["/bin/bash", "/entry.sh"]
+    command: >
+      mongod --replSet rs0 --bind_ip_all --auth --keyFile /data/configdb/keyfile
+    restart: always
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: root
+      MONGO_INITDB_ROOT_PASSWORD: example
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongo-data:/data/db
+      - ./entry.sh:/entry.sh
+
+volumes:
+  mongo-data:

@@ -18,7 +18,7 @@ auth_router.include_router(
     tags=[config.service.tag_metadata_auth_telegram['name']],
 )
 auth_router.include_router(
-    web_router,
+    bot_router,
     prefix='/bot',
     tags=[config.service.tag_metadata_auth_bot['name']],
 )

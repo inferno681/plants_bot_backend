@@ -173,6 +173,15 @@ class AppConfig(BaseSettings):
         )
 
     @property
+    def mongo_url_dev(self) -> str:
+        return 'mongodb://{user}:{pwd}@{host}:{port}/'.format(
+            user=self.secrets.mongo_user.get_secret_value(),
+            pwd=self.secrets.mongo_password.get_secret_value(),
+            host=self.mongodb.host,
+            port=self.mongodb.port,
+        )
+
+    @property
     def redis_url(self) -> str:
         return 'redis://:{pwd}@{host}:{port}/{db}'.format(
             pwd=self.secrets.redis_password.get_secret_value(),

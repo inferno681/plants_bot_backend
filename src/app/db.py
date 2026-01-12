@@ -8,7 +8,7 @@ from fastapi import Depends
 from pymongo import AsyncMongoClient
 from pymongo.errors import PyMongoError
 
-from app.models import Plant, TelegramAccount, User, WebAccount
+from app.models import Plant, TelegramAccount, User, WebAccount, Bot
 from config import config
 
 
@@ -30,7 +30,7 @@ class DbHelper:
     async def init_db(self):
         await init_beanie(
             database=self.client[config.mongodb.db],
-            document_models=[User, WebAccount, TelegramAccount, Plant],
+            document_models=[User, WebAccount, TelegramAccount, Plant, Bot],
         )
 
     async def transaction(self) -> AsyncIterator:
@@ -74,7 +74,7 @@ class DbHelper:
 
 
 db_helper = DbHelper(
-    client=AsyncMongoClient(config.mongo_url),
+    client=AsyncMongoClient(config.mongo_url_dev),
     max_retries=config.mongodb.max_retries,
     backoff_base=config.mongodb.backoff_base,
     backoff_jitter=config.mongodb.backoff_jitter,

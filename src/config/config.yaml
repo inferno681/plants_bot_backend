@@ -39,7 +39,7 @@ redis:
   decode_responses: true
 
 mongodb:
-  host: "swissbro.y9tkger.mongodb.net"
+  host: "127.0.0.1"
   port: 27017
   db: "plants_bot"
   max_retries: 3
