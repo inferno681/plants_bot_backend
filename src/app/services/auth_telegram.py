@@ -176,16 +176,16 @@ class TelegramAuthService(BaseAuthService):
             user_data = json.loads(parsed.get('user', '{}'))
         except Exception:
             errors.append(auth.INVALID_INIT_DATA_USER_DATA_MSG)
-            return 0
+            return {}
 
         if not user_data:
             errors.append(auth.NO_USER_DATA_MSG)
-            return 0
+            return {}
 
         user_id = user_data.get('id')
         if not user_id:
             errors.append(auth.USER_ID_MISSED_INIT_DATA_MSG)
-            return 0
+            return {}
 
         return user_data
 

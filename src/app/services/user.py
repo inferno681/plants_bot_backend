@@ -20,7 +20,9 @@ class UserService:
 user_service = UserService()
 
 
-async def get_current_user_uid_sid(token: str = oauth2_dependency) -> tuple:
+async def get_current_user_uid_sid(
+    token: str = oauth2_dependency,
+) -> UserSession:
     """Get current user DI."""
     payload = await token_service.check_token(token)
     return UserSession(uid=payload[SUB], sid=payload[SID])
