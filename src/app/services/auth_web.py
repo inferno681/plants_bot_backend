@@ -48,7 +48,7 @@ class WebAuthService(BaseAuthService):
         except DuplicateKeyError:
             raise UserAlreadyExistsError()
 
-        return user
+        return web_account
 
     async def login(
         self, login_data: WebAccountLogin, ip: str, ua: str

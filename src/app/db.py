@@ -26,7 +26,6 @@ class DbHelper:
         self.max_retries = max_retries
         self.backoff_base = backoff_base
         self.backoff_jitter = backoff_jitter
-        self.session_dependency = Depends(self.transaction)
 
     async def init_db(self):
         await init_beanie(
@@ -80,3 +79,5 @@ db_helper = DbHelper(
     backoff_base=config.mongodb.backoff_base,
     backoff_jitter=config.mongodb.backoff_jitter,
 )
+
+session_dependency = Depends(db_helper.transaction)

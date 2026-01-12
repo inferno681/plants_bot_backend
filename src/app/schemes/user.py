@@ -1,5 +1,5 @@
 from beanie import PydanticObjectId
-from pydantic import BaseModel
+from pydantic import BaseModel, EmailStr
 
 
 class WebAccountUpdate(BaseModel):
@@ -18,3 +18,10 @@ class TelegramUser(BaseModel):
     last_name: str | None = None
     username: str | None = None
     is_premium: bool | None = None
+
+
+class WebUser(BaseModel):
+    """Web user scheme."""
+
+    user_id: PydanticObjectId
+    email: EmailStr

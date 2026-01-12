@@ -1,9 +1,11 @@
-from app.schemes.additional import ClientInfo
+from app.schemes.client_info import ClientInfo
 from app.schemes.auth import (
     InitData,
     RefreshRequest,
     TelegramAccountBase,
     Tokens,
+    WebAccountRegistration,
+    WebAccountLogin,
 )
 from app.schemes.pagination import CursorPaginatedResponse
 from app.schemes.plant import (
@@ -13,7 +15,7 @@ from app.schemes.plant import (
     PlantTaskScheme,
     PlantUpdateScheme,
 )
-from app.schemes.user import TelegramUser
+from app.schemes.user import TelegramUser, WebUser
 
 __all__ = [
     'Tokens',
@@ -28,4 +30,7 @@ __all__ = [
     'TelegramUser',
     'TelegramAccountBase',
     'ClientInfo',
+    'WebUser',
+    'WebAccountRegistration',
+    'WebAccountLogin',
 ]
