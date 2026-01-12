@@ -1,1 +1,1 @@
-from app.api.auth.endpoints import router
+from app.api.auth.telegram import router

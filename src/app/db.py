@@ -4,6 +4,7 @@ from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
 from beanie import init_beanie
+from fastapi import Depends
 from pymongo import AsyncMongoClient
 from pymongo.errors import PyMongoError
 
@@ -25,6 +26,7 @@ class DbHelper:
         self.max_retries = max_retries
         self.backoff_base = backoff_base
         self.backoff_jitter = backoff_jitter
+        self.session_dependency = Depends(self.transaction)
 
     async def init_db(self):
         await init_beanie(

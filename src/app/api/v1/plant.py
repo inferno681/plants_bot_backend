@@ -22,7 +22,7 @@ from app.schemes import (
     PlantStatsScheme,
     PlantUpdateScheme,
 )
-from app.services import storage_service, user_service
+from app.services import current_user_id_dependency, storage_service
 from app.utils import (
     CursorPaginatorParams,
     OrderParams,
@@ -45,7 +45,7 @@ async def get_plants(
     filters: Annotated[PlantFilter, Depends()],
     paginator: Annotated[CursorPaginatorParams, Depends()],
     ordering: Annotated[OrderParams, Depends(ordering_params)],
-    user_id: int = user_service.current_user_id_dependency,
+    user_id: str = current_user_id_dependency,
 ):
     plants, has_more = await Plant.get_plants(
         user_id, filters, paginator, ordering
@@ -74,7 +74,7 @@ async def get_plants(
 
 @router.get('/stats', response_model=PlantStatsScheme)
 async def get_plants_stats(
-    user_id: int = user_service.current_user_id_dependency,
+    user_id: str = current_user_id_dependency,
 ):
     return PlantStatsScheme.model_validate(await Plant.get_stats(user_id))
 
@@ -83,7 +83,7 @@ async def get_plants_stats(
 async def update_plant_image(
     plant_id: str,
     image: Annotated[UploadFile, File(...)],
-    user_id: int = user_service.current_user_id_dependency,
+    user_id: str = current_user_id_dependency,
 ):
     plant = await Plant.get_plant_by_id(plant_id, user_id)
     if plant is None:
@@ -121,7 +121,7 @@ async def update_plant_image(
 @router.get('/{plant_id}', response_model=PlantReadScheme)
 async def get_plant(
     plant_id: str,
-    user_id: int = user_service.current_user_id_dependency,
+    user_id: str = current_user_id_dependency,
 ):
     plant = await Plant.get_plant_by_id(plant_id, user_id)
     if plant is None:
@@ -141,7 +141,7 @@ async def get_plant(
 async def update_plant(
     plant_id: str,
     plant_update: PlantUpdateScheme,
-    user_id: int = user_service.current_user_id_dependency,
+    user_id: str = current_user_id_dependency,
 ):
     plant = await Plant.get_plant_by_id(plant_id, user_id)
     if plant is None:

@@ -1,3 +1,4 @@
+from app.utils.client_info import client_info_dependency
 from app.utils.filters import PlantFilter
 from app.utils.ordering import (
     OrderDirection,
@@ -16,4 +17,5 @@ __all__ = [
     'OrderDirection',
     'OrderItem',
     'send_photo_to_telegram',
+    'client_info_dependency',
 ]

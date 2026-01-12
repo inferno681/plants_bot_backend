@@ -64,3 +64,14 @@ class WebAccountPasswordChange(BaseModel):
         if self.old_password == self.new_password:
             raise ValueError(PASSWORD_CHANGE_SAME_AS_OLD)
         return self
+
+
+class TelegramAccountBase(BaseModel):
+    """Telegram account scheme."""
+
+    telegram_id: int
+    first_name: str | None = None
+    last_name: str | None = None
+    username: str | None = None
+    is_premium: bool | None = None
+    language_code: str | None = None

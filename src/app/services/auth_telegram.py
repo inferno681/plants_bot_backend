@@ -1,43 +1,39 @@
 import hashlib
 import hmac
 import json
-import logging
 import time
 import urllib
 
-from fastapi import HTTPException, status
-from pwdlib import PasswordHash
+from pymongo.asynchronous.client_session import AsyncClientSession
 from pymongo.errors import DuplicateKeyError
-from redis.asyncio.client import Redis
 
 from app.constants import auth
-from app.exception import UserAlreadyExistsError
-from app.log_messages import (
-    AUTH_SERVICE_START_LOG,
-    TOKEN_SERVICE_START_LOG,
+from app.exception import (
+    InvalidInitDataError,
+    InvalidSignatureError,
+    UserAlreadyExistsError,
+    UserNotFoundError,
+)
+from app.logs.auth import (
+    TELEGRAM_AUTH_SERVICE_START_LOG,
     UNREGISTERED_USER_LOG,
     USER_LOGIN_LOG,
-    USER_LOGOUT_ALL_LOG,
-    USER_LOGOUT_LOG,
-    USER_LOGOUT_OTHERS_LOG,
 )
-from app.models import TelegramAccount, User, WebAccount
-from app.redis_service import redis
+from app.models import TelegramAccount, User
 from app.schemes import Tokens
+from app.schemes.auth import TelegramAccountBase
+from app.services.auth import BaseAuthService, LoginType
+from app.services.token import TokenService, token_service
 from config import config
 
-DOC_USER = 459335857
 
+class TelegramAuthService(BaseAuthService):
+    """Telegram Auth service."""
 
-class AuthService:
-    """Auth service."""
-
-    def __init__(self, redis: Redis):
+    def __init__(self, token_service: TokenService):
         """Class constructor."""
-        self.token_service = TokenService(redis)
-        self.log = logging.getLogger(__name__)
-        self.password_hasher = PasswordHash.recommended()
-        self.log.info(AUTH_SERVICE_START_LOG)
+        super().__init__(token_service)
+        self.log.info(TELEGRAM_AUTH_SERVICE_START_LOG)
 
     def verify_telegram_init_data(self, init_data: str) -> int:
         parsed = self._parse_init_data(init_data)
@@ -50,10 +46,10 @@ class AuthService:
                 digestmod=hashlib.sha256,
             ).digest(),
             '\n'.join(
-                f'{key}={value}'
-                for key, value in sorted(
-                    (key, value)
-                    for key, value in parsed.items()
+                f'{key}={field}'
+                for key, field in sorted(
+                    (key, field)
+                    for key, field in parsed.items()
                     if key != 'hash'
                 )
             ).encode(),
@@ -61,98 +57,70 @@ class AuthService:
         ).hexdigest()
 
         if calculated_hash != parsed['hash']:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail=auth.INVALID_SIGNATURE_MESSAGE,
-            )
+            raise InvalidSignatureError(auth.INVALID_SIGNATURE_MESSAGE)
 
         return user_id
 
-    async def login_telegram_user(self, init_data: str) -> Tokens:
+    async def login_telegram_user(
+        self, init_data: str, ip: str, ua: str
+    ) -> Tokens:
         """Authenticate telegram user and return JWT tokens."""
-        user_id = self.verify_telegram_init_data(init_data)
-        user = await User.find_one(User.user_id == user_id)
-        if not user:
-            self.log.info(UNREGISTERED_USER_LOG, user_id)
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=auth.UNREGISTERED_USER_MESSAGE,
-            )
-        self.log.info(USER_LOGIN_LOG, user_id)
-        return await self.token_service.create_and_put_tokens(user_id)
-
-    async def refresh_user_tokens(self, refresh_token: str) -> Tokens:
-        """Refresh user tokens."""
-        return await self.token_service.refresh_tokens(refresh_token)
-
-    async def login_doc(self, password: str) -> Tokens:
-        """Login for documentation access."""
-        if password != '123':
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail='Invalid documentation password',
-            )
-        user = await User.find_one(User.user_id == DOC_USER)
-        if not user:
-            self.log.info(UNREGISTERED_USER_LOG, DOC_USER)
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail=auth.UNREGISTERED_USER_MESSAGE,
-            )
-        self.log.info(USER_LOGIN_LOG, DOC_USER)
-        return await self.token_service.create_and_put_tokens(DOC_USER)
-
-    async def logout_user(self, sid: str, user_id: int) -> str:
-        """User logout."""
-        await self.token_service.delete_sessions(user_id=user_id, sid=sid)
-        return auth.LOGOUT_MESSAGE
-
-    async def logout_others_sessions(
-        self, current_sid: str, user_id: int
-    ) -> str:
-        """Logout other user sessions."""
-        await self.token_service.delete_sessions(
-            user_id=user_id, current_sid=current_sid
+        telegram_id = self.verify_telegram_init_data(init_data)
+        user = await TelegramAccount.find_one(
+            TelegramAccount.telegram_id == telegram_id
         )
-        return auth.LOGOUT_OTHERS_MESSAGE
+        if not user:
+            self.log.info(UNREGISTERED_USER_LOG, telegram_id)
+            raise UserNotFoundError(auth.UNREGISTERED_USER_MESSAGE)
+        self.log.info(USER_LOGIN_LOG, str(user.user_id), LoginType.telegram)
+        return await self.token_service.create_and_put_tokens(
+            str(user.id), ip, ua
+        )
 
-    async def registration_web_user(self, email: str, password: str, session):
-        """User registration."""
-        user = User()
+    async def registration_telegram_user(
+        self, account_data: TelegramAccountBase, session: AsyncClientSession
+    ):
+        """Telegram user registration."""
+        user = User(language_code=account_data.language_code)
         await user.insert(session=session)
 
         try:
-            web_account = WebAccount(
+            telegram_account = TelegramAccount(
                 user_id=user.id,
-                email=email,
-                hashed_password=self.password_hasher.hash(password),
+                **account_data.model_dump(
+                    exclude={'language_code'}, exclude_unset=True
+                ),
             )
-            await web_account.insert(session=session)
+            await telegram_account.insert(session=session)
 
         except DuplicateKeyError:
             raise UserAlreadyExistsError()
 
-        return user
-
-    async def registration_telegram_user(
-        self,
-    ):
-        """Telegram user registration."""
-        pass
+        return telegram_account
 
     def _parse_init_data(self, init_data: str) -> dict:
+        """Parse init data."""
         try:
             parsed_raw = urllib.parse.parse_qs(init_data, strict_parsing=True)
         except Exception:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail=auth.INVALID_INIT_DATA_FORMAT_MESSAGE,
-            )
-        return {key: value[0] for key, value in parsed_raw.items()}
+            raise InvalidInitDataError(auth.INVALID_INIT_DATA_FORMAT_MESSAGE)
+        return {key: field[0] for key, field in parsed_raw.items()}
 
     def _check_init_data(self, parsed: dict) -> int:
-        errors = []
+        """Check init data."""
+        errors: list = []
 
+        self._check_required_fields(parsed, errors)
+        user_id = self._check_user_data(parsed, errors)
+        self._check_auth_date(parsed, errors)
+
+        if errors:
+            raise InvalidInitDataError(errors)
+
+        return user_id
+
+    def _check_required_fields(self, parsed: dict, errors: list):
+        """Check required fields."""
         missing = [
             field
             for field in auth.REQUIRED_INIT_DATA_FIELDS
@@ -163,32 +131,35 @@ class AuthService:
                 auth.MISSED_FIELDS_MSG.format(fields=', '.join(missing))
             )
 
-        auth_date = None
+    def _check_auth_date(self, parsed: dict, errors: list):
+        """Check auth date."""
         try:
             auth_date = int(parsed.get('auth_date', 0))
         except ValueError:
             errors.append(auth.INVALID_AUTH_DATE_MESSAGE)
+            return
 
-        if auth_date is not None:
-            if int(time.time()) - auth_date > config.service.init_data_max_age:
-                errors.append(auth.INIT_DATA_EXPIRED_MESSAGE)
+        if int(time.time()) - auth_date > config.service.init_data_max_age:
+            errors.append(auth.INIT_DATA_EXPIRED_MESSAGE)
+
+    def _check_user_data(self, parsed: dict, errors: list) -> int:
+        """Check user data."""
         try:
             user_data = json.loads(parsed.get('user', '{}'))
         except Exception:
             errors.append(auth.INVALID_INIT_DATA_USER_DATA_MSG)
+            return 0
+
         if not user_data:
             errors.append(auth.NO_USER_DATA_MSG)
+            return 0
+
         user_id = user_data.get('id')
         if not user_id:
             errors.append(auth.USER_ID_MISSED_INIT_DATA_MSG)
-
-        if errors:
-            raise HTTPException(
-                status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail=errors,
-            )
+            return 0
 
         return user_id
 
 
-auth_service = AuthService(redis)
+telegram_auth_service = TelegramAuthService(token_service=token_service)

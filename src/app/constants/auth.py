@@ -1,5 +1,7 @@
 import re
 
+from bson import ObjectId
+
 INVALID_TOKEN_MESSAGE = 'Invalid token'
 EXPIRED_TOKEN_MESSAGE = 'Token expired'
 MISSING_FIELDS_INIT_DATA_MSG = 'Missing fields in init_data'
@@ -30,3 +32,6 @@ PASSWORD_CHANGE_SAME_AS_OLD = 'New password must be different'
 SESSION_PREFIX = 'session:'
 USER_SESSIONS_PREFIX = 'user_sessions:'
 UNKNOWN_LITERAL = 'unknown'
+
+
+DOC_USER = ObjectId('68fdd756d174872a92b7e87d')

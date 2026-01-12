@@ -16,3 +16,15 @@ class InvalidCredentialsError(Exception):
 
 class UserNotFoundError(Exception):
     """The specified user was not found."""
+
+
+class InvalidSignatureError(Exception):
+    """The provided signature is invalid."""
+
+
+class InvalidInitDataError(Exception):
+    """The provided init_data is invalid."""
+
+
+class InvalidPasswordError(Exception):
+    """Invalid password provided."""

@@ -10,7 +10,6 @@ from app.api.auth import router as auth_router
 from app.api.v1 import v1_router
 from app.db import db_helper
 from app.redis_service import redis
-from app.services.auth import auth_service
 from config import config, setup_logging
 
 log = logging.getLogger('uvicorn')
@@ -22,7 +21,6 @@ async def lifespan(app: FastAPI):
     setup_logging(config.logger.exclude, config.logger.level)
     await db_helper.init_db()
     log.info('db initialized')
-    await auth_service.token_service.load_lua_scripts()
 
     yield
 
