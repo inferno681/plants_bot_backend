@@ -13,7 +13,7 @@ from app.logs.auth import (
     WEB_AUTH_SERVICE_START_LOG,
 )
 from app.models import User, WebAccount
-from app.schemes import Tokens
+from app.schemes import ClientInfo, Tokens
 from app.schemes.auth import WebAccountLogin, WebAccountRegistration
 from app.services.auth import BaseAuthService, LoginType
 from app.services.token import TokenService, token_service
@@ -51,7 +51,7 @@ class WebAuthService(BaseAuthService):
         return web_account
 
     async def login(
-        self, login_data: WebAccountLogin, ip: str, ua: str
+        self, login_data: WebAccountLogin, client_info: ClientInfo
     ) -> Tokens:
         """User login."""
         user = await WebAccount.find_one(WebAccount.email == login_data.email)
@@ -63,7 +63,7 @@ class WebAuthService(BaseAuthService):
         ):
             self.log.info(USER_LOGIN_LOG, str(user.user_id), LoginType.web)
             return await self.token_service.create_and_put_tokens(
-                str(user.user_id), ip, ua
+                str(user.user_id), client_info
             )
         raise InvalidPasswordError()
 

@@ -20,7 +20,7 @@ from app.logs.auth import (
     USER_LOGIN_LOG,
 )
 from app.models import TelegramAccount, User
-from app.schemes import Tokens
+from app.schemes import ClientInfo, Tokens
 from app.schemes.auth import TelegramAccountBase
 from app.services.auth import BaseAuthService, LoginType
 from app.services.token import TokenService, token_service
@@ -62,7 +62,7 @@ class TelegramAuthService(BaseAuthService):
         return user_id
 
     async def login_telegram_user(
-        self, init_data: str, ip: str, ua: str
+        self, init_data: str, client_info: ClientInfo
     ) -> Tokens:
         """Authenticate telegram user and return JWT tokens."""
         telegram_id = self.verify_telegram_init_data(init_data)
@@ -74,7 +74,7 @@ class TelegramAuthService(BaseAuthService):
             raise UserNotFoundError(auth.UNREGISTERED_USER_MESSAGE)
         self.log.info(USER_LOGIN_LOG, str(user.user_id), LoginType.telegram)
         return await self.token_service.create_and_put_tokens(
-            str(user.id), ip, ua
+            str(user.id), client_info
         )
 
     async def registration_telegram_user(

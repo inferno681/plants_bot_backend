@@ -9,6 +9,7 @@ from app.schemes import (
     TelegramAccountBase,
     TelegramUser,
     Tokens,
+    UserSession,
 )
 from app.services import (
     current_user_id_dependency,
@@ -38,28 +39,28 @@ async def login(
 ):
     """Login endpoint."""
     return await telegram_auth_service.login_telegram_user(
-        init.init_data, client_info.ip, client_info.ua
+        init.init_data, client_info
     )
 
 
 @router.post('/logout')
-async def logout(uid_sid: tuple[str, str] = current_user_uid_sid_dependency):
+async def logout(session_info: UserSession = current_user_uid_sid_dependency):
     """Current session logout."""
     return {
         'message': await telegram_auth_service.logout_user(
-            uid_sid[0], uid_sid[1]
+            session_info.uid, session_info.sid
         )
     }
 
 
 @router.post('/logout_others')
 async def logout_other(
-    uid_sid: tuple[str, str] = current_user_uid_sid_dependency,
+    session_info: UserSession = current_user_uid_sid_dependency,
 ):
     """Other session logout."""
     return {
         'message': await telegram_auth_service.logout_others_sessions(
-            uid_sid[0], uid_sid[1]
+            session_info.uid, session_info.sid
         )
     }
 
@@ -79,5 +80,5 @@ async def refresh_tokens(
 ):
     """Refresh tokens endpoint."""
     return await telegram_auth_service.refresh_user_tokens(
-        refresh_token.refresh_token, client_info.ip, client_info.ua
+        refresh_token.refresh_token, client_info
     )

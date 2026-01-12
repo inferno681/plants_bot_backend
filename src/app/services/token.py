@@ -13,7 +13,7 @@ from app.constants import auth
 from app.exception import InvalidTokenError
 from app.logs import token as token_logs
 from app.redis_service import redis
-from app.schemes import Tokens
+from app.schemes import ClientInfo, Tokens
 from config import config
 
 SUB = 'sub'
@@ -136,7 +136,7 @@ class SessionStore:
         )
 
     async def create_session(
-        self, user_id: str, sid: str, ip: str, user_agent: str
+        self, user_id: str, sid: str, client_info: ClientInfo
     ) -> None:
         """Store access and refresh sid in Redis."""
         dropped = await self.session_create_script(
@@ -146,8 +146,8 @@ class SessionStore:
                 self.refresh_ttl,
                 int(time.time()),
                 sid,
-                ip or auth.UNKNOWN_LITERAL,
-                user_agent or auth.UNKNOWN_LITERAL,
+                client_info.ip,
+                client_info.ua,
                 user_id,
             ],
         )
@@ -205,11 +205,7 @@ class SessionStore:
         self.log.info(log_text, user_id)
 
     async def refresh_sessions(
-        self,
-        user_id: str,
-        sid: str,
-        ip: str,
-        user_agent: str,
+        self, user_id: str, sid: str, client_info: ClientInfo
     ) -> str:
         """Refresh sids in storage."""
 
@@ -227,8 +223,8 @@ class SessionStore:
                     user_id,
                     self.refresh_ttl,
                     int(time.time()),
-                    ip or auth.UNKNOWN_LITERAL,
-                    user_agent or auth.UNKNOWN_LITERAL,
+                    client_info.ip,
+                    client_info.ua,
                 ],
             )
         except Exception as exc:
@@ -240,7 +236,7 @@ class SessionStore:
             raise InvalidTokenError(auth.INVALID_TOKEN_MESSAGE)
         if isinstance(script_result, dict) and 'err' in script_result:
             self._handle_refresh_error(
-                script_result['err'], user_id, ip, user_agent
+                script_result['err'], user_id, client_info
             )
         return new_sid
 
@@ -250,21 +246,21 @@ class SessionStore:
         )
 
     def _handle_refresh_error(
-        self, err: str, user_id: str, ip: str, user_agent: str
+        self, err: str, user_id: str, client_info: ClientInfo
     ) -> None:
         if err == 'SESSION_NOT_FOUND':
             self.log.error(
                 token_logs.REFRESH_REPLAY_DETECTED_LOG,
                 user_id,
-                ip,
-                user_agent,
+                client_info.ip,
+                client_info.ua,
             )
         elif err == 'INVALID_OWNER':
             self.log.error(
                 token_logs.REFRESH_INVALID_OWNER_LOG,
                 user_id,
-                ip,
-                user_agent,
+                client_info.ip,
+                client_info.ua,
             )
         else:
             self.log.error(
@@ -315,13 +311,13 @@ class TokenService:
         self.log.info(token_logs.TOKEN_SERVICE_START_LOG)
 
     async def create_and_put_tokens(
-        self, user_id: str, ip: str, user_agent: str
+        self, user_id: str, client_info: ClientInfo
     ) -> Tokens:
         """Create JWT access and refresh tokens and store them in Redis."""
         sid = str(uuid4())
         access_token = self.provider.issue_access(user_id, sid)
         refresh_token = self.provider.issue_refresh(user_id, sid)
-        await self.store.create_session(user_id, sid, ip, user_agent)
+        await self.store.create_session(user_id, sid, client_info)
         return Tokens(access_token=access_token, refresh_token=refresh_token)
 
     async def check_token(
@@ -339,17 +335,14 @@ class TokenService:
         return payload
 
     async def refresh_tokens(
-        self,
-        token: str,
-        ip: str,
-        user_agent: str,
+        self, token: str, client_info: ClientInfo
     ) -> Tokens:
         """Refresh user tokens."""
         payload = await self.check_token(token, is_access_token=False)
         user_id = payload[SUB]
         old_sid = payload[SID]
         new_sid = await self.store.refresh_sessions(
-            user_id, old_sid, ip, user_agent
+            user_id, old_sid, client_info
         )
         self.log.info(
             token_logs.TOKEN_REFRESHED_LOG,

@@ -12,7 +12,7 @@ from app.constants.auth import (
 from app.exception import InvalidCredentialsError, UserNotFoundError
 from app.logs.auth import UNREGISTERED_USER_LOG, USER_LOGIN_LOG
 from app.models import User
-from app.schemes import Tokens
+from app.schemes import ClientInfo, Tokens
 from app.services.token import TokenService
 
 
@@ -31,12 +31,16 @@ class BaseAuthService:
         self.log = getLogger(__name__)
 
     async def refresh_user_tokens(
-        self, refresh_token: str, ip: str, ua: str
+        self, refresh_token: str, client_info: ClientInfo
     ) -> Tokens:
         """Refresh user tokens."""
-        return await self.token_service.refresh_tokens(refresh_token, ip, ua)
+        return await self.token_service.refresh_tokens(
+            refresh_token, client_info
+        )
 
-    async def login_doc(self, password: str, ip: str, ua: str) -> Tokens:
+    async def login_doc(
+        self, password: str, client_info: ClientInfo
+    ) -> Tokens:
         """Login for documentation access."""
         if password != '123':
             raise InvalidCredentialsError(INVALID_DOC_PASSWORD_MESSAGE)
@@ -46,7 +50,7 @@ class BaseAuthService:
             raise UserNotFoundError(UNREGISTERED_USER_MESSAGE)
         self.log.info(USER_LOGIN_LOG, DOC_USER, LoginType.doc)
         return await self.token_service.create_and_put_tokens(
-            str(DOC_USER), ip, ua
+            str(DOC_USER), client_info
         )
 
     async def logout_user(self, user_id: str, sid: str) -> str:
