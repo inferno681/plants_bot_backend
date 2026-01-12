@@ -69,7 +69,7 @@ class WebAccountPasswordChange(BaseModel):
 class TelegramAccountBase(BaseModel):
     """Telegram account scheme."""
 
-    telegram_id: int
+    telegram_id: int = Field(..., alias='id')
     first_name: str | None = None
     last_name: str | None = None
     username: str | None = None

@@ -36,10 +36,11 @@ async def telegram_user_registration(
 async def login(
     init: InitData,
     client_info: ClientInfo = client_info_dependency,
+    session: AsyncClientSession = session_dependency,
 ):
     """Login endpoint."""
     return await telegram_auth_service.login_telegram_user(
-        init.init_data, client_info
+        init.init_data, client_info, session
     )
 
 

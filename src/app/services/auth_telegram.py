@@ -8,15 +8,11 @@ from pymongo.asynchronous.client_session import AsyncClientSession
 from pymongo.errors import DuplicateKeyError
 
 from app.constants import auth
-from app.exception import (
-    InvalidInitDataError,
-    InvalidSignatureError,
-    UserAlreadyExistsError,
-    UserNotFoundError,
-)
+from app.exception import InvalidInitDataError, InvalidSignatureError
 from app.logs.auth import (
     TELEGRAM_AUTH_SERVICE_START_LOG,
     UNREGISTERED_USER_LOG,
+    USER_DATA_UPDATED_LOG,
     USER_LOGIN_LOG,
 )
 from app.models import TelegramAccount, User
@@ -35,9 +31,9 @@ class TelegramAuthService(BaseAuthService):
         super().__init__(token_service)
         self.log.info(TELEGRAM_AUTH_SERVICE_START_LOG)
 
-    def verify_telegram_init_data(self, init_data: str) -> int:
+    def verify_telegram_init_data(self, init_data: str) -> dict:
         parsed = self._parse_init_data(init_data)
-        user_id = self._check_init_data(parsed)
+        user_data = self._check_init_data(parsed)
 
         calculated_hash = hmac.new(
             hmac.new(
@@ -59,22 +55,29 @@ class TelegramAuthService(BaseAuthService):
         if calculated_hash != parsed['hash']:
             raise InvalidSignatureError(auth.INVALID_SIGNATURE_MESSAGE)
 
-        return user_id
+        return user_data
 
     async def login_telegram_user(
-        self, init_data: str, client_info: ClientInfo
+        self,
+        init_data: str,
+        client_info: ClientInfo,
+        session: AsyncClientSession,
     ) -> Tokens:
         """Authenticate telegram user and return JWT tokens."""
-        telegram_id = self.verify_telegram_init_data(init_data)
+        user_data = self.verify_telegram_init_data(init_data)
         user = await TelegramAccount.find_one(
-            TelegramAccount.telegram_id == telegram_id
+            TelegramAccount.telegram_id == user_data['id']
         )
         if not user:
-            self.log.info(UNREGISTERED_USER_LOG, telegram_id)
-            raise UserNotFoundError(auth.UNREGISTERED_USER_MESSAGE)
+            self.log.info(UNREGISTERED_USER_LOG, user_data['id'])
+            account_data = TelegramAccountBase(**user_data)
+            user = await self.registration_telegram_user(
+                account_data=account_data, session=session
+            )
         self.log.info(USER_LOGIN_LOG, str(user.user_id), LoginType.telegram)
+        await self._update_account_if_changed(user, user_data, session)
         return await self.token_service.create_and_put_tokens(
-            str(user.id), client_info
+            str(user.user_id), client_info
         )
 
     async def registration_telegram_user(
@@ -94,9 +97,34 @@ class TelegramAuthService(BaseAuthService):
             await telegram_account.insert(session=session)
 
         except DuplicateKeyError:
-            raise UserAlreadyExistsError()
+            tg_account = await TelegramAccount.find_one(
+                TelegramAccount.telegram_id == account_data.telegram_id
+            )
+            return tg_account
 
         return telegram_account
+
+    async def _update_account_if_changed(
+        self,
+        tg_account: TelegramAccount,
+        user_data: dict,
+        session: AsyncClientSession,
+    ):
+        fields = [
+            'first_name',
+            'last_name',
+            'username',
+            'is_premium',
+        ]
+        update_fields = {
+            field: user_data.get(field)
+            for field in fields
+            if user_data.get(field) != getattr(tg_account, field)
+        }
+
+        if update_fields:
+            await tg_account.set(update_fields, session=session)
+            self.log.info(USER_DATA_UPDATED_LOG, tg_account.user_id)
 
     def _parse_init_data(self, init_data: str) -> dict:
         """Parse init data."""
@@ -106,18 +134,18 @@ class TelegramAuthService(BaseAuthService):
             raise InvalidInitDataError(auth.INVALID_INIT_DATA_FORMAT_MESSAGE)
         return {key: field[0] for key, field in parsed_raw.items()}
 
-    def _check_init_data(self, parsed: dict) -> int:
+    def _check_init_data(self, parsed: dict) -> dict:
         """Check init data."""
         errors: list = []
 
         self._check_required_fields(parsed, errors)
-        user_id = self._check_user_data(parsed, errors)
+        user_data = self._check_user_data(parsed, errors)
         self._check_auth_date(parsed, errors)
 
         if errors:
             raise InvalidInitDataError(errors)
 
-        return user_id
+        return user_data
 
     def _check_required_fields(self, parsed: dict, errors: list):
         """Check required fields."""
@@ -142,7 +170,7 @@ class TelegramAuthService(BaseAuthService):
         if int(time.time()) - auth_date > config.service.init_data_max_age:
             errors.append(auth.INIT_DATA_EXPIRED_MESSAGE)
 
-    def _check_user_data(self, parsed: dict, errors: list) -> int:
+    def _check_user_data(self, parsed: dict, errors: list) -> dict:
         """Check user data."""
         try:
             user_data = json.loads(parsed.get('user', '{}'))
@@ -159,7 +187,7 @@ class TelegramAuthService(BaseAuthService):
             errors.append(auth.USER_ID_MISSED_INIT_DATA_MSG)
             return 0
 
-        return user_id
+        return user_data
 
 
 telegram_auth_service = TelegramAuthService(token_service=token_service)
