@@ -6,7 +6,7 @@ import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 
-from app.api.auth import router as auth_router
+from app.api.auth import auth_router
 from app.api.v1 import v1_router
 from app.db import db_helper
 from app.redis_service import redis
@@ -39,10 +39,10 @@ app = FastAPI(
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=['*'],
-    allow_credentials=True,
-    allow_methods=['*'],
-    allow_headers=['*'],
+    allow_origins=config.cors.allow_origins,
+    allow_methods=config.cors.allow_methods,
+    allow_headers=config.cors.allow_headers,
+    allow_credentials=config.cors.allow_credentials,
 )
 
 
@@ -56,11 +56,7 @@ async def calculate_process_time(request: Request, call_next):
     return response
 
 
-app.include_router(
-    auth_router,
-    prefix='/api/auth',
-    tags=[config.service.tag_metadata_auth['name']],
-)
+app.include_router(auth_router)
 app.include_router(v1_router)
 
 

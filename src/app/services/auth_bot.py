@@ -43,7 +43,7 @@ class BotAuthService:
         self.secret = secret
         self.log.info(BOT_AUTH_SERVICE_START_LOG)
 
-    async def bot_login(self, bot_data, client_info: ClientInfo):
+    async def bot_login(self, bot_data: str, client_info: ClientInfo):
         """Bot login."""
         payload = self.verify_init_data(bot_data)
         bot = await Bot.find_one(Bot.id == payload['bot_id'])

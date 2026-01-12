@@ -16,9 +16,15 @@ service:
   init_data_max_age: 86400
   bot_init_data_max_age: 300
 
-  tag_metadata_auth:
-    name: "Auth"
-    description: "Registration and authentication"
+  tag_metadata_auth_web:
+    name: "Auth web"
+    description: "Registration and authentication for web"
+  tag_metadata_auth_telegram:
+    name: "Auth telegram"
+    description: "Registration and authentication for telegram"
+  tag_metadata_auth_bot:
+    name: "Auth bot"
+    description: "Registration and authentication for bot"
   tag_metadata_plant:
     name: "Plant"
     description: "Plants info"
@@ -39,6 +45,15 @@ mongodb:
   max_retries: 3
   backoff_base: 0.05
   backoff_jitter: 0.05
+
+cors:
+  allow_origins:
+    - "*"
+  allow_credentials: true
+  allow_methods:
+    - "*"
+  allow_headers:
+    - "*"
 
 logger:
   format: "[%(asctime)s.%(msecs)03d] PID:%(process)-5d %(funcName)-35s %(module)-12s:%(lineno)-4d %(levelname)-7s - %(message)s"

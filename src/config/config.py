@@ -26,7 +26,9 @@ class ServiceSettings(BaseModel):
     init_data_max_age: int
     bot_init_data_max_age: int
 
-    tag_metadata_auth: dict[str, str]
+    tag_metadata_auth_web: dict[str, str]
+    tag_metadata_auth_telegram: dict[str, str]
+    tag_metadata_auth_bot: dict[str, str]
     tag_metadata_plant: dict[str, str]
     tag_metadata_health: dict[str, str]
 
@@ -70,6 +72,15 @@ class RedisSettings(BaseModel):
     port: int
     db: int
     decode_responses: bool
+
+
+class CORS(BaseModel):
+    """CORS settings."""
+
+    allow_origins: list[str]
+    allow_credentials: bool
+    allow_methods: list[str]
+    allow_headers: list[str]
 
 
 class Logger(BaseModel):
@@ -134,6 +145,7 @@ class AppConfig(BaseSettings):
     redis: RedisSettings
     storage: StorageS3
     secrets: Secrets
+    cors: CORS
 
     logger: Logger
 

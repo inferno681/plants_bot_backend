@@ -1,3 +1,4 @@
+from app.services.auth_bot import bot_auth_service
 from app.services.auth_telegram import telegram_auth_service
 from app.services.auth_web import web_auth_service
 from app.services.storage import storage_service
@@ -14,4 +15,5 @@ __all__ = [
     'telegram_auth_service',
     'current_user_uid_sid_dependency',
     'current_user_id_dependency',
+    'bot_auth_service',
 ]
