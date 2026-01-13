@@ -5,45 +5,45 @@
 -- ARGV:
 -- 1 = old_sid
 -- 2 = new_sid
--- 3 = user_id
+-- 3 = uid
 -- 4 = ttl
 -- 5 = now
 -- 6 = ip
--- 7 = user_agent
+-- 7 = ua
 -- 8 = user_type
 
-if redis.call("EXISTS", KEYS[1]) == 0 then
-    return { err = "SESSION_NOT_FOUND" }
+local rotated = redis.call("HGET", KEYS[1], "rotated")
+if rotated == "1" then
+    return { err = "REPLAY" }
 end
 
-local stored_uid = redis.call("HGET", KEYS[1], "uid")
-if not stored_uid or stored_uid ~= ARGV[3] then
-    return { err = "INVALID_OWNER" }
+local half_ttl = math.floor(tonumber(ARGV[4]) / 2)
+if half_ttl < 1 then
+    half_ttl = 1
 end
-
-redis.call("DEL", KEYS[1])
-redis.call("ZREM", KEYS[2], ARGV[1])
 
 redis.call(
-    "HSET",
-    "session:" .. ARGV[2],
+    "HSETEX",
+    KEYS[1],
+    half_ttl,
+    "rotated", "1",
+    "rotated_at", ARGV[5]
+)
+
+redis.call("ZREM", KEYS[2], ARGV[1])
+
+local new_key = "session:" .. ARGV[2]
+redis.call(
+    "HSETEX",
+    new_key,
+    tonumber(ARGV[4]),
     "uid", ARGV[3],
     "type", ARGV[8],
     "ip", ARGV[6],
     "user_agent", ARGV[7],
     "created_at", ARGV[5]
 )
-redis.call(
-    "EXPIRE",
-    "session:" .. ARGV[2],
-    tonumber(ARGV[4])
-)
 
-redis.call(
-    "ZADD",
-    KEYS[2],
-    ARGV[5],
-    ARGV[2]
-)
+redis.call("ZADD", KEYS[2], ARGV[5], ARGV[2])
 
 return ARGV[2]

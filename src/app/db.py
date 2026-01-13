@@ -8,7 +8,7 @@ from fastapi import Depends
 from pymongo import AsyncMongoClient
 from pymongo.errors import PyMongoError
 
-from app.models import Plant, TelegramAccount, User, WebAccount, Bot
+from app.models import Bot, Plant, TelegramAccount, User, WebAccount
 from config import config
 
 

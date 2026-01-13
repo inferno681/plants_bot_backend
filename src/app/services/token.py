@@ -9,7 +9,14 @@ from redis.asyncio.client import Redis
 from redis.commands.core import AsyncScript
 
 from app.constants import auth
-from app.exception import InvalidTokenError
+from app.exceptions.token import (
+    TokenExpiredError,
+    TokenIntegrityError,
+    TokenInvalidError,
+    TokenInvalidOwnerError,
+    TokenReplayError,
+    TokenRevokedError,
+)
 from app.logs import token as token_logs
 from app.redis_service import redis
 from app.schemes import ClientInfo, Tokens
@@ -21,6 +28,7 @@ SID = 'sid'
 IAT = 'iat'
 TYPE = 'type'
 USER = 'user'
+SCRIPTS_DIR = files('app.redis_service.scripts')
 
 logger = getLogger(__name__)
 
@@ -87,12 +95,12 @@ class TokenProvider:
                 algorithms=[self.algorithm],
             )
         except jwt.ExpiredSignatureError:
-            raise InvalidTokenError(auth.EXPIRED_TOKEN_MESSAGE)
+            raise TokenExpiredError()
         except jwt.InvalidTokenError as exc:
             self.log.warning(
                 token_logs.INVALID_ACCESS_TOKEN_LOG, type(exc).__name__
             )
-            raise InvalidTokenError(auth.INVALID_TOKEN_MESSAGE)
+            raise TokenInvalidError()
 
     def decode_refresh(self, token: str) -> dict:
         """Decode refresh token."""
@@ -103,12 +111,12 @@ class TokenProvider:
                 algorithms=[self.algorithm],
             )
         except jwt.ExpiredSignatureError:
-            raise InvalidTokenError(auth.EXPIRED_TOKEN_MESSAGE)
+            raise TokenExpiredError()
         except jwt.InvalidTokenError as exc:
             self.log.warning(
                 token_logs.INVALID_REFRESH_TOKEN_LOG, type(exc).__name__
             )
-            raise InvalidTokenError(auth.INVALID_TOKEN_MESSAGE)
+            raise TokenInvalidError()
 
 
 class SessionStore:
@@ -132,12 +140,16 @@ class SessionStore:
         self, refresh_filename: str, session_create_filename: str
     ) -> None:
         """Load Lua scripts into Redis."""
-        self.refresh_script = self._load_script(refresh_filename)
+        self.refresh_script = self.redis.register_script(
+            SCRIPTS_DIR.joinpath(refresh_filename).read_text()
+        )
         self.log.info(
             token_logs.TOKEN_REFRESH_SCRIPT_LOADED_LOG,
             self.refresh_script.sha,  # type: ignore[attr-defined]
         )
-        self.session_create_script = self._load_script(session_create_filename)
+        self.session_create_script = self.redis.register_script(
+            SCRIPTS_DIR.joinpath(session_create_filename).read_text()
+        )
         self.log.info(
             token_logs.SESSION_CREATE_SCRIPT_LOADED_LOG,
             self.session_create_script.sha,  # type: ignore[attr-defined]
@@ -179,20 +191,25 @@ class SessionStore:
                 )
 
     async def check_sid(
-        self, user_id: str, sid: str, user_type: str = USER
-    ) -> bool:
+        self,
+        user_id: str,
+        sid: str,
+        is_access_token: bool = True,
+        user_type: str = USER,
+    ) -> None:
         """Check sid in storage."""
 
-        stored_uid, stored_type = await self.redis.hmget(
-            f'{auth.SESSION_PREFIX}{sid}', ['uid', 'type']
+        stored_uid, stored_type, rotated = await self.redis.hmget(
+            f'{auth.SESSION_PREFIX}{sid}', ['uid', 'type', 'rotated']
         )
+        self._validate_base(stored_uid, stored_type, user_id, user_type)
+        is_rotated = rotated and rotated == '1'
+        if not is_rotated:
+            return
 
-        if not stored_uid or str(stored_uid) != str(user_id):
-            return False
-
-        if not stored_type or user_type != stored_type:
-            return False
-        return True
+        if is_access_token:
+            raise TokenRevokedError()
+        raise TokenReplayError()
 
     async def delete_sessions(
         self,
@@ -220,7 +237,10 @@ class SessionStore:
         if not raw_sids:
             return
 
-        await self._delete_batch(key, raw_sids, session_keys)
+        async with self.redis.pipeline() as pipe:
+            pipe.unlink(*session_keys)
+            pipe.zrem(key, *raw_sids)
+            await pipe.execute()
         self.log.info(log_text, user_id)
 
     async def refresh_sessions(
@@ -257,47 +277,41 @@ class SessionStore:
                 user_id,
                 type(exc).__name__,
             )
-            raise InvalidTokenError(auth.INVALID_TOKEN_MESSAGE)
+            raise TokenInvalidError()
         if isinstance(script_result, dict) and 'err' in script_result:
-            self._handle_refresh_error(
-                script_result['err'], user_id, client_info, user_type
-            )
+            if script_result['err'] == 'REPLAY':
+                self.log.error(
+                    token_logs.REFRESH_REPLAY_DETECTED_LOG,
+                    user_id,
+                    client_info.ip,
+                    client_info.ua,
+                    user_type,
+                )
+                raise TokenReplayError()
+            else:
+                self.log.error(
+                    token_logs.REFRESH_UNKNOWN_ERROR_LOG,
+                    script_result['err'],
+                )
+                raise TokenInvalidError()
+
         return new_sid
 
-    def _load_script(self, filename: str) -> AsyncScript:
-        return self.redis.register_script(
-            files('app.redis_service.scripts').joinpath(filename).read_text()
-        )
-
-    def _handle_refresh_error(
+    def _validate_base(
         self,
-        err: str,
+        stored_uid: str | None,
+        stored_type: str | None,
         user_id: str,
-        client_info: ClientInfo,
-        user_type: str = USER,
+        expected_type: str,
     ) -> None:
-        if err == 'SESSION_NOT_FOUND':
-            self.log.error(
-                token_logs.REFRESH_REPLAY_DETECTED_LOG,
-                user_id,
-                client_info.ip,
-                client_info.ua,
-                user_type,
-            )
-        elif err == 'INVALID_OWNER':
-            self.log.error(
-                token_logs.REFRESH_INVALID_OWNER_LOG,
-                user_id,
-                client_info.ip,
-                client_info.ua,
-                user_type,
-            )
-        else:
-            self.log.error(
-                token_logs.REFRESH_UNKNOWN_ERROR_LOG,
-                err,
-            )
-        raise InvalidTokenError(auth.INVALID_TOKEN_MESSAGE)
+        if not stored_uid or not stored_type:
+            raise TokenInvalidError()
+
+        if stored_uid != user_id:
+            raise TokenInvalidOwnerError()
+
+        if stored_type != expected_type:
+            raise TokenIntegrityError()
 
     async def _collect_bulk_sids(
         self,
@@ -316,18 +330,6 @@ class SessionStore:
                 keys.append(f'{auth.SESSION_PREFIX}{sid}')
 
         return sids, keys
-
-    async def _delete_batch(
-        self,
-        key: str,
-        raw_sids: list[str],
-        session_keys: list[str],
-    ) -> None:
-        """Delete batch of sessions."""
-        async with self.redis.pipeline() as pipe:
-            pipe.unlink(*session_keys)
-            pipe.zrem(key, *raw_sids)
-            await pipe.execute()
 
 
 class TokenService:
@@ -359,11 +361,9 @@ class TokenService:
             if is_access_token
             else self.provider.decode_refresh(token)
         )
-        if not await self.store.check_sid(
-            payload[SUB], payload[SID], payload[TYPE]
-        ):
-            raise InvalidTokenError(auth.INVALID_TOKEN_MESSAGE)
-
+        await self.store.check_sid(
+            payload[SUB], payload[SID], is_access_token, payload[TYPE]
+        )
         return payload
 
     async def refresh_tokens(
