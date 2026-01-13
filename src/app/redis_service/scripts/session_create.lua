@@ -24,7 +24,8 @@ local user_type = ARGV[8]
 redis.call(
     "HSETEX",
     "session:" .. sid,
-    ttl,
+    "EX", ttl,
+    "FIELDS", 5,
     "uid", uid,
     "ip", ip,
     "user_agent", ua,

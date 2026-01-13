@@ -11,6 +11,7 @@ from app.api.v1 import v1_router
 from app.db import db_helper
 from app.redis_service import redis
 from config import config, setup_logging
+from app.exceptions import register_handlers
 
 log = logging.getLogger('uvicorn')
 
@@ -58,7 +59,7 @@ async def calculate_process_time(request: Request, call_next):
 
 app.include_router(auth_router)
 app.include_router(v1_router)
-
+register_handlers(app)
 
 if __name__ == '__main__':
     uvicorn.run(

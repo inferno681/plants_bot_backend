@@ -25,7 +25,8 @@ end
 redis.call(
     "HSETEX",
     KEYS[1],
-    half_ttl,
+    "EX", half_ttl,
+    "FIELDS", 2,
     "rotated", "1",
     "rotated_at", ARGV[5]
 )
@@ -36,7 +37,8 @@ local new_key = "session:" .. ARGV[2]
 redis.call(
     "HSETEX",
     new_key,
-    tonumber(ARGV[4]),
+    "EX", tonumber(ARGV[4]),
+    "FIELDS", 5,
     "uid", ARGV[3],
     "type", ARGV[8],
     "ip", ARGV[6],
