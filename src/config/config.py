@@ -25,6 +25,7 @@ class ServiceSettings(BaseModel):
 
     init_data_max_age: int
     bot_init_data_max_age: int
+    init_data_skew: int
 
     tag_metadata_auth_web: dict[str, str]
     tag_metadata_auth_telegram: dict[str, str]

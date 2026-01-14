@@ -1,58 +1,45 @@
-import hashlib
-import hmac
-import time
-import urllib
 from logging import getLogger
 
-from app.constants.auth import (
-    AUTH_DATE_FUTURE_SKEW_SECONDS,
-    INIT_DATA_EXPIRED_MESSAGE,
-    INVALID_AUTH_DATE_MESSAGE,
-    LOGOUT_MESSAGE,
-    MISSED_FIELDS_MSG,
-    REQUIRED_FIELDS_BOT_INIT_DATA,
-)
-from app.exceptions.auth import (
-    InvalidInitDataError,
-    InvalidSignatureError,
-    UserNotFoundError,
-)
+from app.constants.auth import LOGOUT_MESSAGE
+from app.exceptions.auth import UserNotFoundError
 from app.logs.auth import (
     BOT_AUTH_SERVICE_START_LOG,
-    INVALID_BOT_INIT_DATA_FORMAT_LOG,
-    INVALID_BOT_INIT_DATA_LOG,
-    INVALID_BOT_INIT_DATA_SIGN_LOG,
     UNREGISTERED_BOT_LOG,
     USER_LOGIN_LOG,
 )
 from app.models import Bot
 from app.schemes import ClientInfo, Tokens
 from app.services.auth import LoginType
+from app.services.init_data import (
+    ClientType,
+    InitDataChecker,
+    init_data_checker,
+)
 from app.services.token import TokenService, token_service
-from config import config
 
 
 class BotAuthService:
     """Telegram Auth service."""
 
     def __init__(
-        self, token_service: TokenService, init_data_max_age: int, secret: str
+        self, token_service: TokenService, init_data_checker: InitDataChecker
     ):
         """Class constructor."""
         self.token_service = token_service
+        self.init_data_checker = init_data_checker
         self.log = getLogger(__name__)
-        self.init_data_max_age = init_data_max_age
-        self.secret = secret
         self.log.info(BOT_AUTH_SERVICE_START_LOG)
 
     async def bot_login(self, bot_data: str, client_info: ClientInfo):
         """Bot login."""
-        payload = self.verify_init_data(bot_data)
-        bot = await Bot.find_one(Bot.id == payload['bot_id'])
+        payload = self.init_data_checker.verify_init_data(
+            bot_data, ClientType.bot
+        )
+        bot = await Bot.find_one(Bot.id == payload['id'])
         if not bot:
-            self.log.info(UNREGISTERED_BOT_LOG, payload['bot_id'])
+            self.log.info(UNREGISTERED_BOT_LOG, payload['id'])
             raise UserNotFoundError()
-        self.log.info(USER_LOGIN_LOG, payload['bot_id'], LoginType.bot)
+        self.log.info(USER_LOGIN_LOG, payload['id'], LoginType.bot)
         return await self.token_service.create_and_put_tokens(
             str(bot.id), client_info, 'bot'
         )
@@ -70,85 +57,8 @@ class BotAuthService:
             refresh_token, client_info
         )
 
-    def verify_init_data(self, init_data: str) -> dict:
-        """Verify init data."""
-        parsed = self._parse_init_data(init_data)
-        self._check_init_data(parsed)
-        self._verify_signature(parsed)
-        return parsed
-
-    def _parse_init_data(self, init_data: str) -> dict:
-        """Parse init data."""
-        try:
-            parsed_raw = urllib.parse.parse_qs(init_data, strict_parsing=True)
-        except Exception:
-            self.log.warning(INVALID_BOT_INIT_DATA_FORMAT_LOG)
-            raise InvalidInitDataError()
-
-        return {key: field[0] for key, field in parsed_raw.items()}
-
-    def _check_init_data(self, parsed: dict):
-        """Validate required fields & auth_date."""
-        errors: list[str] = []
-
-        self._check_required_fields(parsed, errors)
-        self._check_auth_date(parsed, errors)
-
-        if errors:
-            self.log.warning(INVALID_BOT_INIT_DATA_LOG, errors)
-            raise InvalidInitDataError()
-
-    def _check_required_fields(self, parsed: dict, errors: list[str]):
-        """Check presence of required fields."""
-        required = REQUIRED_FIELDS_BOT_INIT_DATA
-        missing = [field for field in required if field not in parsed]
-
-        if missing:
-            errors.append(MISSED_FIELDS_MSG.format(fields=', '.join(missing)))
-
-    def _check_auth_date(self, parsed: dict, errors: list[str]):
-        """Check auth_date validity."""
-        try:
-            auth_date = int(parsed.get('auth_date', 0))
-        except ValueError:
-            errors.append(INVALID_AUTH_DATE_MESSAGE)
-            return
-
-        now = int(time.time())
-        if auth_date > now + AUTH_DATE_FUTURE_SKEW_SECONDS:
-            errors.append(INVALID_AUTH_DATE_MESSAGE)
-            return
-
-        if now - auth_date > self.init_data_max_age:
-            errors.append(INIT_DATA_EXPIRED_MESSAGE)
-
-    def _verify_signature(self, parsed: dict):
-        """Verify HMAC signature."""
-        signature = parsed['hash']
-
-        inner = hmac.new(
-            key=b'BotLogin',
-            msg=self.secret.encode(),
-            digestmod=hashlib.sha256,
-        ).digest()
-
-        expected = hmac.new(
-            key=inner,
-            msg='&'.join(
-                f'{key}={parsed[key]}'
-                for key in sorted(parsed)
-                if key != 'hash'
-            ).encode(),
-            digestmod=hashlib.sha256,
-        ).hexdigest()
-
-        if not hmac.compare_digest(expected, signature):
-            self.log.warning(INVALID_BOT_INIT_DATA_SIGN_LOG)
-            raise InvalidSignatureError()
-
 
 bot_auth_service = BotAuthService(
     token_service=token_service,
-    init_data_max_age=config.service.bot_init_data_max_age,
-    secret=config.secrets.bot_token.get_secret_value(),
+    init_data_checker=init_data_checker,
 )

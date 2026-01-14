@@ -1,18 +1,7 @@
-import hashlib
-import hmac
-import json
-import time
-import urllib
-
 from pymongo.asynchronous.client_session import AsyncClientSession
 from pymongo.errors import DuplicateKeyError
 
-from app.constants import auth
-from app.exceptions.auth import InvalidInitDataError, InvalidSignatureError
 from app.logs.auth import (
-    INVALID_TELEGRAM_INIT_DATA_FORMAT_LOG,
-    INVALID_TELEGRAM_INIT_DATA_LOG,
-    INVALID_TELEGRAM_INIT_DATA_SIGN_LOG,
     TELEGRAM_AUTH_SERVICE_START_LOG,
     UNREGISTERED_USER_LOG,
     USER_DATA_UPDATED_LOG,
@@ -22,44 +11,24 @@ from app.models import TelegramAccount, User
 from app.schemes import ClientInfo, Tokens
 from app.schemes.auth import TelegramAccountBase
 from app.services.auth import BaseAuthService, LoginType
+from app.services.init_data import (
+    ClientType,
+    InitDataChecker,
+    init_data_checker,
+)
 from app.services.token import TokenService, token_service
-from config import config
 
 
 class TelegramAuthService(BaseAuthService):
     """Telegram Auth service."""
 
-    def __init__(self, token_service: TokenService):
+    def __init__(
+        self, token_service: TokenService, init_data_checker: InitDataChecker
+    ):
         """Class constructor."""
         super().__init__(token_service)
+        self.init_data_checker = init_data_checker
         self.log.info(TELEGRAM_AUTH_SERVICE_START_LOG)
-
-    def verify_telegram_init_data(self, init_data: str) -> dict:
-        parsed = self._parse_init_data(init_data)
-        user_data = self._check_init_data(parsed)
-
-        calculated_hash = hmac.new(
-            hmac.new(
-                key=b'WebAppData',
-                msg=config.secrets.bot_token.get_secret_value().encode(),
-                digestmod=hashlib.sha256,
-            ).digest(),
-            '\n'.join(
-                f'{key}={field}'
-                for key, field in sorted(
-                    (key, field)
-                    for key, field in parsed.items()
-                    if key != 'hash'
-                )
-            ).encode(),
-            hashlib.sha256,
-        ).hexdigest()
-
-        if not hmac.compare_digest(calculated_hash, parsed['hash']):
-            self.log.warning(INVALID_TELEGRAM_INIT_DATA_SIGN_LOG)
-            raise InvalidSignatureError()
-
-        return user_data
 
     async def login_telegram_user(
         self,
@@ -68,7 +37,9 @@ class TelegramAuthService(BaseAuthService):
         session: AsyncClientSession,
     ) -> Tokens:
         """Authenticate telegram user and return JWT tokens."""
-        user_data = self.verify_telegram_init_data(init_data)
+        user_data = self.init_data_checker.verify_init_data(
+            init_data, ClientType.user
+        )
         user = await TelegramAccount.find_one(
             TelegramAccount.telegram_id == user_data['id']
         )
@@ -130,75 +101,7 @@ class TelegramAuthService(BaseAuthService):
             await tg_account.set(update_fields, session=session)
             self.log.info(USER_DATA_UPDATED_LOG, tg_account.user_id)
 
-    def _parse_init_data(self, init_data: str) -> dict:
-        """Parse init data."""
-        try:
-            parsed_raw = urllib.parse.parse_qs(init_data, strict_parsing=True)
-        except Exception:
-            self.log.warning(INVALID_TELEGRAM_INIT_DATA_FORMAT_LOG)
-            raise InvalidInitDataError()
-        return {key: field[0] for key, field in parsed_raw.items()}
 
-    def _check_init_data(self, parsed: dict) -> dict:
-        """Check init data."""
-        errors: list = []
-
-        self._check_required_fields(parsed, errors)
-        user_data = self._check_user_data(parsed, errors)
-        self._check_auth_date(parsed, errors)
-
-        if errors:
-            self.log.warning(INVALID_TELEGRAM_INIT_DATA_LOG, errors)
-            raise InvalidInitDataError()
-
-        return user_data
-
-    def _check_required_fields(self, parsed: dict, errors: list):
-        """Check required fields."""
-        missing = [
-            field
-            for field in auth.REQUIRED_INIT_DATA_FIELDS
-            if field not in parsed
-        ]
-        if missing:
-            errors.append(
-                auth.MISSED_FIELDS_MSG.format(fields=', '.join(missing))
-            )
-
-    def _check_auth_date(self, parsed: dict, errors: list):
-        """Check auth date."""
-        try:
-            auth_date = int(parsed.get('auth_date', 0))
-        except ValueError:
-            errors.append(auth.INVALID_AUTH_DATE_MESSAGE)
-            return
-
-        now = int(time.time())
-        if auth_date > now + auth.AUTH_DATE_FUTURE_SKEW_SECONDS:
-            errors.append(auth.INVALID_AUTH_DATE_MESSAGE)
-            return
-
-        if now - auth_date > config.service.init_data_max_age:
-            errors.append(auth.INIT_DATA_EXPIRED_MESSAGE)
-
-    def _check_user_data(self, parsed: dict, errors: list) -> dict:
-        """Check user data."""
-        try:
-            user_data = json.loads(parsed.get('user', '{}'))
-        except Exception:
-            errors.append(auth.INVALID_INIT_DATA_USER_DATA_MSG)
-            return {}
-
-        if not user_data:
-            errors.append(auth.NO_USER_DATA_MSG)
-            return {}
-
-        user_id = user_data.get('id')
-        if not user_id:
-            errors.append(auth.USER_ID_MISSED_INIT_DATA_MSG)
-            return {}
-
-        return user_data
-
-
-telegram_auth_service = TelegramAuthService(token_service=token_service)
+telegram_auth_service = TelegramAuthService(
+    token_service=token_service, init_data_checker=init_data_checker
+)
