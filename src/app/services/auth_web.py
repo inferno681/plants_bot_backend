@@ -8,6 +8,8 @@ from app.exceptions.auth import (
     UserNotFoundError,
 )
 from app.logs.auth import (
+    INVALID_WEB_PASSWORD_LOG,
+    SAME_EMAIL_REGISTRATION_LOG,
     UNREGISTERED_USER_LOG,
     USER_LOGIN_LOG,
     WEB_AUTH_SERVICE_START_LOG,
@@ -46,6 +48,7 @@ class WebAuthService(BaseAuthService):
             await web_account.insert(session=session)
 
         except DuplicateKeyError:
+            self.log.info(SAME_EMAIL_REGISTRATION_LOG, account_data.email)
             raise UserAlreadyExistsError()
 
         return web_account
@@ -65,6 +68,7 @@ class WebAuthService(BaseAuthService):
             return await self.token_service.create_and_put_tokens(
                 str(user.user_id), client_info
             )
+        self.log.warning(INVALID_WEB_PASSWORD_LOG, login_data.email)
         raise InvalidPasswordError()
 
 

@@ -8,7 +8,11 @@ from app.constants.auth import (
     LOGOUT_OTHERS_MESSAGE,
 )
 from app.exceptions.auth import InvalidCredentialsError, UserNotFoundError
-from app.logs.auth import UNREGISTERED_USER_LOG, USER_LOGIN_LOG
+from app.logs.auth import (
+    INVALID_DOC_PASSWORD_LOG,
+    UNREGISTERED_USER_LOG,
+    USER_LOGIN_LOG,
+)
 from app.models import User
 from app.schemes import ClientInfo, Tokens
 from app.services.token import TokenService
@@ -43,6 +47,9 @@ class BaseAuthService:
     ) -> Tokens:
         """Login for documentation access."""
         if password != config.secrets.doc_password.get_secret_value():
+            self.log.warning(
+                INVALID_DOC_PASSWORD_LOG, client_info.ip, client_info.ua
+            )
             raise InvalidCredentialsError()
         user = await User.find_one(User.id == DOC_USER)
         if not user:

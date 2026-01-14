@@ -19,6 +19,9 @@ from app.exceptions.auth import (
 )
 from app.logs.auth import (
     BOT_AUTH_SERVICE_START_LOG,
+    INVALID_BOT_INIT_DATA_FORMAT_LOG,
+    INVALID_BOT_INIT_DATA_LOG,
+    INVALID_BOT_INIT_DATA_SIGN_LOG,
     UNREGISTERED_BOT_LOG,
     USER_LOGIN_LOG,
 )
@@ -79,6 +82,7 @@ class BotAuthService:
         try:
             parsed_raw = urllib.parse.parse_qs(init_data, strict_parsing=True)
         except Exception:
+            self.log.warning(INVALID_BOT_INIT_DATA_FORMAT_LOG)
             raise InvalidInitDataError()
 
         return {key: field[0] for key, field in parsed_raw.items()}
@@ -91,7 +95,8 @@ class BotAuthService:
         self._check_auth_date(parsed, errors)
 
         if errors:
-            raise InvalidInitDataError(errors)
+            self.log.warning(INVALID_BOT_INIT_DATA_LOG, errors)
+            raise InvalidInitDataError()
 
     def _check_required_fields(self, parsed: dict, errors: list[str]):
         """Check presence of required fields."""
@@ -136,6 +141,7 @@ class BotAuthService:
         ).hexdigest()
 
         if not hmac.compare_digest(expected, signature):
+            self.log.warning(INVALID_BOT_INIT_DATA_SIGN_LOG)
             raise InvalidSignatureError()
 
 
