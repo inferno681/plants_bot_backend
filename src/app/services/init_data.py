@@ -105,7 +105,9 @@ class InitDataChecker:
     def _check_required_fields(self, parsed: dict, errors: list):
         """Check required fields."""
         missing = [
-            field for field in REQUIRED_INIT_DATA_FIELDS if field not in parsed
+            field
+            for field in REQUIRED_INIT_DATA_FIELDS
+            if field not in parsed or parsed.get(field) in (None, '')
         ]
         if missing:
             errors.append(MISSED_FIELDS_MSG.format(fields=', '.join(missing)))
