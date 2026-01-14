@@ -2,11 +2,7 @@ from pwdlib import PasswordHash
 from pymongo.asynchronous.client_session import AsyncClientSession
 from pymongo.errors import DuplicateKeyError
 
-from app.exceptions.auth import (
-    InvalidPasswordError,
-    UserAlreadyExistsError,
-    UserNotFoundError,
-)
+from app.exceptions.auth import UserAlreadyExistsError, InvalidCredentialsError
 from app.logs.auth import (
     INVALID_WEB_PASSWORD_LOG,
     SAME_EMAIL_REGISTRATION_LOG,
@@ -60,7 +56,7 @@ class WebAuthService(BaseAuthService):
         user = await WebAccount.find_one(WebAccount.email == login_data.email)
         if not user:
             self.log.info(UNREGISTERED_USER_LOG, login_data.email)
-            raise UserNotFoundError()
+            raise InvalidCredentialsError()
         if self.password_hasher.verify(
             login_data.password, user.hashed_password
         ):
@@ -69,7 +65,7 @@ class WebAuthService(BaseAuthService):
                 str(user.user_id), client_info
             )
         self.log.warning(INVALID_WEB_PASSWORD_LOG, login_data.email)
-        raise InvalidPasswordError()
+        raise InvalidCredentialsError()
 
 
 web_auth_service = WebAuthService(token_service=token_service)
