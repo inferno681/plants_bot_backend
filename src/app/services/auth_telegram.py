@@ -52,7 +52,7 @@ class TelegramAuthService(BaseAuthService):
             hashlib.sha256,
         ).hexdigest()
 
-        if calculated_hash != parsed['hash']:
+        if not hmac.compare_digest(calculated_hash, parsed['hash']):
             raise InvalidSignatureError()
 
         return user_data
@@ -167,7 +167,12 @@ class TelegramAuthService(BaseAuthService):
             errors.append(auth.INVALID_AUTH_DATE_MESSAGE)
             return
 
-        if int(time.time()) - auth_date > config.service.init_data_max_age:
+        now = int(time.time())
+        if auth_date > now + auth.AUTH_DATE_FUTURE_SKEW_SECONDS:
+            errors.append(auth.INVALID_AUTH_DATE_MESSAGE)
+            return
+
+        if now - auth_date > config.service.init_data_max_age:
             errors.append(auth.INIT_DATA_EXPIRED_MESSAGE)
 
     def _check_user_data(self, parsed: dict, errors: list) -> dict:

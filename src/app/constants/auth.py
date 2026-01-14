@@ -16,6 +16,7 @@ INVALID_INIT_DATA_USER_DATA_MSG = 'Invalid user JSON in init_data'
 INIT_DATA_EXPIRED_MESSAGE = 'init_data expired'
 USER_ID_MISSED_INIT_DATA_MSG = 'user.id missing in init_data'
 INVALID_AUTH_DATE_MESSAGE = 'Invalid auth_date'
+AUTH_DATE_FUTURE_SKEW_SECONDS = 60
 REQUIRED_INIT_DATA_FIELDS = ('hash', 'auth_date', 'user')
 MISSED_FIELDS_MSG = 'Missing fields: {fields}'
 NO_USER_DATA_MSG = 'No user data in init data'

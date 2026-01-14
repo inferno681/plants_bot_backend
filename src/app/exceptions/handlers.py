@@ -1,6 +1,7 @@
 from logging import getLogger
+from typing import Any, Callable, Coroutine, Type
 
-from fastapi import Request, status
+from fastapi import Request, Response, status
 from fastapi.responses import JSONResponse
 
 from app.constants import DETAIL, LOC, MSG, STATUS, TYPE
@@ -78,7 +79,8 @@ async def exception_handler(request: Request, exc: Exception):
     )
 
 
-exception_handlers = {
+ExceptionHandler = Callable[[Request, Any], Coroutine[Any, Any, Response]]
+exception_handlers: dict[int | Type[Exception], ExceptionHandler] = {
     TokenError: token_exception_handler,
     AuthError: auth_exception_handler,
     Exception: exception_handler,

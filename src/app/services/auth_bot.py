@@ -5,6 +5,7 @@ import urllib
 from logging import getLogger
 
 from app.constants.auth import (
+    AUTH_DATE_FUTURE_SKEW_SECONDS,
     INIT_DATA_EXPIRED_MESSAGE,
     INVALID_AUTH_DATE_MESSAGE,
     LOGOUT_MESSAGE,
@@ -108,7 +109,12 @@ class BotAuthService:
             errors.append(INVALID_AUTH_DATE_MESSAGE)
             return
 
-        if int(time.time()) - auth_date > self.init_data_max_age:
+        now = int(time.time())
+        if auth_date > now + AUTH_DATE_FUTURE_SKEW_SECONDS:
+            errors.append(INVALID_AUTH_DATE_MESSAGE)
+            return
+
+        if now - auth_date > self.init_data_max_age:
             errors.append(INIT_DATA_EXPIRED_MESSAGE)
 
     def _verify_signature(self, parsed: dict):

@@ -30,7 +30,7 @@ class WebAuthService(BaseAuthService):
 
     async def registration_web_user(
         self, account_data: WebAccountRegistration, session: AsyncClientSession
-    ) -> User:
+    ) -> WebAccount:
         """User registration."""
         user = User(language_code=account_data.language_code)
         await user.insert(session=session)
