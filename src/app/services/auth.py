@@ -3,13 +3,11 @@ from logging import getLogger
 
 from app.constants.auth import (
     DOC_USER,
-    INVALID_DOC_PASSWORD_MESSAGE,
     LOGOUT_ALL_MESSAGE,
     LOGOUT_MESSAGE,
     LOGOUT_OTHERS_MESSAGE,
-    UNREGISTERED_USER_MESSAGE,
 )
-from app.exception import InvalidCredentialsError, UserNotFoundError
+from app.exceptions.auth import InvalidCredentialsError, UserNotFoundError
 from app.logs.auth import UNREGISTERED_USER_LOG, USER_LOGIN_LOG
 from app.models import User
 from app.schemes import ClientInfo, Tokens
@@ -44,11 +42,11 @@ class BaseAuthService:
     ) -> Tokens:
         """Login for documentation access."""
         if password != '123':
-            raise InvalidCredentialsError(INVALID_DOC_PASSWORD_MESSAGE)
+            raise InvalidCredentialsError()
         user = await User.find_one(User.id == DOC_USER)
         if not user:
             self.log.info(UNREGISTERED_USER_LOG, DOC_USER)
-            raise UserNotFoundError(UNREGISTERED_USER_MESSAGE)
+            raise UserNotFoundError()
         self.log.info(USER_LOGIN_LOG, DOC_USER, LoginType.doc)
         return await self.token_service.create_and_put_tokens(
             str(DOC_USER), client_info

@@ -1,4 +1,3 @@
-from app.constants.general import MSG, TYPE, STATUS
+from app.constants.general import DETAIL, LOC, MSG, STATUS, TYPE
 
-
-__all__ = ['MSG', 'TYPE', 'STATUS']
+__all__ = ['MSG', 'TYPE', 'STATUS', 'DETAIL', 'LOC']

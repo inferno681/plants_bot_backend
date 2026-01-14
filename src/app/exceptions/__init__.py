@@ -1,3 +1,3 @@
-from app.exceptions.handlers import register_handlers
+from app.exceptions.handlers import exception_handlers
 
-__all__ = ['register_handlers']
+__all__ = ['exception_handlers']

@@ -8,7 +8,7 @@ from pymongo.asynchronous.client_session import AsyncClientSession
 from pymongo.errors import DuplicateKeyError
 
 from app.constants import auth
-from app.exception import InvalidInitDataError, InvalidSignatureError
+from app.exceptions.auth import InvalidInitDataError, InvalidSignatureError
 from app.logs.auth import (
     TELEGRAM_AUTH_SERVICE_START_LOG,
     UNREGISTERED_USER_LOG,
@@ -53,7 +53,7 @@ class TelegramAuthService(BaseAuthService):
         ).hexdigest()
 
         if calculated_hash != parsed['hash']:
-            raise InvalidSignatureError(auth.INVALID_SIGNATURE_MESSAGE)
+            raise InvalidSignatureError()
 
         return user_data
 
@@ -131,7 +131,7 @@ class TelegramAuthService(BaseAuthService):
         try:
             parsed_raw = urllib.parse.parse_qs(init_data, strict_parsing=True)
         except Exception:
-            raise InvalidInitDataError(auth.INVALID_INIT_DATA_FORMAT_MESSAGE)
+            raise InvalidInitDataError()
         return {key: field[0] for key, field in parsed_raw.items()}
 
     def _check_init_data(self, parsed: dict) -> dict:

@@ -9,9 +9,9 @@ from fastapi.middleware.cors import CORSMiddleware
 from app.api.auth import auth_router
 from app.api.v1 import v1_router
 from app.db import db_helper
+from app.exceptions import exception_handlers
 from app.redis_service import redis
 from config import config, setup_logging
-from app.exceptions import register_handlers
 
 log = logging.getLogger('uvicorn')
 
@@ -36,6 +36,7 @@ app = FastAPI(
     lifespan=lifespan,
     openapi_tags=config.service.tags_metadata,
     debug=config.service.debug,
+    exception_handlers=exception_handlers,
 )
 
 app.add_middleware(
@@ -59,7 +60,7 @@ async def calculate_process_time(request: Request, call_next):
 
 app.include_router(auth_router)
 app.include_router(v1_router)
-register_handlers(app)
+
 
 if __name__ == '__main__':
     uvicorn.run(

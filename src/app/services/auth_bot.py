@@ -7,13 +7,11 @@ from logging import getLogger
 from app.constants.auth import (
     INIT_DATA_EXPIRED_MESSAGE,
     INVALID_AUTH_DATE_MESSAGE,
-    INVALID_INIT_DATA_FORMAT_MESSAGE,
-    INVALID_SIGNATURE_MESSAGE,
     LOGOUT_MESSAGE,
     MISSED_FIELDS_MSG,
     REQUIRED_FIELDS_BOT_INIT_DATA,
 )
-from app.exception import (
+from app.exceptions.auth import (
     InvalidInitDataError,
     InvalidSignatureError,
     UserNotFoundError,
@@ -80,7 +78,7 @@ class BotAuthService:
         try:
             parsed_raw = urllib.parse.parse_qs(init_data, strict_parsing=True)
         except Exception:
-            raise InvalidInitDataError(INVALID_INIT_DATA_FORMAT_MESSAGE)
+            raise InvalidInitDataError()
 
         return {key: field[0] for key, field in parsed_raw.items()}
 
@@ -132,7 +130,7 @@ class BotAuthService:
         ).hexdigest()
 
         if not hmac.compare_digest(expected, signature):
-            raise InvalidSignatureError(INVALID_SIGNATURE_MESSAGE)
+            raise InvalidSignatureError()
 
 
 bot_auth_service = BotAuthService(
