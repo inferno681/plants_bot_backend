@@ -12,6 +12,7 @@ from app.logs.auth import UNREGISTERED_USER_LOG, USER_LOGIN_LOG
 from app.models import User
 from app.schemes import ClientInfo, Tokens
 from app.services.token import TokenService
+from config import config
 
 
 class LoginType(StrEnum):
@@ -41,7 +42,7 @@ class BaseAuthService:
         self, password: str, client_info: ClientInfo
     ) -> Tokens:
         """Login for documentation access."""
-        if password != '123':
+        if password != config.secrets.doc_password.get_secret_value():
             raise InvalidCredentialsError()
         user = await User.find_one(User.id == DOC_USER)
         if not user:

@@ -124,6 +124,9 @@ class Secrets(BaseSettings):
     redis_password: SecretStr = Field(
         default=SecretStr('secret_password'), alias='REDIS_PASSWORD'
     )
+    doc_password: SecretStr = Field(
+        default=SecretStr('secret_password'), alias='DOC_PASSWORD'
+    )
 
     model_config = SettingsConfigDict(
         env_file='.env', env_file_encoding='utf-8'
