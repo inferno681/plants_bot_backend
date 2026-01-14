@@ -11,6 +11,7 @@ logger = getLogger(__name__)
 
 
 async def token_exception_handler(request: Request, exc: TokenError):
+    """Token errors handler."""
     error_info = TOKEN_MAP.get(
         type(exc),
         {
@@ -35,6 +36,7 @@ async def token_exception_handler(request: Request, exc: TokenError):
 
 
 async def auth_exception_handler(request: Request, exc: AuthError):
+    """Auth errors handler."""
     error_info = AUTH_ERROR_MAP.get(
         type(exc),
         {
@@ -58,7 +60,26 @@ async def auth_exception_handler(request: Request, exc: AuthError):
     )
 
 
+async def exception_handler(request: Request, exc: Exception):
+    """Generic exceptions handler (HTTP 500)."""
+    logger.exception('Unhandled server error', exc_info=exc)
+
+    return JSONResponse(
+        status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+        content={
+            DETAIL: [
+                {
+                    LOC: ['server'],
+                    MSG: 'internal.server.error',
+                    TYPE: 'internal_error',
+                }
+            ]
+        },
+    )
+
+
 exception_handlers = {
     TokenError: token_exception_handler,
     AuthError: auth_exception_handler,
+    Exception: exception_handler,
 }
