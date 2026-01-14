@@ -124,7 +124,7 @@ class BotAuthService:
 
     def _verify_signature(self, parsed: dict):
         """Verify HMAC signature."""
-        signature = parsed.pop('hash')
+        signature = parsed['hash']
 
         inner = hmac.new(
             key=b'BotLogin',
@@ -135,7 +135,9 @@ class BotAuthService:
         expected = hmac.new(
             key=inner,
             msg='&'.join(
-                f'{key}={parsed[key]}' for key in sorted(parsed)
+                f'{key}={parsed[key]}'
+                for key in sorted(parsed)
+                if key != 'hash'
             ).encode(),
             digestmod=hashlib.sha256,
         ).hexdigest()

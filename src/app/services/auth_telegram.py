@@ -149,7 +149,7 @@ class TelegramAuthService(BaseAuthService):
 
         if errors:
             self.log.warning(INVALID_TELEGRAM_INIT_DATA_LOG, errors)
-            raise InvalidInitDataError(errors)
+            raise InvalidInitDataError()
 
         return user_data
 

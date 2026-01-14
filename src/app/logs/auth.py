@@ -1,4 +1,3 @@
-USER_LOGIN_LOG = 'User %s logged in'
 UNREGISTERED_USER_LOG = 'Unregistered user %s'
 TELEGRAM_AUTH_SERVICE_START_LOG = 'Telegram auth service started'
 WEB_AUTH_SERVICE_START_LOG = 'Web auth service started'
