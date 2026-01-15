@@ -2,6 +2,7 @@ from datetime import date, timedelta
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, computed_field, field_validator
+from beanie import PydanticObjectId
 
 from app.models.plant import FertilizingPeriod, WateringPeriod
 
@@ -83,3 +84,24 @@ class PlantUpdateScheme(BaseModel):
     warm_period: WateringPeriod | None = None
     cold_period: WateringPeriod | None = None
     fertilizing: FertilizingPeriod | None = None
+
+
+class PlantCreteScheme(BaseModel):
+    """Create plant scheme."""
+
+    user_id: PydanticObjectId
+    name: str
+    scientific_name: str | None = None
+    description: str | None = None
+    image: str | None = None
+    image_url: str | None = None
+
+    warm_period: WateringPeriod | None = None
+    cold_period: WateringPeriod | None = None
+    fertilizing: FertilizingPeriod | None = None
+
+    last_watered_at: date | None = None
+    last_fertilized_at: date | None = None
+
+    next_watering_at: date | None = None
+    next_fertilizing_at: date | None = None

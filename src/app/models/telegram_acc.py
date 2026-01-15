@@ -1,11 +1,11 @@
 from typing import Annotated
 
-from beanie import Document, Indexed, PydanticObjectId
+from beanie import Indexed, PydanticObjectId
 
-from app.models.mixin import TimestampMixin
+from app.models.base import BaseDocument
 
 
-class TelegramAccount(TimestampMixin, Document):
+class TelegramAccount(BaseDocument):
     """Telegram auth/account data."""
 
     user_id: Annotated[PydanticObjectId, Indexed()]
@@ -16,6 +16,5 @@ class TelegramAccount(TimestampMixin, Document):
     username: str | None = None
     is_premium: bool | None = None
 
-    class Settings:
+    class Settings(BaseDocument.Settings):
         name = 'telegram_accounts'
-        use_state_management = True

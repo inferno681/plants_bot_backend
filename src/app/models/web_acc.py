@@ -1,11 +1,11 @@
 from typing import Annotated
 
-from beanie import Document, Indexed, PydanticObjectId
+from beanie import Indexed, PydanticObjectId
 
-from app.models.mixin import TimestampMixin
+from app.models.base import BaseDocument
 
 
-class WebAccount(TimestampMixin, Document):
+class WebAccount(BaseDocument):
     """Web authentication account."""
 
     user_id: Annotated[PydanticObjectId, Indexed()]
@@ -13,6 +13,5 @@ class WebAccount(TimestampMixin, Document):
     email: Annotated[str, Indexed(unique=True)]
     hashed_password: str
 
-    class Settings:
+    class Settings(BaseDocument.Settings):
         name = 'web_accounts'
-        use_state_management = True

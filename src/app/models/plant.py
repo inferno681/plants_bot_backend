@@ -1,11 +1,12 @@
-from datetime import date, datetime, timedelta
+from datetime import date, timedelta
 from enum import StrEnum, auto
 from typing import Any, cast
 
-from beanie import Document, PydanticObjectId
+from beanie import PydanticObjectId
 from pydantic import BaseModel, Field
 
 from app.constants.general import DAYS_IN_MONTH, MONTHS_IN_YEAR
+from app.models.base import BaseDocument
 from app.utils import (
     CursorPaginatorParams,
     OrderDirection,
@@ -70,7 +71,7 @@ class FertilizingPeriod(BaseModel):
     note: str | None = None
 
 
-class Plant(Document):
+class Plant(BaseDocument):
     """Plant model."""
 
     user_id: int
@@ -91,9 +92,6 @@ class Plant(Document):
 
     next_watering_at: date | None = None
     next_fertilizing_at: date | None = None
-
-    created_at: datetime | None = None
-    updated_at: datetime | None = None
 
     @classmethod
     async def get_plants(
@@ -232,5 +230,5 @@ class Plant(Document):
             equals & cls._build_cursor_filter(pivot, order_items, index + 1)
         )
 
-    class Settings:
+    class Settings(BaseDocument.Settings):
         name = 'plants'

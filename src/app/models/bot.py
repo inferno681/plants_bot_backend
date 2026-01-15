@@ -1,15 +1,12 @@
-from beanie import Document
-
-from app.models.mixin import TimestampMixin
+from app.models.base import BaseDocument
 
 
-class Bot(TimestampMixin, Document):
+class Bot(BaseDocument):
     """Bot model."""
 
     name: str
     description: str | None = None
     is_active: bool = False
 
-    class Settings:
+    class Settings(BaseDocument.Settings):
         name = 'bots'
-        use_state_management = True

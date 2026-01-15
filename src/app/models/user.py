@@ -1,18 +1,16 @@
-from beanie import Document
 from pymongo import ASCENDING, IndexModel
 
-from app.models.mixin import TimestampMixin
+from app.models.base import BaseDocument
 
 
-class User(TimestampMixin, Document):
+class User(BaseDocument):
     """Core user model."""
 
     public_username: str | None = None
     language_code: str | None = None
 
-    class Settings:
+    class Settings(BaseDocument.Settings):
         name = 'users'
-        use_state_management = True
         indexes = [
             IndexModel(
                 [('public_username', ASCENDING)],
