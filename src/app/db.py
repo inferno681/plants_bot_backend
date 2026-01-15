@@ -18,11 +18,13 @@ class DbHelper:
     def __init__(
         self,
         client: AsyncMongoClient,
+        db: str,
         max_retries: int = 3,
         backoff_base: float = 0.05,
         backoff_jitter: float = 0.05,
     ):
         self.client = client
+        self.db = db
         self.max_retries = max_retries
         self.backoff_base = backoff_base
         self.backoff_jitter = backoff_jitter
@@ -50,6 +52,9 @@ class DbHelper:
                 await asyncio.sleep(self._backoff(attempt))
                 attempt += 1
 
+    async def ping(self):
+        await self.client[self.db].command('ping')
+
     @asynccontextmanager
     async def _transaction_block(self):
         """Transaction block context manager."""
@@ -75,6 +80,7 @@ class DbHelper:
 
 db_helper = DbHelper(
     client=AsyncMongoClient(config.mongo_url_dev),
+    db=config.mongodb.db,
     max_retries=config.mongodb.max_retries,
     backoff_base=config.mongodb.backoff_base,
     backoff_jitter=config.mongodb.backoff_jitter,

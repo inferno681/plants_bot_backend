@@ -2,7 +2,7 @@ from pwdlib import PasswordHash
 from pymongo.asynchronous.client_session import AsyncClientSession
 from pymongo.errors import DuplicateKeyError
 
-from app.exceptions.auth import UserAlreadyExistsError, InvalidCredentialsError
+from app.exceptions.auth import InvalidCredentialsError, UserAlreadyExistsError
 from app.logs.auth import (
     INVALID_WEB_PASSWORD_LOG,
     SAME_EMAIL_REGISTRATION_LOG,
