@@ -1,9 +1,15 @@
 from datetime import date, timedelta
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, computed_field, field_validator
-from beanie import PydanticObjectId
+from pydantic import (
+    BaseModel,
+    ConfigDict,
+    computed_field,
+    field_validator,
+    model_validator,
+)
 
+from app.exceptions.plant import PeriodCrossingError
 from app.models.plant import FertilizingPeriod, WateringPeriod
 
 
@@ -89,7 +95,6 @@ class PlantUpdateScheme(BaseModel):
 class PlantCreteScheme(BaseModel):
     """Create plant scheme."""
 
-    user_id: PydanticObjectId
     name: str
     scientific_name: str | None = None
     description: str | None = None
@@ -105,3 +110,16 @@ class PlantCreteScheme(BaseModel):
 
     next_watering_at: date | None = None
     next_fertilizing_at: date | None = None
+
+    @model_validator(mode='after')
+    def check_periods_do_not_overlap(self):
+        if not self.warm_period or not self.cold_period:
+            return self
+
+        warm_start, warm_end = self.warm_period.as_period()
+        cold_start, cold_end = self.cold_period.as_period()
+
+        if warm_start <= cold_end and cold_start <= warm_end:
+            raise PeriodCrossingError()
+
+        return self

@@ -3,6 +3,7 @@ from enum import StrEnum, auto
 from typing import Any, cast
 
 from beanie import PydanticObjectId
+from dateutil import relativedelta
 from pydantic import BaseModel, Field
 
 from app.constants.general import DAYS_IN_MONTH, MONTHS_IN_YEAR
@@ -14,6 +15,13 @@ from app.utils import (
     OrderParams,
     PlantFilter,
 )
+
+
+class Period(StrEnum):
+    """Enum for periods."""
+
+    warm = auto()
+    cold = auto()
 
 
 class MonthDay(BaseModel):
@@ -47,10 +55,33 @@ class WateringSchedule(BaseModel):
 class WateringPeriod(BaseModel):
     """Model for watering periods."""
 
-    start: MonthDay | None = None
-    end: MonthDay | None = None
-    schedule: WateringSchedule | None = None
+    start: MonthDay
+    end: MonthDay
+    schedule: WateringSchedule
     note: str | None = None
+
+    def as_period(self) -> tuple[date, date]:
+        """Convert values to dates."""
+        current_year = date.today().year
+        if self.start is None or self.end is None:
+            raise ValueError()
+        start = self.start.as_date(current_year)
+        end = self.end.as_date(current_year)
+        if start < end:
+            return start, end
+        if start < date.today():
+            end += relativedelta(years=1)
+        else:
+            start -= relativedelta(years=1)
+        return start, end
+
+
+class CurrentPeriod(BaseModel):
+    period_name: Period
+    period: WateringPeriod
+    next_period: WateringPeriod
+    start: date
+    end: date
 
 
 class FertilizingType(StrEnum):
@@ -64,17 +95,32 @@ class FertilizingType(StrEnum):
 class FertilizingPeriod(BaseModel):
     """Fertilizing period model."""
 
-    start: MonthDay | None = None
-    end: MonthDay | None = None
-    frequency: int | None = None
+    start: MonthDay
+    end: MonthDay
+    frequency: int
     type: FertilizingType = FertilizingType.days
     note: str | None = None
+
+    def as_period(self) -> tuple[date, date]:
+        """Convert values to dates."""
+        current_year = date.today().year
+        if self.start is None or self.end is None:
+            raise ValueError()
+        start = self.start.as_date(current_year)
+        end = self.end.as_date(current_year)
+        if start < end:
+            return start, end
+        if start < date.today():
+            end += relativedelta(years=1)
+        else:
+            start -= relativedelta(years=1)
+        return start, end
 
 
 class Plant(BaseDocument):
     """Plant model."""
 
-    user_id: int
+    user_id: PydanticObjectId
     name: str
     scientific_name: str | None = None
     description: str | None = None
@@ -92,6 +138,34 @@ class Plant(BaseDocument):
 
     next_watering_at: date | None = None
     next_fertilizing_at: date | None = None
+
+    @property
+    def current_period(self) -> CurrentPeriod | None:
+        today = date.today()
+
+        if self.warm_period:
+            start, end = self.warm_period.as_period()
+            if start <= today <= end:
+                return CurrentPeriod(
+                    period_name=Period.warm,
+                    period=self.warm_period,
+                    next_period=self.cold_period,
+                    start=start,
+                    end=end,
+                )
+
+        if self.cold_period:
+            start, end = self.cold_period.as_period()
+            if start <= today <= end:
+                return CurrentPeriod(
+                    period_name=Period.cold,
+                    period=self.cold_period,
+                    next_period=self.warm_period,
+                    start=start,
+                    end=end,
+                )
+
+        return None
 
     @classmethod
     async def get_plants(

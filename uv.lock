@@ -866,6 +866,7 @@ dependencies = [
     { name = "pydantic", extra = ["email"] },
     { name = "pydantic-settings" },
     { name = "pyjwt" },
+    { name = "python-dateutil" },
     { name = "python-multipart" },
     { name = "pyyaml" },
     { name = "redis" },
@@ -878,6 +879,7 @@ dev = [
     { name = "isort" },
     { name = "mypy" },
     { name = "pytest" },
+    { name = "types-python-dateutil" },
     { name = "types-pyyaml" },
     { name = "types-redis" },
     { name = "wemake-python-styleguide" },
@@ -895,6 +897,7 @@ requires-dist = [
     { name = "pydantic", extras = ["email"], specifier = ">=2.12.5" },
     { name = "pydantic-settings", specifier = ">=2.12.0" },
     { name = "pyjwt", specifier = ">=2.10.1" },
+    { name = "python-dateutil", specifier = ">=2.9.0.post0" },
     { name = "python-multipart", specifier = ">=0.0.20" },
     { name = "pyyaml", specifier = ">=6.0.3" },
     { name = "redis", specifier = ">=7.1.0" },
@@ -907,6 +910,7 @@ dev = [
     { name = "isort", specifier = ">=7.0.0" },
     { name = "mypy", specifier = ">=1.18.2" },
     { name = "pytest", specifier = ">=9.0.1" },
+    { name = "types-python-dateutil", specifier = ">=2.9.0.20251115" },
     { name = "types-pyyaml", specifier = ">=6.0.12.20250915" },
     { name = "types-redis", specifier = ">=4.6.0.20241004" },
     { name = "wemake-python-styleguide", specifier = ">=1.4.0" },
@@ -1387,6 +1391,15 @@ dependencies = [
 sdist = { url = "https://files.pythonhosted.org/packages/93/29/47a346550fd2020dac9a7a6d033ea03fccb92fa47c726056618cc889745e/types-pyOpenSSL-24.1.0.20240722.tar.gz", hash = "sha256:47913b4678a01d879f503a12044468221ed8576263c1540dcb0484ca21b08c39", size = 8458, upload-time = "2024-07-22T02:32:22.558Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/98/05/c868a850b6fbb79c26f5f299b768ee0adc1f9816d3461dcf4287916f655b/types_pyOpenSSL-24.1.0.20240722-py3-none-any.whl", hash = "sha256:6a7a5d2ec042537934cfb4c9d4deb0e16c4c6250b09358df1f083682fe6fda54", size = 7499, upload-time = "2024-07-22T02:32:21.232Z" },
+]
+
+[[package]]
+name = "types-python-dateutil"
+version = "2.9.0.20251115"
+source = { registry = "https://pypi.org/simple" }
+sdist = { url = "https://files.pythonhosted.org/packages/6a/36/06d01fb52c0d57e9ad0c237654990920fa41195e4b3d640830dabf9eeb2f/types_python_dateutil-2.9.0.20251115.tar.gz", hash = "sha256:8a47f2c3920f52a994056b8786309b43143faa5a64d4cbb2722d6addabdf1a58", size = 16363, upload-time = "2025-11-15T03:00:13.717Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/43/0b/56961d3ba517ed0df9b3a27bfda6514f3d01b28d499d1bce9068cfe4edd1/types_python_dateutil-2.9.0.20251115-py3-none-any.whl", hash = "sha256:9cf9c1c582019753b8639a081deefd7e044b9fa36bd8217f565c6c4e36ee0624", size = 18251, upload-time = "2025-11-15T03:00:12.317Z" },
 ]
 
 [[package]]
