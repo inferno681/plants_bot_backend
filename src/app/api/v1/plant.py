@@ -22,7 +22,12 @@ from app.schemes import (
     PlantStatsScheme,
     PlantUpdateScheme,
 )
-from app.services import current_user_id_dependency, storage_service
+from app.schemes.plant import PlantCreteScheme
+from app.services import (
+    current_user_id_dependency,
+    storage_service,
+    plant_service,
+)
 from app.utils import (
     CursorPaginatorParams,
     OrderParams,
@@ -38,6 +43,15 @@ def ordering_params(
 
 
 router = APIRouter()
+
+
+@router.post('', response_model=PlantReadScheme)
+async def add_plant(
+    plant_data: PlantCreteScheme, user_id: str = current_user_id_dependency
+):
+    return await plant_service.add_plant(
+        user_id=user_id, plant_data=plant_data
+    )
 
 
 @router.get('', response_model=CursorPaginatedResponse[PlantReadSchemeShort])

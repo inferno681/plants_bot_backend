@@ -139,13 +139,11 @@ class Plant(BaseDocument):
     next_watering_at: date | None = None
     next_fertilizing_at: date | None = None
 
-    @property
-    def current_period(self) -> CurrentPeriod | None:
-        today = date.today()
+    def period_info(self, date: date) -> CurrentPeriod | None:
 
         if self.warm_period:
             start, end = self.warm_period.as_period()
-            if start <= today <= end:
+            if start <= date <= end:
                 return CurrentPeriod(
                     period_name=Period.warm,
                     period=self.warm_period,
@@ -156,7 +154,7 @@ class Plant(BaseDocument):
 
         if self.cold_period:
             start, end = self.cold_period.as_period()
-            if start <= today <= end:
+            if start <= date <= end:
                 return CurrentPeriod(
                     period_name=Period.cold,
                     period=self.cold_period,

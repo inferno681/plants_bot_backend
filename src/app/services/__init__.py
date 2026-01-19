@@ -8,6 +8,7 @@ from app.services.user import (
     current_user_uid_sid_dependency,
     user_service,
 )
+from app.services.plant import plant_service
 
 __all__ = [
     'web_auth_service',
@@ -18,4 +19,5 @@ __all__ = [
     'current_user_id_dependency',
     'bot_auth_service',
     'health_service',
+    'plant_service',
 ]
