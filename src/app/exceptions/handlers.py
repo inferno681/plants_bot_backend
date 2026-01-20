@@ -6,6 +6,7 @@ from fastapi.responses import JSONResponse
 
 from app.constants import DETAIL, LOC, MSG, STATUS, TYPE
 from app.exceptions.auth import AUTH_ERROR_MAP, AuthError
+from app.exceptions.image import IMAGE_ERROR_MAP, ImageError
 from app.exceptions.token import TOKEN_MAP, TokenError
 
 logger = getLogger(__name__)
@@ -79,9 +80,35 @@ async def exception_handler(request: Request, exc: Exception):
     )
 
 
+async def image_exception_handler(request: Request, exc: ImageError):
+    """Image errors handler."""
+    error_info = IMAGE_ERROR_MAP.get(
+        type(exc),
+        {
+            MSG: 'image.error',
+            TYPE: 'image_error',
+            STATUS: status.HTTP_400_BAD_REQUEST,
+        },
+    )
+
+    return JSONResponse(
+        status_code=error_info[STATUS],
+        content={
+            DETAIL: [
+                {
+                    LOC: ['image'],
+                    MSG: error_info[MSG],
+                    TYPE: error_info[TYPE],
+                }
+            ]
+        },
+    )
+
+
 ExceptionHandler = Callable[[Request, Any], Coroutine[Any, Any, Response]]
 exception_handlers: dict[int | Type[Exception], ExceptionHandler] = {
     TokenError: token_exception_handler,
     AuthError: auth_exception_handler,
+    ImageError: image_exception_handler,
     Exception: exception_handler,
 }
