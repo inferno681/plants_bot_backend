@@ -1,15 +1,29 @@
-from datetime import date, timedelta
+from datetime import date
 from logging import getLogger
+from uuid import uuid4
 
 from beanie import PydanticObjectId, SortDirection
 
+from app.exceptions.plant import PlantNotFoundError
 from app.logs.plant import PLANT_SERVICE_START_LOG
 from app.models import Plant
-from app.schemes import PlantCreteScheme, PlantDashboardStats, PlantTask
+from app.schemes import (
+    ImageUpload,
+    PlantCreteScheme,
+    PlantDashboardStats,
+    PlantTask,
+)
+from app.services.image import image_service
+from app.services.pipeline import pipeline_builder
 from app.services.scheduler import scheduler
-from app.utils.filters import PlantFilter
-from app.utils.ordering import OrderItem, OrderParams
-from app.utils.pagination import CursorPaginatorParams
+from app.services.storage import storage_service
+from app.utils import (
+    CursorPaginatorParams,
+    OrderItem,
+    OrderParams,
+    PlantFilter,
+    send_photo_to_telegram,
+)
 
 
 class PlantService:
@@ -56,7 +70,7 @@ class PlantService:
             if pivot is None:
                 return [], False
 
-            cursor_filter = Plant._build_cursor_filter(
+            cursor_filter = self._build_cursor_filter(
                 pivot=pivot,
                 order_items=ordering.with_tie_breaker(),
             )
@@ -76,72 +90,19 @@ class PlantService:
 
         return plants, has_more
 
-    async def get_plant_by_id(
-        self, plant_id: str, user_id: str
-    ) -> 'Plant | None':
-        return await Plant.find_one(
+    async def get_plant_by_id(self, plant_id: str, user_id: str) -> Plant:
+        plant = await Plant.find_one(
             Plant.id == PydanticObjectId(plant_id),
             Plant.user_id == PydanticObjectId(user_id),
         )
+        if not plant:
+            raise PlantNotFoundError()
+        return plant
 
     async def get_stats(self, user_id: str) -> PlantDashboardStats:
         """Aggregate basic dashboard stats."""
         today = date.today()
-        week_limit = today + timedelta(days=7)
-        pipeline = [
-            {'$match': {'user_id': PydanticObjectId(user_id)}},
-            {
-                '$facet': {
-                    'total': [{'$count': 'value'}],
-                    'attention': [
-                        {
-                            '$match': {
-                                '$or': [
-                                    {'next_watering_at': {'$lte': today}},
-                                    {'next_fertilizing_at': {'$lte': today}},
-                                ]
-                            }
-                        },
-                        {'$count': 'value'},
-                    ],
-                    'watering_week': [
-                        {
-                            '$match': {
-                                'next_watering_at': {
-                                    '$gte': today,
-                                    '$lte': week_limit,
-                                }
-                            }
-                        },
-                        {'$count': 'value'},
-                    ],
-                    'tasks': [
-                        {'$match': {'next_watering_at': {'$ne': None}}},
-                        {'$sort': {'next_watering_at': 1}},
-                        {'$limit': 10},
-                        {
-                            '$project': {
-                                'plant_id': '$_id',
-                                'name': 1,
-                                'date': '$next_watering_at',
-                                'type': {
-                                    '$cond': [
-                                        {
-                                            '$eq': [
-                                                '$next_watering_at',
-                                                '$next_fertilizing_at',
-                                            ]
-                                        },
-                                        'watering_with_fertilizing',
-                                        'watering',
-                                    ]
-                                },
-                            }
-                        },
-                    ],
-                }
-            },
-        ]
+        pipeline = pipeline_builder.build_dashboard_pipeline(user_id, today)
 
         agg_result = await Plant.aggregate(pipeline).to_list()
 
@@ -170,6 +131,24 @@ class PlantService:
             ),
             tasks=[PlantTask(**task) for task in dashboard_data['tasks']],
         )
+
+    async def update_plant_image(
+        self,
+        plant_id: str,
+        user_id: str,
+        file_info: ImageUpload,
+    ) -> Plant:
+        plant = await self.get_plant_by_id(plant_id, user_id)
+        file_id = await send_photo_to_telegram(file_info)
+        new_file, ext = image_service.process(file_info)
+        storage_key = f'{user_id}/{uuid4()}.{ext}'
+        if plant.storage_key:
+            await storage_service.delete_file(plant.storage_key or '')
+        await storage_service.upload_file(storage_key, new_file)
+        plant.storage_key = storage_key
+        plant.image = file_id
+        await plant.save()
+        return plant
 
     def _build_cursor_filter(
         self,

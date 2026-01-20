@@ -8,13 +8,12 @@ from app.schemes.auth import (
 )
 from app.schemes.client_info import ClientInfo
 from app.schemes.dashboard import PlantDashboardStats, PlantTask
+from app.schemes.image import ImageConfig, ImageUpload
 from app.schemes.pagination import CursorPaginatedResponse
 from app.schemes.plant import (
     PlantCreteScheme,
     PlantReadScheme,
     PlantReadSchemeShort,
-    PlantStatsScheme,
-    PlantTaskScheme,
     PlantUpdateScheme,
 )
 from app.schemes.user import TelegramUser, WebUser
@@ -25,8 +24,6 @@ __all__ = [
     'PlantReadScheme',
     'InitData',
     'PlantReadSchemeShort',
-    'PlantStatsScheme',
-    'PlantTaskScheme',
     'RefreshRequest',
     'CursorPaginatedResponse',
     'PlantUpdateScheme',
@@ -40,4 +37,7 @@ __all__ = [
     'PlantCreteScheme',
     'PlantDashboardStats',
     'PlantTask',
+    'PlantDashboardStats',
+    'ImageUpload',
+    'ImageConfig',
 ]

@@ -99,6 +99,23 @@ class Logger(BaseModel):
     ] = 'INFO'
 
 
+class ImageSettings(BaseSettings):
+    """Uploading image settings."""
+
+    allowed_mime: set[str]
+    allowed_ext: set[str]
+    max_size_bytes: int
+
+    out_width: int
+    out_height: int
+    jpeg_quality: int
+    webp_quality: int
+
+    max_input_width: int
+    max_input_height: int
+    max_input_pixels: int
+
+
 class Secrets(BaseSettings):
     """Secrets settings."""
 
@@ -150,6 +167,7 @@ class AppConfig(BaseSettings):
     storage: StorageS3
     secrets: Secrets
     cors: CORS
+    image: ImageSettings
 
     logger: Logger
 

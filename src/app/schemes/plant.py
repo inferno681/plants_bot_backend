@@ -1,5 +1,4 @@
 from datetime import date, timedelta
-from typing import Literal
 
 from pydantic import (
     BaseModel,
@@ -11,13 +10,6 @@ from pydantic import (
 
 from app.exceptions.plant import PeriodCrossingError
 from app.models.plant import FertilizingPeriod, WateringPeriod
-
-
-class PlantStatsScheme(BaseModel):
-    total: int
-    watering_week: int
-    attention: int
-    tasks: list['PlantTaskScheme']
 
 
 class PlantReadSchemeShort(BaseModel):
@@ -50,13 +42,6 @@ class PlantReadSchemeShort(BaseModel):
             else:
                 return 'healthy'
         return 'healthy'
-
-
-class PlantTaskScheme(BaseModel):
-    plant_id: str
-    name: str
-    date: date
-    type: Literal['watering', 'watering_with_fertilizing']
 
 
 class PlantReadScheme(PlantReadSchemeShort):

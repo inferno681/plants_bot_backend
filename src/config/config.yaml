@@ -55,6 +55,26 @@ cors:
     - "*"
   allow_headers:
     - "*"
+image:
+  allowed_mime:
+    - "image/jpeg"
+    - "image/png"
+    - "image/webp"
+  allowed_ext:
+    - ".jpg"
+    - ".jpeg"
+    - ".png"
+    - ".webp"
+  max_size_bytes: 5242880
+
+  out_width: 512
+  out_height: 512
+  jpeg_quality: 85
+  webp_quality: 80
+
+  max_input_width: 4096
+  max_input_height: 4096
+  max_input_pixels: 20000000
 
 logger:
   format: "[%(asctime)s.%(msecs)03d] PID:%(process)-5d %(funcName)-35s %(module)-12s:%(lineno)-4d %(levelname)-7s - %(message)s"

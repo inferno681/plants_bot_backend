@@ -1,9 +1,10 @@
 from httpx import AsyncClient
 
+from app.schemes import ImageUpload
 from config import config
 
 
-async def send_photo_to_telegram(file_bytes, filename, content_type) -> str:
+async def send_photo_to_telegram(file_info: ImageUpload) -> str:
 
     async with AsyncClient() as client:
         resp = await client.post(
@@ -11,9 +12,9 @@ async def send_photo_to_telegram(file_bytes, filename, content_type) -> str:
             data={'chat_id': config.service.service_chat_id},
             files={
                 'photo': (
-                    filename,
-                    file_bytes,
-                    content_type,
+                    file_info.filename,
+                    file_info.file_bytes,
+                    file_info.content_type,
                 )
             },
         )
