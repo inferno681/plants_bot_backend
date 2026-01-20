@@ -1,15 +1,14 @@
 from datetime import date, datetime
 from logging import getLogger
 
-
-from dateutil import relativedelta
+from dateutil.relativedelta import relativedelta
 from dateutil.rrule import MONTHLY, WEEKLY, rrule
 
 from app.constants.plant import WEEKDAY_MAP
 from app.exceptions.plant import NoDaysSchedulerError, NoWateringPeriodError
 from app.logs.scheduler import SCHEDULER_SERVICE_START_LOG
 from app.models import Plant
-from app.models.plant import FertilizingType, FrequencyType, WateringSchedule
+from app.models.plant import FrequencyType, WateringSchedule
 
 
 class Scheduler:
@@ -56,18 +55,13 @@ class Scheduler:
         self, plant: Plant, last_fertilized: date | None = None
     ) -> Plant:
         """Calculate new fertilizing date."""
+        if not plant.fertilizing:
+            return plant
         fert_start, fert_end = plant.fertilizing.as_period()
 
-        frequency = plant.fertilizing.frequency
-
-        if plant.fertilizing.type == FertilizingType.days:
-            delta = relativedelta(days=frequency)
-        elif plant.fertilizing.type == FertilizingType.weeks:
-            delta = relativedelta(weeks=frequency)
-        elif plant.fertilizing.type == FertilizingType.months:
-            delta = relativedelta(months=frequency)
-
-        fertilizing_date = (last_fertilized or date.today()) + delta
+        fertilizing_date = (
+            last_fertilized or date.today()
+        ) + plant.fertilizing.build_delta()
         if last_fertilized and fertilizing_date <= date.today():
             plant.last_fertilized_at = date.today()
             return self.next_fertilizing_date(plant)
@@ -81,11 +75,13 @@ class Scheduler:
 
     def sync_watering_and_fertilizing(self, plant: Plant):
         """Check synchronization for watering and fertilizing."""
-        if plant.fertilizing and (
-            plant.next_watering_at >= plant.next_fertilizing_at
+        if not (
+            plant.fertilizing
+            and plant.next_watering_at
+            and plant.next_fertilizing_at
         ):
-            return True
-        return False
+            return False
+        return plant.next_watering_at >= plant.next_fertilizing_at
 
     def _build_rrule(
         self, schedule: WateringSchedule, start_dt: datetime

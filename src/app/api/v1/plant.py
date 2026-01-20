@@ -1,4 +1,3 @@
-import asyncio
 from pathlib import Path
 from typing import Annotated
 from uuid import uuid4
@@ -25,8 +24,9 @@ from app.schemes import (
 from app.schemes.plant import PlantCreteScheme
 from app.services import (
     current_user_id_dependency,
-    storage_service,
+    plant_mapper,
     plant_service,
+    storage_service,
 )
 from app.utils import (
     CursorPaginatorParams,
@@ -61,22 +61,10 @@ async def get_plants(
     ordering: Annotated[OrderParams, Depends(ordering_params)],
     user_id: str = current_user_id_dependency,
 ):
-    plants, has_more = await Plant.get_plants(
+    plants, has_more = await plant_service.get_plants(
         user_id, filters, paginator, ordering
     )
-    schemes = [PlantReadSchemeShort.model_validate(plant) for plant in plants]
-
-    for scheme, url in zip(
-        schemes,
-        await asyncio.gather(
-            *[
-                storage_service.presigned_url_for_plant(plant)
-                for plant in plants
-            ]
-        ),
-    ):
-        if isinstance(url, str):
-            scheme.image_url = url
+    schemes = await plant_mapper.to_short_many(plants)
 
     return CursorPaginatedResponse(
         items=schemes,

@@ -7,6 +7,7 @@ from app.schemes.auth import (
     WebAccountRegistration,
 )
 from app.schemes.client_info import ClientInfo
+from app.schemes.dashboard import PlantDashboardStats, PlantTask
 from app.schemes.pagination import CursorPaginatedResponse
 from app.schemes.plant import (
     PlantCreteScheme,
@@ -37,4 +38,6 @@ __all__ = [
     'WebAccountLogin',
     'UserSession',
     'PlantCreteScheme',
+    'PlantDashboardStats',
+    'PlantTask',
 ]
