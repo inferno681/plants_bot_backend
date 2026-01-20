@@ -1,21 +1,9 @@
 from enum import StrEnum
 from typing import Any, Iterable, Tuple
 
+from beanie import SortDirection
 from fastapi import HTTPException, status
 from pydantic import BaseModel, Field, field_validator
-
-
-class OrderDirection(StrEnum):
-    ASC = 'asc'
-    DESC = 'desc'
-
-    @property
-    def sign(self) -> str:
-        return '+' if self == OrderDirection.ASC else '-'
-
-    @property
-    def sort_direction(self) -> int:
-        return 1 if self == OrderDirection.ASC else -1
 
 
 class OrderField(StrEnum):
@@ -30,15 +18,20 @@ class OrderItem(BaseModel):
     """Single ordering rule."""
 
     field: OrderField
-    direction: OrderDirection = OrderDirection.ASC
+    direction: SortDirection = SortDirection.ASCENDING
 
     @property
     def sort_string(self) -> str:
-        return f'{self.direction.sign}{self.field.value}'
+        sign = (
+            '+'
+            if self.direction == SortDirection.ASCENDING
+            else '-'
+        )
+        return f'{sign}{self.field.value}'
 
     @property
-    def sort_tuple(self) -> Tuple[str, int]:
-        return self.field.value, self.direction.sort_direction
+    def sort_tuple(self) -> Tuple[str, SortDirection]:
+        return self.field.value, self.direction
 
 
 class OrderParams(BaseModel):
@@ -72,12 +65,12 @@ class OrderParams(BaseModel):
                 token = raw.strip()
                 if not token:
                     continue
-                direction = OrderDirection.ASC
+                direction = SortDirection.ASCENDING
                 if token[0] in '+-':
                     direction = (
-                        OrderDirection.ASC
+                        SortDirection.ASCENDING
                         if token[0] == '+'
-                        else OrderDirection.DESC
+                        else SortDirection.DESCENDING
                     )
                     token = token[1:]
                 try:
@@ -104,7 +97,7 @@ class OrderParams(BaseModel):
         items = list(self.order)
         if not any(item.field == OrderField.ID for item in items):
             primary_direction = (
-                items[0].direction if items else OrderDirection.ASC
+                items[0].direction if items else SortDirection.ASCENDING
             )
             items.append(
                 OrderItem(field=OrderField.ID, direction=primary_direction)
@@ -116,5 +109,5 @@ class OrderParams(BaseModel):
         return [item.sort_string for item in self.with_tie_breaker()]
 
     @property
-    def sort_tuples(self) -> list[Tuple[str, int]]:
+    def sort_tuples(self) -> list[Tuple[str, SortDirection]]:
         return [item.sort_tuple for item in self.with_tie_breaker()]

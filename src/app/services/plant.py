@@ -1,14 +1,14 @@
 from datetime import date, timedelta
 from logging import getLogger
 
-from beanie import PydanticObjectId
+from beanie import PydanticObjectId, SortDirection
 
 from app.logs.plant import PLANT_SERVICE_START_LOG
 from app.models import Plant
 from app.schemes import PlantCreteScheme, PlantDashboardStats, PlantTask
 from app.services.scheduler import scheduler
 from app.utils.filters import PlantFilter
-from app.utils.ordering import OrderDirection, OrderItem, OrderParams
+from app.utils.ordering import OrderItem, OrderParams
 from app.utils.pagination import CursorPaginatorParams
 
 
@@ -84,7 +84,7 @@ class PlantService:
             Plant.user_id == PydanticObjectId(user_id),
         )
 
-    async def get_stats(self, user_id: str) -> dict:
+    async def get_stats(self, user_id: str) -> PlantDashboardStats:
         """Aggregate basic dashboard stats."""
         today = date.today()
         week_limit = today + timedelta(days=7)
@@ -185,7 +185,7 @@ class PlantService:
 
         comparator = (
             field_expr < pivot_value
-            if order_item.direction == OrderDirection.DESC
+            if order_item.direction == SortDirection.DESCENDING
             else field_expr > pivot_value
         )
 
