@@ -5,6 +5,7 @@ from app.schemes.auth import (
     Tokens,
     WebAccountLogin,
     WebAccountRegistration,
+    WebTokens,
 )
 from app.schemes.client_info import ClientInfo
 from app.schemes.dashboard import PlantDashboardStats, PlantTask
@@ -40,4 +41,5 @@ __all__ = [
     'PlantDashboardStats',
     'ImageUpload',
     'ImageConfig',
+    'WebTokens',
 ]

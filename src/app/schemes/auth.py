@@ -19,6 +19,10 @@ class Tokens(BaseModel):
     refresh_token: str
 
 
+class WebTokens(BaseModel):
+    access_token: str
+
+
 class InitData(BaseModel):
     init_data: str = Field(..., description='Signed initData string.')
 

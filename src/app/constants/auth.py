@@ -1,4 +1,5 @@
 import re
+from typing import Literal
 
 from bson import ObjectId
 
@@ -21,7 +22,8 @@ REQUIRED_INIT_DATA_FIELDS = ('hash', 'auth_date', 'user')
 MISSED_FIELDS_MSG = 'Missing fields: {fields}'
 NO_USER_DATA_MSG = 'No user data in init data'
 INVALID_DOC_PASSWORD_MESSAGE = 'Invalid documentation password'
-
+MISSING_REFRESH_TOKEN = 'Missing refresh token'
+CSRF_VALIDATION_FAILED_MSG = 'CSRF validation failed'
 PASSWORD_REGEX = re.compile(
     r'^(?=.*?[A-Z])(?=.*?[a-z])(?=.*?[0-9])(?=.*?[#?!@$%^&*-]).{8,}$'
 )
@@ -38,3 +40,9 @@ UNKNOWN_LITERAL = 'unknown'
 DOC_USER = ObjectId('68fdd756d174872a92b7e87d')
 
 REQUIRED_FIELDS_BOT_INIT_DATA = ('bot_id', 'auth_date', 'hash')
+
+COOKIE_PATH = '/auth/refresh'
+CSRF_LENGTH = 32
+
+SameSite = Literal['lax', 'strict', 'none']
+LAX_LITERAL: SameSite = 'lax'
