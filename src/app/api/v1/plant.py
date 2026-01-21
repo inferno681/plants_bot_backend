@@ -15,7 +15,6 @@ from app.services import (
     current_user_id_dependency,
     plant_mapper,
     plant_service,
-    storage_service,
 )
 from app.utils import CursorPaginatorParams, OrderParams, PlantFilter
 
@@ -86,13 +85,7 @@ async def get_plant(
 ):
     plant = await plant_service.get_plant_by_id(plant_id, user_id)
 
-    scheme = PlantReadScheme.model_validate(plant)
-
-    url = await storage_service.presigned_url_for_plant(plant)
-    if isinstance(url, str):
-        scheme.image_url = url
-
-    return scheme
+    return await plant_mapper.to_full(plant)
 
 
 @router.patch('/{plant_id}', response_model=PlantReadScheme)
@@ -101,15 +94,6 @@ async def update_plant(
     plant_update: PlantUpdateScheme,
     user_id: str = current_user_id_dependency,
 ):
-    plant = await plant_service.get_plant_by_id(plant_id, user_id)
+    plant = await plant_service.update_plant(plant_id, user_id, plant_update)
 
-    for key, new_value in plant_update.model_dump(exclude_unset=True).items():
-        setattr(plant, key, new_value)
-    await plant.save()
-    scheme = PlantReadScheme.model_validate(plant)
-
-    url = await storage_service.presigned_url_for_plant(plant)
-    if isinstance(url, str):
-        scheme.image_url = url
-
-    return scheme
+    return plant_mapper.to_full(plant)

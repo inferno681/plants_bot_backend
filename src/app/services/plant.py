@@ -12,6 +12,7 @@ from app.schemes import (
     PlantCreteScheme,
     PlantDashboardStats,
     PlantTask,
+    PlantUpdateScheme,
 )
 from app.services.image import image_service
 from app.services.pipeline import pipeline_builder
@@ -144,6 +145,21 @@ class PlantService:
         )
         plant.storage_key = storage_key
         plant.image = file_id
+        await plant.save()
+        return plant
+
+    async def update_plant(
+        self,
+        plant_id: str,
+        user_id: str,
+        plant_update: PlantUpdateScheme,
+    ) -> Plant:
+        plant = await self.get_plant_by_id(plant_id, user_id)
+
+        for key, new_value in plant_update.model_dump(
+            exclude_unset=True
+        ).items():
+            setattr(plant, key, new_value)
         await plant.save()
         return plant
 
