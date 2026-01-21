@@ -12,6 +12,6 @@ v1_router.include_router(
 )
 v1_router.include_router(
     healthz_router,
-    prefix='healthz',
+    prefix='/healthz',
     tags=[config.service.tag_metadata_health['name']],
 )

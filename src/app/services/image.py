@@ -1,119 +1,83 @@
+import asyncio
+from concurrent.futures import ThreadPoolExecutor
+from logging import getLogger
 from pathlib import Path
-
-import pyvips
 
 from app.exceptions.image import (
     FileTooLargeError,
     InvalidExtensionError,
-    InvalidImageError,
     UnsupportedMimeError,
 )
+from app.logs.image import (
+    FILE_TOO_LARGE_LOG,
+    IMAGE_SERVICE_START_LOG,
+    IMAGE_VALIDATOR_START_LOG,
+    UNSUPPORTED_EXT_LOG,
+    UNSUPPORTED_MIME_LOG,
+)
 from app.schemes import ImageConfig, ImageUpload
+from app.services.image_backend import get_backend
 from config import config
+
+logger = getLogger(__name__)
+image_pool = ThreadPoolExecutor(max_workers=8)
 
 
 class ImageValidator:
     def __init__(self, cfg: ImageConfig):
         self.cfg = cfg
-        self.allowed_mime = {mime.lower() for mime in cfg.allowed_mime}
+        self.allowed_mime = cfg.allowed_mime
+        self.allowed_ext = cfg.allowed_ext
+        self.log = logger
+        self.log.info(IMAGE_VALIDATOR_START_LOG)
 
     def validate(self, filename, content_type, file_bytes):
-        self._mime(content_type)
-        self._ext(filename)
-        self._size(file_bytes)
-
-    def _mime(self, content_type):
+        """Base image validation."""
         mime = content_type.split(';', 1)[0].strip().lower()
         if mime not in self.allowed_mime:
+            self.log.info(UNSUPPORTED_MIME_LOG, mime)
             raise UnsupportedMimeError(mime)
 
-    def _ext(self, filename):
         ext = Path(filename).suffix.lower()
-        if ext not in self.cfg.allowed_ext:
+        if ext not in self.allowed_ext:
+            self.log.info(UNSUPPORTED_EXT_LOG, ext)
             raise InvalidExtensionError(ext)
 
-    def _size(self, file_bytes):
         if len(file_bytes) > self.cfg.max_size_bytes:
+            self.log.info(FILE_TOO_LARGE_LOG, len(file_bytes))
             raise FileTooLargeError(len(file_bytes))
-
-
-class VipsProcessor:
-    def __init__(self, cfg: ImageConfig):
-        self.cfg = cfg
-
-    def open_safe(self, file_bytes: bytes) -> pyvips.Image:
-        try:
-            img = pyvips.Image.new_from_buffer(file_bytes, '')
-        except Exception:
-            raise InvalidImageError()
-
-        width, height = img.width, img.height
-
-        if (
-            width > self.cfg.max_input_width
-            or height > self.cfg.max_input_height
-        ):
-            raise InvalidImageError(f'Image too large: {width}x{height}')
-        pixels = width * height
-        if pixels > self.cfg.max_input_pixels:
-            raise InvalidImageError(f'Image too large: {pixels} pixels')
-
-        return img
-
-    @staticmethod
-    def orient(img: pyvips.Image) -> pyvips.Image:
-        try:
-            return img.autorot()
-        except Exception:
-            return img
-
-    @staticmethod
-    def strip_meta(img: pyvips.Image) -> pyvips.Image:
-        return img.copy(strip=True)
-
-    def resize(self, img: pyvips.Image) -> pyvips.Image:
-        return img.thumbnail_image(
-            self.cfg.out_width, height=self.cfg.out_height, crop='centre'
-        )
-
-    def process(self, img: pyvips.Image) -> pyvips.Image:
-        img = self.orient(img)
-        img = self.strip_meta(img)
-        img = self.resize(img)
-        return img
-
-
-class VipsExporter:
-    def __init__(self, cfg: ImageConfig):
-        self.cfg = cfg
-
-    def export_jpeg(self, img: pyvips.Image) -> bytes:
-        return img.write_to_buffer('.jpg', Q=self.cfg.jpeg_quality)
-
-    def export_webp(self, img: pyvips.Image) -> bytes:
-        return img.write_to_buffer('.webp', Q=self.cfg.webp_quality)
 
 
 class ImageService:
     def __init__(self, cfg: ImageConfig):
+        self.cfg = cfg
+        self.backend = get_backend(cfg)
         self.validator = ImageValidator(cfg)
-        self.processor = VipsProcessor(cfg)
-        self.exporter = VipsExporter(cfg)
+        self.image_pool = ThreadPoolExecutor(max_workers=cfg.max_workers)
+        self.log = logger
+        self.log.info(IMAGE_SERVICE_START_LOG)
 
-    def process(
-        self,
-        file_info: ImageUpload,
-        as_webp: bool = False,
-    ):
+    async def process(self, file_info: ImageUpload, as_webp: bool = False):
+        """Image file processing."""
         self.validator.validate(
             file_info.filename, file_info.content_type, file_info.file_bytes
         )
-        img = self.processor.open_safe(file_info.file_bytes)
-        img = self.processor.process(img)
+
+        loop = asyncio.get_running_loop()
+        return await loop.run_in_executor(
+            self.image_pool, self._process_sync, file_info, as_webp
+        )
+
+    def _process_sync(self, file_info, as_webp):
+        """Image file processing."""
+        img = self.backend.open(file_info.file_bytes)
+        img = self.backend.orient(img)
+        img = self.backend.strip(img)
+        img = self.backend.resize(img)
+
         if as_webp:
-            return self.exporter.export_webp(img), '.webp'
-        else:
-            return self.exporter.export_jpeg(img), '.jpg'
+            return self.backend.export_webp(img), '.webp'
+        return self.backend.export_jpeg(img), '.jpg'
 
 
 image_service = ImageService(ImageConfig(**config.image.model_dump()))

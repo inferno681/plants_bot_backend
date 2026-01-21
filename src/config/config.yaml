@@ -76,6 +76,10 @@ image:
   max_input_height: 4096
   max_input_pixels: 20000000
 
+  backend: "pillow"
+
+  max_workers: 8
+
 logger:
   format: "[%(asctime)s.%(msecs)03d] PID:%(process)-5d %(funcName)-35s %(module)-12s:%(lineno)-4d %(levelname)-7s - %(message)s"
   exclude:

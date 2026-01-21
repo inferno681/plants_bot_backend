@@ -115,6 +115,10 @@ class ImageSettings(BaseSettings):
     max_input_height: int
     max_input_pixels: int
 
+    backend: str
+
+    max_workers: int
+
 
 class Secrets(BaseSettings):
     """Secrets settings."""

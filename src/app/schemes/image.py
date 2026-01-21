@@ -1,3 +1,5 @@
+from typing import Literal
+
 from pydantic import BaseModel
 
 
@@ -16,6 +18,10 @@ class ImageConfig(BaseModel):
     max_input_width: int = 4096
     max_input_height: int = 4096
     max_input_pixels: int = 20_000_000
+
+    backend: Literal['pillow', 'vips']
+
+    max_workers: int = 8
 
 
 class ImageUpload(BaseModel):

@@ -139,12 +139,9 @@ class PlantService:
         file_info: ImageUpload,
     ) -> Plant:
         plant = await self.get_plant_by_id(plant_id, user_id)
-        file_id = await send_photo_to_telegram(file_info)
-        new_file, ext = image_service.process(file_info)
-        storage_key = f'{user_id}/{uuid4()}.{ext}'
-        if plant.storage_key:
-            await storage_service.delete_file(plant.storage_key or '')
-        await storage_service.upload_file(storage_key, new_file)
+        file_id, storage_key = await self._process_image(
+            user_id, file_info, plant
+        )
         plant.storage_key = storage_key
         plant.image = file_id
         await plant.save()
@@ -175,6 +172,18 @@ class PlantService:
         return comparator | (
             equals & self._build_cursor_filter(pivot, order_items, index + 1)
         )
+
+    async def _process_image(
+        self, user_id: str, file_info: ImageUpload, plant: Plant
+    ) -> tuple[str, str]:
+        """Image processing."""
+        file_id = await send_photo_to_telegram(file_info)
+        new_file, ext = await image_service.process(file_info)
+        storage_key = f'{user_id}/{uuid4()}{ext}'
+        if plant.storage_key:
+            await storage_service.delete_file(plant.storage_key)
+        await storage_service.upload_file(storage_key, new_file)
+        return file_id, storage_key
 
 
 plant_service = PlantService()

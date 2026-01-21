@@ -1,0 +1,16 @@
+IMAGE_SERVICE_START_LOG = 'Image service started'
+PILLOW_BACKEND_START_LOG = 'Pillow backend started'
+VIPS_BACKEND_START_LOG = 'Vips backend started'
+IMAGE_VALIDATOR_START_LOG = 'Image validator started'
+
+UNSUPPORTED_MIME_LOG = 'Unsupported mime type: %s'
+UNSUPPORTED_EXT_LOG = 'Unsupported ext: %s'
+FILE_TOO_LARGE_LOG = 'File to large: %s'
+IMAGE_DECODE_FILED_LOG = 'Image decode filed error: %s'
+IMAGE_TOO_LARGE_LOG = 'Image too large: %s x %s'
+IMAGE_TOO_LARGE_PIX_LOG = 'Image too large pix: %s'
+IMAGE_ROTATION_ERROR_LOG = 'Image rotation error: %s'
+
+IMAGE_OPEN_ERROR_LOG = 'Failed to open image: %s'
+IMAGE_EXIF_STRIP_ERROR_LOG = 'EXIF strip skipped: %s'
+IMAGE_ORIENT_ERROR_LOG = 'Image orientation skipped: %s'
