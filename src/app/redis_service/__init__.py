@@ -1,3 +1,3 @@
-from app.redis_service.client import redis
+from app.redis_service.client import init_redis
 
-__all__ = ['redis']
+__all__ = ['init_redis']

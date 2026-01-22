@@ -64,6 +64,3 @@ class MongoPipelineBuilder:
                 }
             },
         ]
-
-
-pipeline_builder = MongoPipelineBuilder()

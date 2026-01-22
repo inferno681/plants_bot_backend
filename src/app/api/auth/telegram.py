@@ -1,7 +1,12 @@
 from fastapi import APIRouter
 from pymongo.asynchronous.client_session import AsyncClientSession
 
-from app.db import session_dependency
+from app.dependencies import (
+    current_user_id_dep,
+    current_user_uid_sid_dep,
+    session_dependency,
+    telegram_auth_service_dep,
+)
 from app.schemes import (
     ClientInfo,
     InitData,
@@ -11,11 +16,7 @@ from app.schemes import (
     Tokens,
     UserSession,
 )
-from app.services import (
-    current_user_id_dependency,
-    current_user_uid_sid_dependency,
-    telegram_auth_service,
-)
+from app.services import TelegramAuthService
 from app.utils import client_info_dependency
 
 router = APIRouter()
@@ -25,6 +26,7 @@ router = APIRouter()
 async def telegram_user_registration(
     user_data: TelegramAccountBase,
     session: AsyncClientSession = session_dependency,
+    telegram_auth_service: TelegramAuthService = telegram_auth_service_dep,
 ):
     """Telegram user registration (Bot action)"""
     return await telegram_auth_service.registration_telegram_user(
@@ -37,6 +39,7 @@ async def login(
     init: InitData,
     client_info: ClientInfo = client_info_dependency,
     session: AsyncClientSession = session_dependency,
+    telegram_auth_service: TelegramAuthService = telegram_auth_service_dep,
 ):
     """Login endpoint."""
     return await telegram_auth_service.login_telegram_user(
@@ -45,7 +48,10 @@ async def login(
 
 
 @router.post('/logout')
-async def logout(session_info: UserSession = current_user_uid_sid_dependency):
+async def logout(
+    session_info: UserSession = current_user_uid_sid_dep,
+    telegram_auth_service: TelegramAuthService = telegram_auth_service_dep,
+):
     """Current session logout."""
     return {
         'message': await telegram_auth_service.logout_user(
@@ -56,7 +62,8 @@ async def logout(session_info: UserSession = current_user_uid_sid_dependency):
 
 @router.post('/logout_others')
 async def logout_other(
-    session_info: UserSession = current_user_uid_sid_dependency,
+    session_info: UserSession = current_user_uid_sid_dep,
+    telegram_auth_service: TelegramAuthService = telegram_auth_service_dep,
 ):
     """Other session logout."""
     return {
@@ -67,7 +74,10 @@ async def logout_other(
 
 
 @router.post('/logout_all')
-async def logout_all(user_id: str = current_user_id_dependency):
+async def logout_all(
+    user_id: str = current_user_id_dep,
+    telegram_auth_service: TelegramAuthService = telegram_auth_service_dep,
+):
     """All session logout."""
     return {
         'message': await telegram_auth_service.logout_all_sessions(user_id)
@@ -78,6 +88,7 @@ async def logout_all(user_id: str = current_user_id_dependency):
 async def refresh_tokens(
     refresh_token: RefreshRequest,
     client_info: ClientInfo = client_info_dependency,
+    telegram_auth_service: TelegramAuthService = telegram_auth_service_dep,
 ):
     """Refresh tokens endpoint."""
     return await telegram_auth_service.refresh_user_tokens(

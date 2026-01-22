@@ -109,6 +109,3 @@ class Scheduler:
                 byweekday=weekdays,
                 dtstart=start_dt,
             )
-
-
-scheduler = Scheduler()

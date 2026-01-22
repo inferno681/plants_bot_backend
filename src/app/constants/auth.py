@@ -1,4 +1,5 @@
 import re
+from importlib.resources import files
 from typing import Literal
 
 from bson import ObjectId
@@ -46,3 +47,11 @@ CSRF_LENGTH = 32
 
 SameSite = Literal['lax', 'strict', 'none']
 LAX_LITERAL: SameSite = 'lax'
+
+SUB = 'sub'
+EXP = 'exp'
+SID = 'sid'
+IAT = 'iat'
+TYPE = 'type'
+USER = 'user'
+SCRIPTS_DIR = files('app.redis_service.scripts')

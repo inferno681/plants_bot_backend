@@ -2,21 +2,12 @@ from enum import StrEnum, auto
 from logging import getLogger
 
 from app.constants.auth import (
-    DOC_USER,
     LOGOUT_ALL_MESSAGE,
     LOGOUT_MESSAGE,
     LOGOUT_OTHERS_MESSAGE,
 )
-from app.exceptions.auth import InvalidCredentialsError, UserNotFoundError
-from app.logs.auth import (
-    INVALID_DOC_PASSWORD_LOG,
-    UNREGISTERED_USER_LOG,
-    USER_LOGIN_LOG,
-)
-from app.models import User
 from app.schemes import ClientInfo, Tokens
 from app.services.token import TokenService
-from config import config
 
 
 class LoginType(StrEnum):
@@ -40,24 +31,6 @@ class BaseAuthService:
         """Refresh user tokens."""
         return await self.token_service.refresh_tokens(
             refresh_token, client_info
-        )
-
-    async def login_doc(
-        self, password: str, client_info: ClientInfo
-    ) -> Tokens:
-        """Login for documentation access."""
-        if password != config.secrets.doc_password.get_secret_value():
-            self.log.warning(
-                INVALID_DOC_PASSWORD_LOG, client_info.ip, client_info.ua
-            )
-            raise InvalidCredentialsError()
-        user = await User.find_one(User.id == DOC_USER)
-        if not user:
-            self.log.info(UNREGISTERED_USER_LOG, DOC_USER)
-            raise UserNotFoundError()
-        self.log.info(USER_LOGIN_LOG, DOC_USER, LoginType.doc)
-        return await self.token_service.create_and_put_tokens(
-            str(DOC_USER), client_info
         )
 
     async def logout_user(self, user_id: str, sid: str) -> str:

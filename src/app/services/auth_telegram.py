@@ -1,3 +1,4 @@
+from fastapi import FastAPI, Request
 from pymongo.asynchronous.client_session import AsyncClientSession
 from pymongo.errors import DuplicateKeyError
 
@@ -11,12 +12,8 @@ from app.models import TelegramAccount, User
 from app.schemes import ClientInfo, Tokens
 from app.schemes.auth import TelegramAccountBase
 from app.services.auth import BaseAuthService, LoginType
-from app.services.init_data import (
-    ClientType,
-    InitDataChecker,
-    init_data_checker,
-)
-from app.services.token import TokenService, token_service
+from app.services.init_data import ClientType, InitDataChecker
+from app.services.token import TokenService
 
 
 class TelegramAuthService(BaseAuthService):
@@ -102,6 +99,17 @@ class TelegramAuthService(BaseAuthService):
             self.log.info(USER_DATA_UPDATED_LOG, tg_account.user_id)
 
 
-telegram_auth_service = TelegramAuthService(
-    token_service=token_service, init_data_checker=init_data_checker
-)
+def init_telegram_auth_service(
+    app: FastAPI,
+    token_service: TokenService,
+    init_data_checker: InitDataChecker,
+) -> None:
+    """Create TelegramAuthService once and store on app.state."""
+    app.state.telegram_auth_service = TelegramAuthService(
+        token_service=token_service, init_data_checker=init_data_checker
+    )
+
+
+def get_telegram_auth_service(request: Request) -> TelegramAuthService:
+    """FastAPI dependency for TelegramAuthService."""
+    return request.app.state.telegram_auth_service

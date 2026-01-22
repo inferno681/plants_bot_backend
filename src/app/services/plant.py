@@ -3,6 +3,7 @@ from logging import getLogger
 from uuid import uuid4
 
 from beanie import PydanticObjectId, SortDirection
+from fastapi import FastAPI, Request
 
 from app.exceptions.plant import PlantNotFoundError
 from app.logs.plant import PLANT_SERVICE_START_LOG
@@ -14,10 +15,10 @@ from app.schemes import (
     PlantTask,
     PlantUpdateScheme,
 )
-from app.services.image import image_service
-from app.services.pipeline import pipeline_builder
-from app.services.scheduler import scheduler
-from app.services.storage import storage_service
+from app.services.image import ImageService
+from app.services.pipeline import MongoPipelineBuilder
+from app.services.scheduler import Scheduler
+from app.services.storage import S3StorageService
 from app.utils import (
     CursorPaginatorParams,
     OrderItem,
@@ -30,7 +31,18 @@ from app.utils import (
 class PlantService:
     """Plant service."""
 
-    def __init__(self):
+    def __init__(
+        self,
+        scheduler: Scheduler,
+        pipeline_builder: MongoPipelineBuilder,
+        image_service: ImageService,
+        storage: S3StorageService,
+    ):
+        """Service constructor."""
+        self.scheduler = scheduler
+        self.pipeline_builder = pipeline_builder
+        self.image_service = image_service
+        self.storage = storage
         self.log = getLogger(__name__)
         self.log.info(PLANT_SERVICE_START_LOG)
 
@@ -41,11 +53,11 @@ class PlantService:
             user_id=PydanticObjectId(user_id), **plant_data.model_dump()
         )
         if plant.warm_period and plant.cold_period:
-            plant = scheduler.next_watering_date(
+            plant = self.scheduler.next_watering_date(
                 plant, plant.last_watered_at if plant.last_watered_at else None
             )
         if plant.fertilizing:
-            plant = scheduler.next_fertilizing_date(
+            plant = self.scheduler.next_fertilizing_date(
                 plant,
                 plant.last_fertilized_at if plant.last_fertilized_at else None,
             )
@@ -103,7 +115,7 @@ class PlantService:
     async def get_stats(self, user_id: str) -> PlantDashboardStats:
         """Aggregate basic dashboard stats."""
         today = date.today()
-        pipeline = pipeline_builder.build_dashboard_pipeline(
+        pipeline = self.pipeline_builder.build_dashboard_pipeline(
             user_id, datetime.combine(today, time.min)
         )
 
@@ -196,12 +208,30 @@ class PlantService:
     ) -> tuple[str, str]:
         """Image processing."""
         file_id = await send_photo_to_telegram(file_info)
-        new_file, ext = await image_service.process(file_info)
+        new_file, ext = await self.image_service.process(file_info)
         storage_key = f'{user_id}/{uuid4()}{ext}'
         if plant.storage_key:
-            await storage_service.delete_file(plant.storage_key)
-        await storage_service.upload_file(storage_key, new_file)
+            await self.storage.delete_file(plant.storage_key)
+        await self.storage.upload_file(storage_key, new_file)
         return file_id, storage_key
 
 
-plant_service = PlantService()
+def init_plant_service(
+    app: FastAPI,
+    scheduler: Scheduler,
+    pipeline_builder: MongoPipelineBuilder,
+    image_service: ImageService,
+    storage: S3StorageService,
+) -> None:
+    """Create PlantService once and store on app.state."""
+    app.state.plant_service = PlantService(
+        scheduler=scheduler,
+        pipeline_builder=pipeline_builder,
+        image_service=image_service,
+        storage=storage,
+    )
+
+
+def get_plant_service(request: Request) -> PlantService:
+    """FastAPI dependency for PlantService."""
+    return request.app.state.plant_service

@@ -1,0 +1,115 @@
+from contextlib import asynccontextmanager
+from logging import getLogger
+
+from fastapi import FastAPI
+from pymongo import AsyncMongoClient
+from redis.asyncio import Redis
+
+from app import services
+from app.db import init_db_helper
+from app.redis_service import init_redis
+from config import config, setup_logging
+
+logger = getLogger(__name__)
+
+
+def init_auth(app: FastAPI, redis: Redis):
+    """Auth services initialization."""
+
+    token_service = services.TokenService(
+        provider=services.TokenProvider(
+            access_secret=(
+                config.secrets.access_token_secret.get_secret_value()
+            ),
+            refresh_secret=(
+                config.secrets.refresh_token_secret.get_secret_value()
+            ),
+            access_ttl=config.auth.access_token_ttl,
+            refresh_ttl=config.auth.refresh_token_ttl,
+        ),
+        store=services.SessionStore(
+            redis=redis,
+            refresh_ttl=config.auth.refresh_token_ttl,
+            max_session=config.auth.max_sessions_per_user,
+        ),
+    )
+    services.init_web_auth_service(
+        app=app,
+        token_service=token_service,
+        doc_pass=config.secrets.doc_password.get_secret_value(),
+    )
+    init_data_checker = services.InitDataChecker(
+        secret=config.secrets.bot_token.get_secret_value(),
+        user_init_data_ttl=config.auth.user_init_data_ttl,
+        bot_init_data_ttl=config.auth.bot_init_data_ttl,
+        skew=config.auth.init_data_skew,
+    )
+    services.init_telegram_auth_service(
+        app=app,
+        token_service=token_service,
+        init_data_checker=init_data_checker,
+    )
+    services.init_bot_auth_service(
+        app=app,
+        token_service=token_service,
+        init_data_checker=init_data_checker,
+    )
+    services.init_user_service(app=app, token_service=token_service)
+
+
+async def init_mongo(app: FastAPI):
+    """Db initialization."""
+    db_helper = init_db_helper(
+        app=app,
+        client=AsyncMongoClient(config.mongo_url),
+        db=config.mongodb.db,
+        max_retries=config.mongodb.max_retries,
+        backoff_base=config.mongodb.backoff_base,
+        backoff_jitter=config.mongodb.backoff_jitter,
+    )
+    await db_helper.init_db()
+    logger.info('db initialized')
+    return db_helper
+
+
+def init_plant(app: FastAPI):
+    """Plant services initialization."""
+    storage = services.S3StorageService(
+        bucket=config.storage.bucket,
+        endpoint_url=config.storage.endpoint_url,
+        aws_access_key=config.secrets.aws_access_key.get_secret_value(),
+        aws_secret_key=config.secrets.aws_secret_key.get_secret_value(),
+    )
+    services.init_plant_mapper(app=app, storage=storage)
+    image_service = services.ImageService(config.image)
+    services.init_plant_service(
+        app,
+        scheduler=services.Scheduler(),
+        pipeline_builder=services.MongoPipelineBuilder(),
+        image_service=image_service,
+        storage=storage,
+    )
+    return image_service
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    """Application lifespan event handler."""
+    setup_logging(config.logger.exclude, config.logger.level)
+    redis = init_redis(
+        url=config.redis_url,
+        db=config.redis.db,
+        password=config.secrets.redis_password.get_secret_value(),
+        decode_responses=config.redis.decode_responses,
+    )
+    init_auth(app=app, redis=redis)
+    image_service = init_plant(app=app)
+    db_helper = await init_mongo(app=app)
+    services.init_healthz_service(app=app, mongo=db_helper, redis=redis)
+
+    yield
+
+    await db_helper.close()
+    await redis.close()
+    logger.info('connections closed')
+    image_service.close()

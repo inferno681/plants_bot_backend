@@ -22,3 +22,9 @@ SESSIONS_EVICTED_LOG = (
     'Sessions evicted: '
     'uid=%s,sid=%s, ip=%s, ua=%s, created_at=%s, ttl=%s, user_type=%s'
 )
+
+TOKEN_MISSED_UID_TYPE_LOG = (
+    'Token missing uid/type in session store for user: %s'
+)
+TOKEN_OWNER_MISMATCH_LOG = 'Token owner mismatch: expected=%s got=%s'
+TOKEN_TYPE_MISMATCH_LOG = 'Token type mismatch: expected=%s got=%s'

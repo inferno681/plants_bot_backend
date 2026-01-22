@@ -1,39 +1,28 @@
 import secrets
 from typing import Annotated
 
-from fastapi import (
-    APIRouter,
-    Cookie,
-    Depends,
-    Header,
-    HTTPException,
-    Response,
-    status,
-)
+from fastapi import APIRouter, Depends, Response
 from fastapi.security import OAuth2PasswordRequestForm
 from pymongo.asynchronous.client_session import AsyncClientSession
 
-from app.constants.auth import (
-    COOKIE_PATH,
-    CSRF_LENGTH,
-    CSRF_VALIDATION_FAILED_MSG,
-    LAX_LITERAL,
-    MISSING_REFRESH_TOKEN,
+from app.constants.auth import COOKIE_PATH, CSRF_LENGTH, LAX_LITERAL
+from app.dependencies import (
+    current_user_id_dep,
+    current_user_uid_sid_dep,
+    refresh_request_dep,
+    session_dependency,
+    web_auth_service_dep,
 )
-from app.db import session_dependency
 from app.schemes import (
     ClientInfo,
+    RefreshRequestCookie,
     UserSession,
     WebAccountLogin,
     WebAccountRegistration,
     WebTokens,
     WebUser,
 )
-from app.services import (
-    current_user_id_dependency,
-    current_user_uid_sid_dependency,
-    web_auth_service,
-)
+from app.services import WebAuthService
 from app.utils import client_info_dependency
 from config import config
 
@@ -44,6 +33,7 @@ router = APIRouter()
 async def doc_login(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     client_info: ClientInfo = client_info_dependency,
+    web_auth_service: WebAuthService = web_auth_service_dep,
 ):
     """Documentation user login endpoint."""
     tokens = await web_auth_service.login_doc(form_data.password, client_info)
@@ -54,6 +44,7 @@ async def doc_login(
 async def web_registration(
     user_data: WebAccountRegistration,
     session: AsyncClientSession = session_dependency,
+    web_auth_service: WebAuthService = web_auth_service_dep,
 ):
     """Web user registration."""
     return await web_auth_service.registration_web_user(user_data, session)
@@ -64,6 +55,7 @@ async def login(
     login_data: WebAccountLogin,
     response: Response,
     client_info: ClientInfo = client_info_dependency,
+    web_auth_service: WebAuthService = web_auth_service_dep,
 ):
     """Web user login."""
     tokens = await web_auth_service.login(login_data, client_info)
@@ -93,7 +85,8 @@ async def login(
 @router.post('/logout')
 async def logout(
     response: Response,
-    session_info: UserSession = current_user_uid_sid_dependency,
+    session_info: UserSession = current_user_uid_sid_dep,
+    web_auth_service: WebAuthService = web_auth_service_dep,
 ):
     """Current session logout."""
     message = await web_auth_service.logout_user(
@@ -107,7 +100,8 @@ async def logout(
 
 @router.post('/logout_others')
 async def logout_other(
-    session_info: UserSession = current_user_uid_sid_dependency,
+    session_info: UserSession = current_user_uid_sid_dep,
+    web_auth_service: WebAuthService = web_auth_service_dep,
 ):
     """Other session logout."""
     return {
@@ -118,7 +112,10 @@ async def logout_other(
 
 
 @router.post('/logout_all')
-async def logout_all(user_id: str = current_user_id_dependency):
+async def logout_all(
+    user_id: str = current_user_id_dep,
+    web_auth_service: WebAuthService = web_auth_service_dep,
+):
     """All session logout."""
     return {'message': await web_auth_service.logout_all_sessions(user_id)}
 
@@ -126,28 +123,13 @@ async def logout_all(user_id: str = current_user_id_dependency):
 @router.post('/refresh', response_model=WebTokens)
 async def refresh_tokens(
     response: Response,
-    csrf_cookie: Annotated[str | None, Cookie(alias='csrf_token')] = None,
-    csrf_header: Annotated[str | None, Header(alias='X-CSRF-Token')] = None,
-    refresh_token: Annotated[str | None, Cookie(alias='refresh_token')] = None,
+    refresh_request: RefreshRequestCookie = refresh_request_dep,
     client_info: ClientInfo = client_info_dependency,
+    web_auth_service: WebAuthService = web_auth_service_dep,
 ):
     """Refresh tokens endpoint."""
-    if refresh_token is None:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail=MISSING_REFRESH_TOKEN,
-        )
-    if (
-        csrf_cookie is None
-        or csrf_header is None
-        or csrf_cookie != csrf_header
-    ):
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail=CSRF_VALIDATION_FAILED_MSG,
-        )
     tokens = await web_auth_service.refresh_user_tokens(
-        refresh_token, client_info
+        refresh_request.refresh_token, client_info
     )
     response.set_cookie(
         key='refresh_token',

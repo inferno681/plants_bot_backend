@@ -2,9 +2,9 @@ from pathlib import Path
 from typing import Literal
 
 import yaml
+from dns.resolver import NXDOMAIN, NoAnswer, Timeout, resolve
 from pydantic import BaseModel, Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from dns.resolver import resolve, NoAnswer, NXDOMAIN, Timeout
 
 
 class ServiceSettings(BaseModel):
@@ -16,6 +16,7 @@ class ServiceSettings(BaseModel):
     port: int
     timeout: int
     workers: int
+
     max_sessions_per_user: int
 
     service_chat_id: int
@@ -54,6 +55,19 @@ class ServiceSettings(BaseModel):
             'workers': self.workers,
             'worker_class': 'uvicorn.workers.UvicornWorker',
         }
+
+
+class AuthSettings(BaseModel):
+    """Auth settings."""
+
+    max_sessions_per_user: int
+
+    access_token_ttl: int
+    refresh_token_ttl: int
+
+    user_init_data_ttl: int
+    bot_init_data_ttl: int
+    init_data_skew: int
 
 
 class MongoSettings(BaseModel):
@@ -116,7 +130,7 @@ class ImageSettings(BaseSettings):
     max_input_height: int
     max_input_pixels: int
 
-    backend: str
+    backend: Literal['pillow', 'vips']
 
     max_workers: int
 
@@ -173,6 +187,7 @@ class AppConfig(BaseSettings):
     secrets: Secrets
     cors: CORS
     image: ImageSettings
+    auth: AuthSettings
 
     logger: Logger
 

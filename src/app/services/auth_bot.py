@@ -1,5 +1,7 @@
 from logging import getLogger
 
+from fastapi import FastAPI, Request
+
 from app.constants.auth import LOGOUT_MESSAGE
 from app.exceptions.auth import UserNotFoundError
 from app.logs.auth import (
@@ -10,12 +12,8 @@ from app.logs.auth import (
 from app.models import Bot
 from app.schemes import ClientInfo, Tokens
 from app.services.auth import LoginType
-from app.services.init_data import (
-    ClientType,
-    InitDataChecker,
-    init_data_checker,
-)
-from app.services.token import TokenService, token_service
+from app.services.init_data import ClientType, InitDataChecker
+from app.services.token import TokenService
 
 
 class BotAuthService:
@@ -58,7 +56,17 @@ class BotAuthService:
         )
 
 
-bot_auth_service = BotAuthService(
-    token_service=token_service,
-    init_data_checker=init_data_checker,
-)
+def init_bot_auth_service(
+    app: FastAPI,
+    token_service: TokenService,
+    init_data_checker: InitDataChecker,
+) -> None:
+    """Create BotAuthService once and store on app.state."""
+    app.state.bot_auth_service = BotAuthService(
+        token_service=token_service, init_data_checker=init_data_checker
+    )
+
+
+def get_bot_auth_service(request: Request) -> BotAuthService:
+    """FastAPI dependency for BotAuthService."""
+    return request.app.state.bot_auth_service

@@ -1,15 +1,15 @@
 from logging import getLogger
 
+from fastapi import FastAPI, Request
 from redis.asyncio import Redis
 
 from app.constants import OK, STATUS
-from app.db import DbHelper, db_helper
+from app.db import DbHelper
 from app.logs.healthz import (
     HEALTH_SERVICE_START_LOG,
     MONGO_NOT_READY_LOG,
     REDIS_NOT_READY_LOG,
 )
-from app.redis_service import redis
 
 
 class HealthService:
@@ -50,4 +50,11 @@ class HealthService:
         }
 
 
-health_service = HealthService(mongo=db_helper, redis=redis)
+def init_healthz_service(app: FastAPI, mongo: DbHelper, redis: Redis) -> None:
+    """Create HealthService once and store on app.state."""
+    app.state.healthz_service = HealthService(mongo=mongo, redis=redis)
+
+
+def get_healthz_service(request: Request) -> HealthService:
+    """FastAPI dependency for HealthService."""
+    return request.app.state.healthz_service

@@ -15,7 +15,7 @@ from app.logs.image import (
     PILLOW_BACKEND_START_LOG,
     VIPS_BACKEND_START_LOG,
 )
-from app.schemes import ImageConfig
+from config.config import ImageSettings
 
 logger = getLogger(__name__)
 
@@ -41,7 +41,7 @@ class IImageBackend(Protocol):
 
 
 class PillowBackend(IImageBackend):
-    def __init__(self, cfg: ImageConfig):
+    def __init__(self, cfg: ImageSettings):
         try:
             from PIL import Image, ImageOps
         except ImportError:
@@ -104,7 +104,7 @@ class PillowBackend(IImageBackend):
 
 
 class VipsBackend(IImageBackend):
-    def __init__(self, cfg: ImageConfig):
+    def __init__(self, cfg: ImageSettings):
         try:
             import pyvips
         except ImportError:
@@ -162,7 +162,7 @@ class VipsBackend(IImageBackend):
         return img.write_to_buffer('.webp', Q=self.cfg.webp_quality)
 
 
-def get_backend(cfg: ImageConfig):
+def get_backend(cfg: ImageSettings):
     if cfg.backend == 'pillow':
         return PillowBackend(cfg)
     if cfg.backend == 'vips':

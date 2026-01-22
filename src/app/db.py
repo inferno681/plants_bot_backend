@@ -4,12 +4,11 @@ from contextlib import asynccontextmanager
 from typing import AsyncIterator
 
 from beanie import init_beanie
-from fastapi import Depends
+from fastapi import FastAPI, Request
 from pymongo import AsyncMongoClient
 from pymongo.errors import PyMongoError
 
 from app.models import Bot, Plant, TelegramAccount, User, WebAccount
-from config import config
 
 
 class DbHelper:
@@ -23,6 +22,7 @@ class DbHelper:
         backoff_base: float = 0.05,
         backoff_jitter: float = 0.05,
     ):
+        """Database helper constructor."""
         self.client = client
         self.db = db
         self.max_retries = max_retries
@@ -30,8 +30,9 @@ class DbHelper:
         self.backoff_jitter = backoff_jitter
 
     async def init_db(self):
+        """Beanie initialization."""
         await init_beanie(
-            database=self.client[config.mongodb.db],
+            database=self.client[self.db],
             document_models=[User, WebAccount, TelegramAccount, Plant, Bot],
         )
 
@@ -54,6 +55,10 @@ class DbHelper:
 
     async def ping(self):
         await self.client[self.db].command('ping')
+
+    async def close(self):
+        """Close client connections."""
+        await self.client.aclose()
 
     @asynccontextmanager
     async def _transaction_block(self):
@@ -78,12 +83,26 @@ class DbHelper:
         )
 
 
-db_helper = DbHelper(
-    client=AsyncMongoClient(config.mongo_url),
-    db=config.mongodb.db,
-    max_retries=config.mongodb.max_retries,
-    backoff_base=config.mongodb.backoff_base,
-    backoff_jitter=config.mongodb.backoff_jitter,
-)
+def init_db_helper(
+    app: FastAPI,
+    client: AsyncMongoClient,
+    db: str,
+    max_retries: int = 3,
+    backoff_base: float = 0.05,
+    backoff_jitter: float = 0.05,
+) -> DbHelper:
+    """Create DbHelper once and store on app.state."""
+    db_helper = DbHelper(
+        client=client,
+        db=db,
+        max_retries=max_retries,
+        backoff_base=backoff_base,
+        backoff_jitter=backoff_jitter,
+    )
+    app.state.db_helper = db_helper
+    return db_helper
 
-session_dependency = Depends(db_helper.transaction)
+
+def get_db_helper(request: Request) -> DbHelper:
+    """FastAPI dependency for DbHelper."""
+    return request.app.state.db_helper

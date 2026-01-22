@@ -15,15 +15,6 @@ from app.schemes.user import Language
 from app.schemes.validator import PasswordStr
 
 
-class Tokens(BaseModel):
-    access_token: str
-    refresh_token: str
-
-
-class WebTokens(BaseModel):
-    access_token: str
-
-
 class InitData(BaseModel):
     init_data: str = Field(..., description='Signed initData string.')
 
@@ -36,12 +27,6 @@ class InitData(BaseModel):
                 detail=INVALID_INIT_DATA_FORMAT_MESSAGE,
             )
         return init_data
-
-
-class RefreshRequest(BaseModel):
-    """Refresh token request scheme."""
-
-    refresh_token: str
 
 
 class WebAccountLogin(BaseModel):

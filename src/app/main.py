@@ -1,6 +1,5 @@
 import logging
 import time
-from contextlib import asynccontextmanager
 
 import uvicorn
 from fastapi import FastAPI, Request
@@ -8,26 +7,11 @@ from fastapi.middleware.cors import CORSMiddleware
 
 from app.api.auth import auth_router
 from app.api.v1 import v1_router
-from app.db import db_helper
 from app.exceptions import exception_handlers
-from app.redis_service import redis
-from config import config, setup_logging
+from app.lifespan import lifespan
+from config import config
 
 log = logging.getLogger('uvicorn')
-
-
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Application lifespan event handler."""
-    setup_logging(config.logger.exclude, config.logger.level)
-    await db_helper.init_db()
-    log.info('db initialized')
-
-    yield
-
-    await db_helper.client.aclose()
-    await redis.aclose()
-    log.info('connections closed')
 
 
 app = FastAPI(

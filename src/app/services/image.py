@@ -15,16 +15,18 @@ from app.logs.image import (
     UNSUPPORTED_EXT_LOG,
     UNSUPPORTED_MIME_LOG,
 )
-from app.schemes import ImageConfig, ImageUpload
+from app.schemes import ImageUpload
 from app.services.image_backend import get_backend
-from config import config
+from config.config import ImageSettings
 
 logger = getLogger(__name__)
-image_pool = ThreadPoolExecutor(max_workers=8)
 
 
 class ImageValidator:
-    def __init__(self, cfg: ImageConfig):
+    """Image validation."""
+
+    def __init__(self, cfg: ImageSettings):
+        """Service constructor."""
         self.cfg = cfg
         self.allowed_mime = cfg.allowed_mime
         self.allowed_ext = cfg.allowed_ext
@@ -49,7 +51,10 @@ class ImageValidator:
 
 
 class ImageService:
-    def __init__(self, cfg: ImageConfig):
+    """Image processing service."""
+
+    def __init__(self, cfg: ImageSettings):
+        """Service constructor."""
         self.cfg = cfg
         self.backend = get_backend(cfg)
         self.validator = ImageValidator(cfg)
@@ -68,6 +73,10 @@ class ImageService:
             self.image_pool, self._process_sync, file_info, as_webp
         )
 
+    def close(self) -> None:
+        """Release executor resources on shutdown."""
+        self.image_pool.shutdown(wait=False, cancel_futures=True)
+
     def _process_sync(self, file_info, as_webp):
         """Image file processing."""
         img = self.backend.open(file_info.file_bytes)
@@ -78,6 +87,3 @@ class ImageService:
         if as_webp:
             return self.backend.export_webp(img), '.webp'
         return self.backend.export_jpeg(img), '.jpg'
-
-
-image_service = ImageService(ImageConfig(**config.image.model_dump()))

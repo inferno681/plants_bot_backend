@@ -1,37 +1,40 @@
 from logging import getLogger
 
-from fastapi import Depends
+from fastapi import FastAPI, Request
 
+from app.constants.auth import SID, SUB
 from app.log_messages import USER_SERVICE_START_LOG
 from app.schemes import UserSession
-from app.security import oauth2_dependency
-from app.services.token import SID, SUB, token_service
+from app.services.token import TokenService
 
 
 class UserService:
     """User service."""
 
-    def __init__(self):
+    def __init__(self, token_service: TokenService):
         """User service initialization."""
+        self.token_service = token_service
         self.log = getLogger(__name__)
         self.log.info(USER_SERVICE_START_LOG)
 
+    async def get_current_user_uid_sid(self, token: str) -> UserSession:
+        """Get current user DI."""
+        payload = await self.token_service.check_token(token)
+        return UserSession(uid=payload[SUB], sid=payload[SID])
 
-user_service = UserService()
-
-
-async def get_current_user_uid_sid(
-    token: str = oauth2_dependency,
-) -> UserSession:
-    """Get current user DI."""
-    payload = await token_service.check_token(token)
-    return UserSession(uid=payload[SUB], sid=payload[SID])
+    async def get_current_user_id(self, token: str) -> str:
+        """Get current user DI."""
+        return (await self.token_service.check_token(token))[SUB]
 
 
-async def get_current_user_id(token: str = oauth2_dependency) -> str:
-    """Get current user DI."""
-    return (await token_service.check_token(token))[SUB]
+def init_user_service(
+    app: FastAPI,
+    token_service: TokenService,
+) -> None:
+    """Create UserService once and store on app.state."""
+    app.state.user_service = UserService(token_service=token_service)
 
 
-current_user_uid_sid_dependency = Depends(get_current_user_uid_sid)
-current_user_id_dependency = Depends(get_current_user_id)
+def get_user_service(request: Request) -> UserService:
+    """FastAPI dependency for UserService."""
+    return request.app.state.user_service

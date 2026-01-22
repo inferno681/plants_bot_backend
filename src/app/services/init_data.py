@@ -21,7 +21,6 @@ from app.logs.auth import (
     INVALID_INIT_DATA_LOG,
     INVALID_INIT_DATA_SIGN_LOG,
 )
-from config import config
 
 
 class ClientType(StrEnum):
@@ -35,11 +34,15 @@ class InitDataChecker:
     """Init data checker."""
 
     def __init__(
-        self, secret: str, user_max_age: int, bot_max_age: int, skew: int
+        self,
+        secret: str,
+        user_init_data_ttl: int,
+        bot_init_data_ttl: int,
+        skew: int,
     ):
         self.secret = secret
-        self.user_max_age = user_max_age
-        self.bot_max_age = bot_max_age
+        self.user_init_data_ttl = user_init_data_ttl
+        self.bot_init_data_ttl = bot_init_data_ttl
         self.skew = skew
         self.log = getLogger(__name__)
 
@@ -130,9 +133,9 @@ class InitDataChecker:
             errors.append(INVALID_AUTH_DATE_MESSAGE)
             return
         max_age = (
-            self.user_max_age
+            self.user_init_data_ttl
             if client_type == ClientType.user
-            else self.bot_max_age
+            else self.bot_init_data_ttl
         )
         if now - auth_date > max_age:
             errors.append(INIT_DATA_EXPIRED_MESSAGE)
@@ -155,11 +158,3 @@ class InitDataChecker:
             return {}
 
         return user_data
-
-
-init_data_checker = InitDataChecker(
-    secret=config.secrets.bot_token.get_secret_value(),
-    user_max_age=config.service.init_data_max_age,
-    bot_max_age=config.service.bot_init_data_max_age,
-    skew=config.service.init_data_skew,
-)
