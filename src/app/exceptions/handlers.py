@@ -3,6 +3,7 @@ from typing import Any, Callable, Coroutine, Type
 
 from fastapi import Request, Response, status
 from fastapi.responses import JSONResponse
+from pydantic import ValidationError
 
 from app.constants import DETAIL, LOC, MSG, STATUS, TYPE
 from app.exceptions.auth import AUTH_ERROR_MAP, AuthError
@@ -105,10 +106,26 @@ async def image_exception_handler(request: Request, exc: ImageError):
     )
 
 
+async def pydantic_validation_error_handler(request, exc: ValidationError):
+    return JSONResponse(
+        status_code=status.HTTP_400_BAD_REQUEST,
+        content={
+            DETAIL: [
+                {
+                    LOC: ['model'],
+                    MSG: exc.errors(),
+                    TYPE: 'validation_error',
+                }
+            ]
+        },
+    )
+
+
 ExceptionHandler = Callable[[Request, Any], Coroutine[Any, Any, Response]]
 exception_handlers: dict[int | Type[Exception], ExceptionHandler] = {
     TokenError: token_exception_handler,
     AuthError: auth_exception_handler,
     ImageError: image_exception_handler,
+    ValidationError: pydantic_validation_error_handler,
     Exception: exception_handler,
 }
