@@ -11,6 +11,7 @@ from app.constants.auth import (
     INVALID_INIT_DATA_FORMAT_MESSAGE,
     PASSWORD_CHANGE_SAME_AS_OLD,
 )
+from app.schemes.user import Language
 from app.schemes.validator import PasswordStr
 
 
@@ -53,7 +54,7 @@ class WebAccountLogin(BaseModel):
 class WebAccountRegistration(WebAccountLogin):
     """Web account registration scheme."""
 
-    language_code: str | None = None
+    language_code: Language | None = None
 
 
 class WebAccountPasswordChange(BaseModel):
@@ -77,4 +78,4 @@ class TelegramAccountBase(BaseModel):
     last_name: str | None = None
     username: str | None = None
     is_premium: bool | None = None
-    language_code: str | None = None
+    language_code: Language | None = None

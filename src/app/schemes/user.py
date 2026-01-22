@@ -1,11 +1,20 @@
+from enum import StrEnum, auto
+
 from beanie import PydanticObjectId
 from pydantic import BaseModel, EmailStr
+
+
+class Language(StrEnum):
+    """Supported languages."""
+
+    en = auto()
+    ru = auto()
 
 
 class WebAccountUpdate(BaseModel):
     """Web account update scheme."""
 
-    language_code: str | None = None
+    language_code: Language | None = None
 
 
 class TelegramUser(BaseModel):

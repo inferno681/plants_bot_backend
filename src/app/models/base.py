@@ -22,3 +22,4 @@ class BaseDocument(Document):
     class Settings:
         use_state_management = True
         exclude_none = True
+        keep_nulls = False
