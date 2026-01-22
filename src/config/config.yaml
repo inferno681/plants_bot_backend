@@ -49,7 +49,7 @@ mongodb:
 
 cors:
   allow_origins:
-    - "*"
+    - "null"
   allow_credentials: true
   allow_methods:
     - "*"

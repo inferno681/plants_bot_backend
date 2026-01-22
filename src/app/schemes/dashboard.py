@@ -1,11 +1,12 @@
 from datetime import date
 from typing import Literal
 
+from beanie import PydanticObjectId
 from pydantic import BaseModel
 
 
 class PlantTask(BaseModel):
-    plant_id: str
+    plant_id: PydanticObjectId
     name: str
     date: date
     type: Literal['watering', 'watering_with_fertilizing']

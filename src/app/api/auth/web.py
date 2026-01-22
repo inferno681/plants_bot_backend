@@ -80,7 +80,7 @@ async def login(
     response.set_cookie(
         key='csrf_token',
         value=secrets.token_urlsafe(CSRF_LENGTH),
-        httponly=False,  # важно! JS должен видеть
+        httponly=False,
         secure=True,
         samesite=LAX_LITERAL,
         max_age=config.service.refresh_token_ttl,
@@ -126,11 +126,9 @@ async def logout_all(user_id: str = current_user_id_dependency):
 @router.post('/refresh', response_model=WebTokens)
 async def refresh_tokens(
     response: Response,
-    csrf_cookie: Annotated[str | None, Cookie(alias='csrf_token')],
-    csrf_header: Annotated[str | None, Header(alias='X-CSRF-Token')],
-    refresh_token: Annotated[
-        str | None, Cookie(alias='refresh_token', default=None)
-    ],
+    csrf_cookie: Annotated[str | None, Cookie(alias='csrf_token')] = None,
+    csrf_header: Annotated[str | None, Header(alias='X-CSRF-Token')] = None,
+    refresh_token: Annotated[str | None, Cookie(alias='refresh_token')] = None,
     client_info: ClientInfo = client_info_dependency,
 ):
     """Refresh tokens endpoint."""

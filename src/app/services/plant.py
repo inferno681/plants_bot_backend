@@ -1,4 +1,4 @@
-from datetime import date
+from datetime import date, datetime, time
 from logging import getLogger
 from uuid import uuid4
 
@@ -103,7 +103,9 @@ class PlantService:
     async def get_stats(self, user_id: str) -> PlantDashboardStats:
         """Aggregate basic dashboard stats."""
         today = date.today()
-        pipeline = pipeline_builder.build_dashboard_pipeline(user_id, today)
+        pipeline = pipeline_builder.build_dashboard_pipeline(
+            user_id, datetime.combine(today, time.min)
+        )
 
         agg_result = await Plant.aggregate(pipeline).to_list()
 

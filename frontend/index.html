@@ -15,6 +15,7 @@
         <p class="lede">Следите за поливом и подкормкой, держите расписание под рукой и сохраняйте заметки по каждому растению.</p>
         <div class="hero__actions">
           <button class="button button--primary" id="refresh">Обновить данные</button>
+          <a class="button button--ghost" href="add-plant.html">Добавить растение</a>
           <button class="button button--ghost" type="button">Экспорт</button>
           <button class="button button--ghost" type="button" id="theme-toggle">Тема</button>
         </div>
@@ -47,11 +48,11 @@
   <div class="modal" id="login-modal" hidden>
     <div class="modal__dialog">
       <h3>Вход</h3>
-      <p class="modal__note">Введите логин и пароль, если вы не авторизованы через Telegram.</p>
+      <p class="modal__note">Введите email и пароль, если вы не авторизованы через Telegram.</p>
       <form id="login-form">
         <label class="modal__field">
-          <span>Логин</span>
-          <input type="text" id="login-username" name="username" autocomplete="username" required />
+          <span>Email</span>
+          <input type="email" id="login-email" name="email" autocomplete="email" required />
         </label>
         <label class="modal__field">
           <span>Пароль</span>
@@ -61,7 +62,36 @@
           <button type="submit" class="button button--primary">Войти</button>
           <button type="button" class="button button--ghost" id="login-cancel">Отмена</button>
         </div>
+        <div class="modal__actions">
+          <button type="button" class="button button--ghost" id="open-register">Создать аккаунт</button>
+        </div>
         <div class="modal__error" id="login-error" hidden></div>
+      </form>
+    </div>
+  </div>
+
+  <div class="modal" id="register-modal" hidden>
+    <div class="modal__dialog">
+      <h3>Регистрация</h3>
+      <p class="modal__note">Заполните email и пароль для создания аккаунта.</p>
+      <form id="register-form">
+        <label class="modal__field">
+          <span>Email</span>
+          <input type="email" id="register-email" name="email" autocomplete="email" required />
+        </label>
+        <label class="modal__field">
+          <span>Пароль</span>
+          <input type="password" id="register-password" name="password" autocomplete="new-password" required />
+        </label>
+        <label class="modal__field">
+          <span>Повторите пароль</span>
+          <input type="password" id="register-password-confirm" name="password_confirm" autocomplete="new-password" required />
+        </label>
+        <div class="modal__actions">
+          <button type="submit" class="button button--primary">Создать</button>
+          <button type="button" class="button button--ghost" id="register-cancel">Отмена</button>
+        </div>
+        <div class="modal__error" id="register-error" hidden></div>
       </form>
     </div>
   </div>

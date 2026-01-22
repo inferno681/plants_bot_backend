@@ -1,7 +1,8 @@
 const { ENDPOINTS, STORAGE_KEYS, THEMES } = window.CONFIG;
 const API_URL = ENDPOINTS.PLANTS;
-const LOGIN_URL = ENDPOINTS.LOGIN;
-const REFRESH_URL = ENDPOINTS.REFRESH;
+const TG_LOGIN_URL = ENDPOINTS.TG_LOGIN;
+const TG_REFRESH_URL = ENDPOINTS.TG_REFRESH;
+const WEB_REFRESH_URL = ENDPOINTS.WEB_REFRESH;
 
 const state = { loading: true, error: null, plant: null, saving: false, uploading: false };
 const auth = { accessToken: null, refreshToken: null };
@@ -71,40 +72,81 @@ const setTokens = (accessToken, refreshToken) => {
 
 const authHeaders = () => (auth.accessToken ? { Authorization: `Bearer ${auth.accessToken}` } : {});
 
-const loginDoc = async () => {
+const getCookieValue = (name) => {
+  const match = document.cookie.match(new RegExp(`(?:^|;\\s*)${name}=([^;]+)`));
+  return match ? decodeURIComponent(match[1]) : null;
+};
+
+const getTelegramInitData = () => {
+  const sdkData = window.Telegram?.WebApp?.initData;
+  if (sdkData) return sdkData;
+
+  const params = new URLSearchParams(window.location.search);
+  return (
+    params.get('tgWebAppData') ||
+    params.get('tgwebappdata') ||
+    params.get('init_data')
+  );
+};
+
+const authMode = getTelegramInitData() ? 'telegram' : 'web';
+let telegramLoginAttempted = false;
+
+const loginWithTelegram = async () => {
+  if (telegramLoginAttempted) return false;
+  const initData = getTelegramInitData();
+  if (!initData) return false;
+  telegramLoginAttempted = true;
+
   try {
-    const formData = new URLSearchParams();
-    formData.append('username', 'doc');
-    formData.append('password', '123');
-
-    const response = await fetch(LOGIN_URL, {
+    const response = await fetch(TG_LOGIN_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: formData,
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ init_data: initData }),
     });
-
-    if (!response.ok) {
-      throw new Error(`Auth failed with status ${response.status}`);
-    }
-
+    if (!response.ok) throw new Error(`Status ${response.status}`);
     const data = await response.json();
     setTokens(data.access_token || data.accessToken, data.refresh_token || data.refreshToken);
     return true;
   } catch (error) {
-    console.error('Auth error', error);
-    state.error = 'Не удалось авторизоваться. Попробуйте позже.';
+    console.error('Telegram login failed', error);
     return false;
   }
 };
 
 const refreshTokens = async () => {
-  if (!auth.refreshToken) return false;
+  if (authMode === 'telegram') {
+    if (!auth.refreshToken) return false;
+
+    try {
+      const response = await fetch(TG_REFRESH_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: auth.refreshToken }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Refresh failed with status ${response.status}`);
+      }
+
+      const data = await response.json();
+      setTokens(data.access_token || data.accessToken, data.refresh_token || data.refreshToken);
+      return true;
+    } catch (error) {
+      console.error('Refresh error', error);
+      setTokens(null, null);
+      return false;
+    }
+  }
+
+  const csrfToken = getCookieValue('csrf_token');
+  if (!csrfToken) return false;
 
   try {
-    const response = await fetch(REFRESH_URL, {
+    const response = await fetch(WEB_REFRESH_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refresh_token: auth.refreshToken }),
+      headers: { 'X-CSRF-Token': csrfToken },
+      credentials: 'include',
     });
 
     if (!response.ok) {
@@ -112,7 +154,7 @@ const refreshTokens = async () => {
     }
 
     const data = await response.json();
-    setTokens(data.access_token || data.accessToken, data.refresh_token || data.refreshToken);
+    setTokens(data.access_token || data.accessToken, null);
     return true;
   } catch (error) {
     console.error('Refresh error', error);
@@ -122,14 +164,27 @@ const refreshTokens = async () => {
 };
 
 const ensureAuth = async () => {
+  if (authMode === 'telegram') {
+    if (auth.accessToken) return true;
+    if (await refreshTokens()) return true;
+    if (await loginWithTelegram()) return true;
+    return false;
+  }
+
   if (auth.accessToken) return true;
   if (await refreshTokens()) return true;
-  return loginDoc();
+  return false;
 };
 
 const authFetch = async (url, options = {}) => {
-  const makeRequest = () =>
-    fetch(url, { ...options, headers: { ...(options.headers || {}), ...authHeaders() } });
+  const makeRequest = () => {
+    const headers = { ...(options.headers || {}), ...authHeaders() };
+    const nextOptions = { ...options, headers };
+    if (authMode === 'web') {
+      nextOptions.credentials = 'include';
+    }
+    return fetch(url, nextOptions);
+  };
 
   await ensureAuth();
   let response = await makeRequest();
@@ -141,9 +196,11 @@ const authFetch = async (url, options = {}) => {
     if (response.status !== 401) return response;
   }
 
-  const loggedIn = await loginDoc();
-  if (loggedIn) {
-    response = await makeRequest();
+  if (authMode === 'telegram') {
+    const loggedIn = await loginWithTelegram();
+    if (loggedIn) {
+      response = await makeRequest();
+    }
   }
 
   return response;
@@ -540,6 +597,9 @@ const handleUploadImage = async () => {
 };
 
 const bootstrap = async () => {
+  if (authMode === 'telegram' && window.Telegram?.WebApp?.ready) {
+    window.Telegram.WebApp.ready();
+  }
   initTheme();
   loadTokens();
   ensureEditPanelClosed();
@@ -570,7 +630,14 @@ const bootstrap = async () => {
   elements.uploadImage?.addEventListener('click', handleUploadImage);
 
   const ok = await ensureAuth();
-  if (!ok) return;
+  if (!ok) {
+    if (authMode === 'web') {
+      window.location.href = 'index.html';
+      return;
+    }
+    showError('Не удалось авторизоваться.');
+    return;
+  }
 
   fetchPlant();
 };

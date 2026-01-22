@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Добавить растение</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="page">
+    <header class="detail-header">
+      <div class="detail-header__group">
+        <button class="button button--ghost" id="back-btn" type="button">↩ Назад</button>
+      </div>
+      <div class="detail-header__group">
+        <button class="button button--ghost" id="theme-toggle" type="button">Тема</button>
+      </div>
+    </header>
+
+    <section class="edit-panel">
+      <div class="edit-panel__header">
+        <div>
+          <p class="eyebrow">Новое растение</p>
+          <h2 class="section-title">Карточка растения</h2>
+        </div>
+        <div class="edit-status" id="create-status" aria-live="polite"></div>
+      </div>
+
+      <form id="create-form" class="edit-form" novalidate>
+        <div class="form-grid">
+          <article class="form-card">
+            <div class="form-card__header">
+              <div>
+                <div class="eyebrow">Основное</div>
+                <h3 class="form-card__title">Название и описание</h3>
+              </div>
+            </div>
+
+            <label class="form-field">
+              <span class="form-label">Название</span>
+              <input type="text" id="field-name" name="name" placeholder="Например, Фикус" required />
+            </label>
+
+            <label class="form-field">
+              <span class="form-label">Латинское название</span>
+              <input type="text" id="field-scientific" name="scientific_name" placeholder="Ficus lyrata" />
+            </label>
+
+            <label class="form-field">
+              <span class="form-label">Описание</span>
+              <textarea id="field-description" name="description" rows="4" placeholder="Краткая памятка"></textarea>
+            </label>
+          </article>
+        </div>
+
+        <div class="form-actions">
+          <button class="button button--primary" type="submit" id="create-plant">Создать</button>
+          <button class="button button--ghost" type="button" id="cancel-create">Отмена</button>
+        </div>
+      </form>
+    </section>
+  </div>
+
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="constants.js"></script>
+  <script src="add-plant.js"></script>
+</body>
+</html>

@@ -1,4 +1,4 @@
-from datetime import date, timedelta
+from datetime import datetime, timedelta
 
 from beanie import PydanticObjectId
 
@@ -7,7 +7,7 @@ class MongoPipelineBuilder:
     """Builds aggregation pipelines."""
 
     @staticmethod
-    def build_dashboard_pipeline(user_id: str, today: date):
+    def build_dashboard_pipeline(user_id: str, today: datetime):
         week_limit = today + timedelta(days=7)
 
         return [

@@ -8,9 +8,11 @@
   const ENDPOINTS = {
     PLANTS: `${API_BASE}/api/v1/plants`,
     STATS: `${API_BASE}/api/v1/plants/stats`,
-    TG_LOGIN: `${API_BASE}/api/auth/login`,
-    LOGIN: `${API_BASE}/api/auth/login_doc`,
-    REFRESH: `${API_BASE}/api/auth/refresh`,
+    TG_LOGIN: `${API_BASE}/auth/telegram/login`,
+    TG_REFRESH: `${API_BASE}/auth/telegram/refresh`,
+    WEB_LOGIN: `${API_BASE}/auth/web/login`,
+    WEB_REGISTER: `${API_BASE}/auth/web/registration`,
+    WEB_REFRESH: `${API_BASE}/auth/web/refresh`,
   };
 
   const STORAGE_KEYS = {

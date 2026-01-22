@@ -2,8 +2,10 @@ const { ENDPOINTS, STORAGE_KEYS, THEMES } = window.CONFIG;
 const API_URL = ENDPOINTS.PLANTS;
 const STATS_URL = ENDPOINTS.STATS;
 const TG_LOGIN_URL = ENDPOINTS.TG_LOGIN;
-const LOGIN_URL = ENDPOINTS.LOGIN;
-const REFRESH_URL = ENDPOINTS.REFRESH;
+const TG_REFRESH_URL = ENDPOINTS.TG_REFRESH;
+const WEB_LOGIN_URL = ENDPOINTS.WEB_LOGIN;
+const WEB_REGISTER_URL = ENDPOINTS.WEB_REGISTER;
+const WEB_REFRESH_URL = ENDPOINTS.WEB_REFRESH;
 
 let plants = [];
 const filters = { text: '', mode: 'all' };
@@ -46,14 +48,44 @@ const authHeaders = () => {
   return { Authorization: `Bearer ${auth.accessToken}` };
 };
 
+const getCookieValue = (name) => {
+  const match = document.cookie.match(new RegExp(`(?:^|;\\s*)${name}=([^;]+)`));
+  return match ? decodeURIComponent(match[1]) : null;
+};
+
 const refreshTokens = async () => {
-  if (!auth.refreshToken) return false;
+  if (authMode === 'telegram') {
+    if (!auth.refreshToken) return false;
+
+    try {
+      const response = await fetch(TG_REFRESH_URL, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ refresh_token: auth.refreshToken }),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Refresh failed with status ${response.status}`);
+      }
+
+      const data = await response.json();
+      setTokens(data.access_token || data.accessToken, data.refresh_token || data.refreshToken);
+      return true;
+    } catch (error) {
+      console.error('Refresh error', error);
+      setTokens(null, null);
+      return false;
+    }
+  }
+
+  const csrfToken = getCookieValue('csrf_token');
+  if (!csrfToken) return false;
 
   try {
-    const response = await fetch(REFRESH_URL, {
+    const response = await fetch(WEB_REFRESH_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ refresh_token: auth.refreshToken }),
+      headers: { 'X-CSRF-Token': csrfToken },
+      credentials: 'include',
     });
 
     if (!response.ok) {
@@ -61,7 +93,7 @@ const refreshTokens = async () => {
     }
 
     const data = await response.json();
-    setTokens(data.access_token || data.accessToken, data.refresh_token || data.refreshToken);
+    setTokens(data.access_token || data.accessToken, null);
     return true;
   } catch (error) {
     console.error('Refresh error', error);
@@ -71,17 +103,28 @@ const refreshTokens = async () => {
 };
 
 const ensureAuth = async () => {
-  if (await loginWithTelegram()) return true;
+  if (authMode === 'telegram') {
+    if (auth.accessToken) return true;
+    if (await refreshTokens()) return true;
+    if (await loginWithTelegram()) return true;
+    return false;
+  }
+
   if (auth.accessToken) return true;
   if (await refreshTokens()) return true;
-  if (await loginWithTelegram()) return true;
   showLoginModal();
   return false;
 };
 
 const authFetch = async (url, options = {}) => {
-  const makeRequest = () =>
-    fetch(url, { ...options, headers: { ...(options.headers || {}), ...authHeaders() } });
+  const makeRequest = () => {
+    const headers = { ...(options.headers || {}), ...authHeaders() };
+    const nextOptions = { ...options, headers };
+    if (authMode === 'web') {
+      nextOptions.credentials = 'include';
+    }
+    return fetch(url, nextOptions);
+  };
 
   await ensureAuth();
   let response = await makeRequest();
@@ -94,14 +137,18 @@ const authFetch = async (url, options = {}) => {
     if (response.status !== 401) return response;
   }
 
-  const loggedIn = await loginWithTelegram();
-  if (loggedIn) {
-    response = await makeRequest();
-    if (response.status !== 401) return response;
+  if (authMode === 'telegram') {
+    const loggedIn = await loginWithTelegram();
+    if (loggedIn) {
+      response = await makeRequest();
+      if (response.status !== 401) return response;
+    }
   }
 
   setTokens(null, null);
-  showLoginModal();
+  if (authMode === 'web') {
+    showLoginModal();
+  }
   return response;
 };
 
@@ -116,6 +163,8 @@ const getTelegramInitData = () => {
     params.get('init_data')
   );
 };
+
+const authMode = getTelegramInitData() ? 'telegram' : 'web';
 
 const loginWithTelegram = async () => {
   if (telegramLoginAttempted) return false;
@@ -141,12 +190,13 @@ const loginWithTelegram = async () => {
 
 const showLoginModal = () => {
   if (!elements.loginModal) return;
+  if (elements.registerModal) elements.registerModal.hidden = true;
   elements.loginModal.hidden = false;
   if (elements.loginError) {
     elements.loginError.hidden = true;
     elements.loginError.textContent = '';
   }
-  elements.loginUsername?.focus();
+  elements.loginEmail?.focus();
 };
 
 const hideLoginModal = () => {
@@ -154,27 +204,69 @@ const hideLoginModal = () => {
   elements.loginModal.hidden = true;
 };
 
-const loginWithCredentials = async (username, password) => {
-  try {
-    const formData = new URLSearchParams();
-    formData.append('username', username);
-    formData.append('password', password);
+const showRegisterModal = () => {
+  if (!elements.registerModal) return;
+  if (elements.loginModal) elements.loginModal.hidden = true;
+  elements.registerModal.hidden = false;
+  if (elements.registerError) {
+    elements.registerError.hidden = true;
+    elements.registerError.textContent = '';
+  }
+  elements.registerEmail?.focus();
+};
 
-    const response = await fetch(LOGIN_URL, {
+const hideRegisterModal = () => {
+  if (!elements.registerModal) return;
+  elements.registerModal.hidden = true;
+};
+
+const loginWithCredentials = async (email, password) => {
+  try {
+    const response = await fetch(WEB_LOGIN_URL, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
-      body: formData,
+      headers: { 'Content-Type': 'application/json' },
+      credentials: 'include',
+      body: JSON.stringify({ email, password }),
     });
     if (!response.ok) throw new Error(`Status ${response.status}`);
     const data = await response.json();
-    setTokens(data.access_token || data.accessToken, data.refresh_token || data.refreshToken);
+    setTokens(data.access_token || data.accessToken, null);
     hideLoginModal();
     return true;
   } catch (error) {
     console.error('Manual login failed', error);
     if (elements.loginError) {
       elements.loginError.hidden = false;
-      elements.loginError.textContent = 'Неверный логин или пароль';
+      elements.loginError.textContent = 'Неверный email или пароль';
+    }
+    return false;
+  }
+};
+
+const registerWithCredentials = async (email, password, confirmPassword) => {
+  if (password !== confirmPassword) {
+    if (elements.registerError) {
+      elements.registerError.hidden = false;
+      elements.registerError.textContent = 'Пароли не совпадают';
+    }
+    return false;
+  }
+
+  try {
+    const response = await fetch(WEB_REGISTER_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+    if (!response.ok) throw new Error(`Status ${response.status}`);
+    await response.json();
+    hideRegisterModal();
+    return loginWithCredentials(email, password);
+  } catch (error) {
+    console.error('Registration failed', error);
+    if (elements.registerError) {
+      elements.registerError.hidden = false;
+      elements.registerError.textContent = 'Не удалось создать аккаунт';
     }
     return false;
   }
@@ -193,8 +285,16 @@ const elements = {
   loginForm: document.getElementById('login-form'),
   loginError: document.getElementById('login-error'),
   loginCancel: document.getElementById('login-cancel'),
-  loginUsername: document.getElementById('login-username'),
+  loginEmail: document.getElementById('login-email'),
   loginPassword: document.getElementById('login-password'),
+  openRegister: document.getElementById('open-register'),
+  registerModal: document.getElementById('register-modal'),
+  registerForm: document.getElementById('register-form'),
+  registerError: document.getElementById('register-error'),
+  registerCancel: document.getElementById('register-cancel'),
+  registerEmail: document.getElementById('register-email'),
+  registerPassword: document.getElementById('register-password'),
+  registerPasswordConfirm: document.getElementById('register-password-confirm'),
 };
 
 const applyTheme = (theme) => {
@@ -497,10 +597,10 @@ elements.loadMore?.addEventListener('click', () => {
 
 elements.loginForm?.addEventListener('submit', async (e) => {
   e.preventDefault();
-  const username = elements.loginUsername?.value?.trim() || '';
+  const email = elements.loginEmail?.value?.trim() || '';
   const password = elements.loginPassword?.value || '';
-  if (!username || !password) return;
-  const ok = await loginWithCredentials(username, password);
+  if (!email || !password) return;
+  const ok = await loginWithCredentials(email, password);
   if (ok) {
     fetchStats();
     fetchPlants(true);
@@ -509,6 +609,28 @@ elements.loginForm?.addEventListener('submit', async (e) => {
 
 elements.loginCancel?.addEventListener('click', () => {
   hideLoginModal();
+});
+
+elements.openRegister?.addEventListener('click', () => {
+  showRegisterModal();
+});
+
+elements.registerCancel?.addEventListener('click', () => {
+  hideRegisterModal();
+  showLoginModal();
+});
+
+elements.registerForm?.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const email = elements.registerEmail?.value?.trim() || '';
+  const password = elements.registerPassword?.value || '';
+  const confirmPassword = elements.registerPasswordConfirm?.value || '';
+  if (!email || !password || !confirmPassword) return;
+  const ok = await registerWithCredentials(email, password, confirmPassword);
+  if (ok) {
+    fetchStats();
+    fetchPlants(true);
+  }
 });
 
 const cardsContainer = elements.cards?.parentElement;
@@ -520,11 +642,14 @@ cardsContainer?.addEventListener('scroll', () => {
 });
 
 const bootstrap = async () => {
-  if (window.Telegram?.WebApp?.ready) {
+  if (authMode === 'telegram' && window.Telegram?.WebApp?.ready) {
     window.Telegram.WebApp.ready();
   }
   initTheme();
   loadTokens();
+  if (authMode === 'web' && !auth.accessToken) {
+    showLoginModal();
+  }
   const ok = await ensureAuth();
   if (!ok) {
     renderCards();
