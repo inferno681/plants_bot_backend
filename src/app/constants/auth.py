@@ -37,7 +37,7 @@ USER_SESSIONS_PREFIX = 'user_sessions:'
 UNKNOWN_LITERAL = 'unknown'
 
 
-DOC_USER = ObjectId('68fdd756d174872a92b7e87d')
+DOC_USER = ObjectId('6971e9e9b6362470dd9341be')
 
 REQUIRED_FIELDS_BOT_INIT_DATA = ('bot_id', 'auth_date', 'hash')
 
