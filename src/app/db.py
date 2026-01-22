@@ -79,7 +79,7 @@ class DbHelper:
 
 
 db_helper = DbHelper(
-    client=AsyncMongoClient(config.mongo_url_dev),
+    client=AsyncMongoClient(config.mongo_url),
     db=config.mongodb.db,
     max_retries=config.mongodb.max_retries,
     backoff_base=config.mongodb.backoff_base,

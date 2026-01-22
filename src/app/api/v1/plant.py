@@ -96,4 +96,4 @@ async def update_plant(
 ):
     plant = await plant_service.update_plant(plant_id, user_id, plant_update)
 
-    return plant_mapper.to_full(plant)
+    return await plant_mapper.to_full(plant)

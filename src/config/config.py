@@ -4,6 +4,7 @@ from typing import Literal
 import yaml
 from pydantic import BaseModel, Field, SecretStr
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from dns.resolver import resolve, NoAnswer, NXDOMAIN, Timeout
 
 
 class ServiceSettings(BaseModel):
@@ -191,20 +192,14 @@ class AppConfig(BaseSettings):
         return cls(**yaml_config, secrets=Secrets())
 
     @property
-    def mongo_url(self) -> str:
-        return 'mongodb+srv://{user}:{pwd}@{host}/'.format(
+    def mongo_url(self):
+        is_srv = self.is_srv_mongo(self.mongodb.host)
+        return '{scheme}://{user}:{pwd}@{host}{port}/'.format(
+            scheme='mongodb+srv' if is_srv else 'mongodb',
             user=self.secrets.mongo_user.get_secret_value(),
             pwd=self.secrets.mongo_password.get_secret_value(),
             host=self.mongodb.host,
-        )
-
-    @property
-    def mongo_url_dev(self) -> str:
-        return 'mongodb://{user}:{pwd}@{host}:{port}/'.format(
-            user=self.secrets.mongo_user.get_secret_value(),
-            pwd=self.secrets.mongo_password.get_secret_value(),
-            host=self.mongodb.host,
-            port=self.mongodb.port,
+            port='' if is_srv else f':{self.mongodb.port}',
         )
 
     @property
@@ -221,6 +216,14 @@ class AppConfig(BaseSettings):
         return 'https://api.telegram.org/bot{token}/sendPhoto'.format(
             token=self.secrets.bot_token.get_secret_value()
         )
+
+    @staticmethod
+    def is_srv_mongo(host: str) -> bool:
+        try:
+            resolve(f'_mongodb._tcp.{host}', 'SRV')
+            return True
+        except (NoAnswer, NXDOMAIN, Timeout):
+            return False
 
 
 config = AppConfig.load_settings('src/config/config.yaml')
