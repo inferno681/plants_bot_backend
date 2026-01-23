@@ -17,17 +17,9 @@ class ServiceSettings(BaseModel):
     timeout: int
     workers: int
 
-    max_sessions_per_user: int
-
     service_chat_id: int
 
     debug: bool
-    access_token_ttl: int
-    refresh_token_ttl: int
-
-    init_data_max_age: int
-    bot_init_data_max_age: int
-    init_data_skew: int
 
     tag_metadata_auth_web: dict[str, str]
     tag_metadata_auth_telegram: dict[str, str]

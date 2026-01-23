@@ -92,24 +92,44 @@ def init_plant(app: FastAPI):
     return image_service
 
 
-@asynccontextmanager
-async def lifespan(app: FastAPI):
-    """Application lifespan event handler."""
-    setup_logging(config.logger.exclude, config.logger.level)
+async def create_resources(app: FastAPI):
+    """Services initialization."""
     redis = init_redis(
         url=config.redis_url,
         db=config.redis.db,
         password=config.secrets.redis_password.get_secret_value(),
         decode_responses=config.redis.decode_responses,
     )
-    init_auth(app=app, redis=redis)
-    image_service = init_plant(app=app)
-    db_helper = await init_mongo(app=app)
+    init_auth(app, redis)
+
+    db_helper = await init_mongo(app)
+    image_service = init_plant(app)
+
     services.init_healthz_service(app=app, mongo=db_helper, redis=redis)
 
-    yield
+    return redis, db_helper, image_service
 
-    await db_helper.close()
-    await redis.close()
+
+async def close_resources(
+    redis: Redis | None,
+    db_helper,
+    image_service,
+):
+    """Services closing."""
+    if db_helper:
+        await db_helper.close()
+    if redis:
+        await redis.close()
+    if image_service:
+        image_service.close()
     logger.info('connections closed')
-    image_service.close()
+
+
+@asynccontextmanager
+async def lifespan(app: FastAPI):
+    setup_logging(config.logger.exclude, config.logger.level)
+    try:
+        redis, db_helper, image_service = await create_resources(app)
+        yield
+    finally:
+        await close_resources(redis, db_helper, image_service)
