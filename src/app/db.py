@@ -36,6 +36,7 @@ class DbHelper:
             document_models=[User, WebAccount, TelegramAccount, Plant, Bot],
         )
 
+    @asynccontextmanager
     async def transaction(self) -> AsyncIterator:
         """Transaction context manager with retry logic."""
         attempt = 0

@@ -66,7 +66,7 @@ async def login(
         httponly=True,
         secure=True,
         samesite=LAX_LITERAL,
-        max_age=config.service.refresh_token_ttl,
+        max_age=config.auth.refresh_token_ttl,
         path=COOKIE_PATH,
     )
     response.set_cookie(
@@ -75,7 +75,7 @@ async def login(
         httponly=False,
         secure=True,
         samesite=LAX_LITERAL,
-        max_age=config.service.refresh_token_ttl,
+        max_age=config.auth.refresh_token_ttl,
         path=COOKIE_PATH,
     )
 
@@ -137,7 +137,7 @@ async def refresh_tokens(
         httponly=True,
         secure=True,
         samesite=LAX_LITERAL,
-        max_age=config.service.refresh_token_ttl,
+        max_age=config.auth.refresh_token_ttl,
         path=COOKIE_PATH,
     )
     response.set_cookie(
@@ -146,7 +146,7 @@ async def refresh_tokens(
         httponly=False,
         secure=True,
         samesite=LAX_LITERAL,
-        max_age=config.service.access_token_ttl,
+        max_age=config.auth.access_token_ttl,
         path=COOKIE_PATH,
     )
     return WebTokens(access_token=tokens.access_token)
