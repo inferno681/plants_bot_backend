@@ -84,7 +84,6 @@ class PlantCreteScheme(BaseModel):
     scientific_name: str | None = None
     description: str | None = None
     image: str | None = None
-    image_url: str | None = None
 
     warm_period: WateringPeriod | None = None
     cold_period: WateringPeriod | None = None

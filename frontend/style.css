@@ -678,16 +678,17 @@ h1 {
   background: var(--card-strong);
   border: 1px solid var(--border);
   border-radius: 14px;
-  padding: 12px 14px;
+  padding: 6px 14px 12px;
   box-shadow: var(--shadow);
   display: grid;
-  gap: 10px;
+  gap: 6px;
 }
 
 .form-card__header {
   display: flex;
   justify-content: space-between;
-  align-items: center;
+  align-items: flex-start;
+  margin-bottom: 0;
 }
 
 .form-card__title {
@@ -696,35 +697,96 @@ h1 {
 
 .form-field {
   display: grid;
-  gap: 6px;
+  gap: 4px;
 }
 
 .form-label {
   color: var(--muted);
-  font-size: 13px;
+  font-size: 12px;
+  display: flex;
+  align-items: flex-end;
+  min-height: 20px;
+  line-height: 1.1;
 }
 
 .form-field input,
 .form-field textarea,
 .form-field select {
   width: 100%;
-  padding: 10px 12px;
+  padding: 8px 10px;
   border-radius: 10px;
   border: 1px solid var(--border);
   background: var(--input-bg);
   color: var(--text);
-  font-size: 14px;
+  font-size: 13px;
 }
 
 .form-field textarea {
   resize: vertical;
-  min-height: 72px;
+  min-height: 56px;
+}
+
+#field-description {
+  min-height: 36px;
+  height: 36px;
+}
+
+#field-name,
+#field-scientific {
+  padding: 6px 10px;
+  height: 36px;
 }
 
 .form-row {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
+  align-items: start;
+}
+
+.upload-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.upload-filename {
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.image-preview-wrap {
+  border-radius: 12px;
+  border: 1px dashed var(--border);
+  padding: 10px;
+  background: var(--card);
+}
+
+.image-preview {
+  display: block;
+  width: 100%;
+  max-width: 320px;
+  height: auto;
+  border-radius: 10px;
+}
+
+.weekday-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(64px, 1fr));
+  gap: 6px 8px;
+}
+
+.checkbox-field {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 13px;
+  color: var(--text);
+}
+
+.checkbox-field input[type="checkbox"] {
+  accent-color: var(--accent);
 }
 
 .form-actions {

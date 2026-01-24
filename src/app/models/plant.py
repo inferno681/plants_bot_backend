@@ -34,7 +34,6 @@ class WateringSchedule(BaseModel):
     type: FrequencyType = FrequencyType.weekly
     weekday: set[int] | int | None = None
     monthday: int | None = None
-    note: str | None = None
 
 
 class WateringPeriod(BaseModel):
