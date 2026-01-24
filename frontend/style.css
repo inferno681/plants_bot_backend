@@ -752,6 +752,15 @@ h1 {
   gap: 8px;
 }
 
+.form-card--primary {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-card--primary .form-subsection--image {
+  margin-top: auto;
+}
+
 .form-field {
   display: grid;
   gap: 4px;
@@ -783,6 +792,18 @@ h1 {
   color: var(--text);
   font-size: 13px;
 }
+
+.form-row .form-field {
+  width: 100%;
+  min-width: 0;
+}
+
+.form-field input[type="date"] {
+  width: 100%;
+  min-width: 0;
+  display: block;
+}
+
 
 .form-field select.is-hidden {
   position: absolute;
