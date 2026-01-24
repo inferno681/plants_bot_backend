@@ -758,6 +758,11 @@ h1 {
   position: relative;
 }
 
+.form-field.is-disabled {
+  opacity: 0.45;
+  pointer-events: none;
+}
+
 .form-label {
   color: var(--muted);
   font-size: 12px;

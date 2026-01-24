@@ -596,19 +596,92 @@ const uploadPlantImage = async (plantId, file) => {
   return { ok: true };
 };
 
+const getWeekdayInputs = (name) => Array.from(document.querySelectorAll(`input[name="${name}"]`));
+
+const setGroupDisabledVisual = (groupEl, isDisabled) => {
+  if (!groupEl) return;
+  groupEl.classList.toggle('is-disabled', isDisabled);
+};
+
+const applyWeekdayRules = (kind, changedInput = null) => {
+  const isWarm = kind === 'warm';
+  const scheduleType = isWarm
+    ? elements.fieldWarmScheduleType?.value || 'weekly'
+    : elements.fieldColdScheduleType?.value || 'weekly';
+  const weekdaysName = isWarm ? 'warm-weekday' : 'cold-weekday';
+  const inputs = getWeekdayInputs(weekdaysName);
+  const group = isWarm ? elements.warmWeekdaysGroup : elements.coldWeekdaysGroup;
+
+  if (scheduleType === 'monthly') {
+    inputs.forEach((input) => {
+      input.checked = false;
+      input.disabled = true;
+    });
+    setGroupDisabledVisual(group, true);
+    return;
+  }
+
+  inputs.forEach((input) => {
+    input.disabled = false;
+  });
+  setGroupDisabledVisual(group, false);
+
+  if (scheduleType !== 'biweekly') {
+    return;
+  }
+
+  if (changedInput && changedInput.checked) {
+    inputs.forEach((input) => {
+      if (input !== changedInput) {
+        input.checked = false;
+      }
+    });
+    return;
+  }
+
+  const selected = inputs.find((input) => input.checked);
+  if (!selected) {
+    return;
+  }
+
+  inputs.forEach((input) => {
+    if (input !== selected) {
+      input.checked = false;
+    }
+  });
+};
+
+const applyMonthdayRules = (kind) => {
+  const isWarm = kind === 'warm';
+  const scheduleType = isWarm
+    ? elements.fieldWarmScheduleType?.value || 'weekly'
+    : elements.fieldColdScheduleType?.value || 'weekly';
+  const monthdayInput = isWarm ? elements.fieldWarmMonthday : elements.fieldColdMonthday;
+  const group = isWarm ? elements.warmMonthdayGroup : elements.coldMonthdayGroup;
+
+  if (monthdayInput) {
+    const enabled = scheduleType === 'monthly';
+    monthdayInput.disabled = !enabled;
+    if (!enabled) {
+      monthdayInput.value = '';
+    }
+    setGroupDisabledVisual(group, !enabled);
+  }
+};
+
 const toggleScheduleFields = (kind) => {
   if (kind === 'warm') {
-    const type = elements.fieldWarmScheduleType?.value || 'weekly';
-    const monthly = type === 'monthly';
-    if (elements.warmMonthdayGroup) elements.warmMonthdayGroup.hidden = !monthly;
-    if (elements.warmWeekdaysGroup) elements.warmWeekdaysGroup.hidden = monthly;
+    if (elements.warmMonthdayGroup) elements.warmMonthdayGroup.hidden = false;
+    if (elements.warmWeekdaysGroup) elements.warmWeekdaysGroup.hidden = false;
+    applyMonthdayRules('warm');
+    applyWeekdayRules('warm');
     return;
   }
   if (kind === 'cold') {
-    const type = elements.fieldColdScheduleType?.value || 'weekly';
-    const monthly = type === 'monthly';
-    if (elements.coldMonthdayGroup) elements.coldMonthdayGroup.hidden = !monthly;
-    if (elements.coldWeekdaysGroup) elements.coldWeekdaysGroup.hidden = monthly;
+    if (elements.coldMonthdayGroup) elements.coldMonthdayGroup.hidden = false;
+    if (elements.coldWeekdaysGroup) elements.coldWeekdaysGroup.hidden = false;
+    applyMonthdayRules('cold');
+    applyWeekdayRules('cold');
   }
 };
 
@@ -775,6 +848,13 @@ const bootstrap = async () => {
   elements.fieldColdScheduleType?.addEventListener('change', () => toggleScheduleFields('cold'));
   toggleScheduleFields('warm');
   toggleScheduleFields('cold');
+
+  getWeekdayInputs('warm-weekday').forEach((input) => {
+    input.addEventListener('change', (event) => applyWeekdayRules('warm', event.target));
+  });
+  getWeekdayInputs('cold-weekday').forEach((input) => {
+    input.addEventListener('change', (event) => applyWeekdayRules('cold', event.target));
+  });
 
   const handleWarmInput = () => updateComplementPeriod('warm');
   const handleColdInput = () => updateComplementPeriod('cold');
