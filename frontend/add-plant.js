@@ -48,6 +48,170 @@ const elements = {
   fieldFertNote: document.getElementById('field-fert-note'),
 };
 
+const customSelects = new Map();
+
+const closeAllCustomSelects = (except) => {
+  customSelects.forEach((instance) => {
+    if (instance.wrapper !== except) {
+      instance.wrapper.classList.remove('is-open');
+      instance.trigger.setAttribute('aria-expanded', 'false');
+    }
+  });
+};
+
+const syncCustomSelect = (selectEl, instance) => {
+  const selectedOption = selectEl.options[selectEl.selectedIndex];
+  if (selectedOption) {
+    instance.trigger.textContent = selectedOption.textContent;
+    instance.options.forEach((optionBtn) => {
+      optionBtn.classList.toggle('is-selected', optionBtn.dataset.value === selectedOption.value);
+    });
+  }
+};
+
+const enhanceSelect = (selectEl) => {
+  if (!selectEl || selectEl.dataset.customized === 'true') return;
+
+  const wrapper = document.createElement('div');
+  wrapper.className = 'custom-select';
+
+  const trigger = document.createElement('button');
+  trigger.type = 'button';
+  trigger.className = 'custom-select__trigger';
+  trigger.setAttribute('aria-haspopup', 'listbox');
+  trigger.setAttribute('aria-expanded', 'false');
+
+  const menu = document.createElement('div');
+  menu.className = 'custom-select__menu';
+  menu.setAttribute('role', 'listbox');
+
+  const optionButtons = Array.from(selectEl.options).map((option, index) => {
+    const optionBtn = document.createElement('button');
+    optionBtn.type = 'button';
+    optionBtn.className = 'custom-select__option';
+    optionBtn.textContent = option.textContent;
+    optionBtn.dataset.value = option.value;
+    optionBtn.dataset.index = String(index);
+    optionBtn.setAttribute('role', 'option');
+    if (selectEl.id) {
+      optionBtn.id = `${selectEl.id}-option-${index}`;
+    }
+    optionBtn.addEventListener('click', () => {
+      if (selectEl.value !== option.value) {
+        selectEl.value = option.value;
+        selectEl.dispatchEvent(new Event('change', { bubbles: true }));
+      }
+      syncCustomSelect(selectEl, instance);
+      wrapper.classList.remove('is-open');
+      trigger.setAttribute('aria-expanded', 'false');
+    });
+    optionBtn.addEventListener('mouseenter', () => {
+      instance.setActive(index);
+    });
+    menu.append(optionBtn);
+    return optionBtn;
+  });
+
+  wrapper.append(trigger, menu);
+  selectEl.classList.add('is-hidden');
+  selectEl.dataset.customized = 'true';
+  selectEl.insertAdjacentElement('afterend', wrapper);
+
+  const setActive = (index) => {
+    const nextIndex = Math.max(0, Math.min(optionButtons.length - 1, index));
+    instance.activeIndex = nextIndex;
+    optionButtons.forEach((optionBtn, idx) => {
+      optionBtn.classList.toggle('is-active', idx === nextIndex);
+    });
+    const activeOption = optionButtons[nextIndex];
+    if (activeOption?.id) {
+      trigger.setAttribute('aria-activedescendant', activeOption.id);
+    }
+    activeOption?.scrollIntoView({ block: 'nearest' });
+  };
+
+  const chooseActive = () => {
+    const activeOption = optionButtons[instance.activeIndex];
+    if (!activeOption) return;
+    if (selectEl.value !== activeOption.dataset.value) {
+      selectEl.value = activeOption.dataset.value;
+      selectEl.dispatchEvent(new Event('change', { bubbles: true }));
+    }
+    syncCustomSelect(selectEl, instance);
+    wrapper.classList.remove('is-open');
+    trigger.setAttribute('aria-expanded', 'false');
+  };
+
+  const instance = { wrapper, trigger, menu, options: optionButtons, activeIndex: 0, setActive };
+  customSelects.set(selectEl, instance);
+
+  trigger.addEventListener('click', (event) => {
+    event.preventDefault();
+    const nextState = !wrapper.classList.contains('is-open');
+    closeAllCustomSelects(wrapper);
+    wrapper.classList.toggle('is-open', nextState);
+    trigger.setAttribute('aria-expanded', String(nextState));
+    if (nextState) {
+      setActive(selectEl.selectedIndex);
+    }
+  });
+
+  trigger.addEventListener('keydown', (event) => {
+    const isOpen = wrapper.classList.contains('is-open');
+    if (event.key === 'Escape') {
+      wrapper.classList.remove('is-open');
+      trigger.setAttribute('aria-expanded', 'false');
+      return;
+    }
+    if (event.key === 'ArrowDown' || event.key === 'ArrowUp') {
+      event.preventDefault();
+      if (!isOpen) {
+        closeAllCustomSelects(wrapper);
+        wrapper.classList.add('is-open');
+        trigger.setAttribute('aria-expanded', 'true');
+        setActive(selectEl.selectedIndex);
+        return;
+      }
+      const delta = event.key === 'ArrowDown' ? 1 : -1;
+      setActive(instance.activeIndex + delta);
+      return;
+    }
+    if (event.key === 'Home') {
+      event.preventDefault();
+      setActive(0);
+      return;
+    }
+    if (event.key === 'End') {
+      event.preventDefault();
+      setActive(optionButtons.length - 1);
+      return;
+    }
+    if (event.key === 'Enter' || event.key === ' ') {
+      event.preventDefault();
+      if (!isOpen) {
+        closeAllCustomSelects(wrapper);
+        wrapper.classList.add('is-open');
+        trigger.setAttribute('aria-expanded', 'true');
+        setActive(selectEl.selectedIndex);
+      } else {
+        chooseActive();
+      }
+    }
+  });
+
+  selectEl.addEventListener('change', () => syncCustomSelect(selectEl, instance));
+  syncCustomSelect(selectEl, instance);
+};
+
+const initCustomSelects = () => {
+  document.querySelectorAll('select').forEach((selectEl) => enhanceSelect(selectEl));
+  document.addEventListener('click', (event) => {
+    if (!event.target.closest('.custom-select')) {
+      closeAllCustomSelects();
+    }
+  });
+};
+
 const loadTokens = () => {
   try {
     const stored = localStorage.getItem(STORAGE_KEYS.AUTH);
@@ -589,6 +753,7 @@ const bootstrap = async () => {
     applyTheme(current === THEMES.DARK ? THEMES.LIGHT : THEMES.DARK);
   });
   elements.form?.addEventListener('submit', handleCreate);
+  initCustomSelects();
 
   elements.imageUploadBtn?.addEventListener('click', () => {
     elements.imageInput?.click();
