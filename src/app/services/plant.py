@@ -170,6 +170,9 @@ class PlantService:
     ) -> Plant:
         plant = await self.get_plant_by_id(plant_id, user_id)
 
+        if plant_update is None:
+            return plant
+
         for key, new_value in plant_update.model_dump(
             exclude_unset=True
         ).items():

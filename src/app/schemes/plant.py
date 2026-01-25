@@ -66,24 +66,12 @@ class PlantReadScheme(PlantReadSchemeShort):
     model_config = ConfigDict(from_attributes=True)
 
 
-class PlantUpdateScheme(BaseModel):
-
-    name: str | None = None
-    scientific_name: str | None = None
-    description: str | None = None
-
-    warm_period: WateringPeriod | None = None
-    cold_period: WateringPeriod | None = None
-    fertilizing: FertilizingPeriod | None = None
-
-
 class PlantCreteScheme(BaseModel):
     """Create plant scheme."""
 
     name: str
     scientific_name: str | None = None
     description: str | None = None
-    image: str | None = None
 
     warm_period: WateringPeriod | None = None
     cold_period: WateringPeriod | None = None
@@ -105,5 +93,13 @@ class PlantCreteScheme(BaseModel):
 
         if warm_start <= cold_end and cold_start <= warm_end:
             raise PeriodCrossingError()
-
         return self
+
+
+class PlantUpdateScheme(PlantCreteScheme):
+
+    name: str | None = None
+
+
+class PlantBotCreateScheme(PlantCreteScheme):
+    image: str | None = None

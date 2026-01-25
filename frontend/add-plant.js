@@ -361,9 +361,6 @@ const authFetch = async (url, options = {}) => {
       elements.status.classList.remove('edit-status--ok');
       elements.status.classList.add('edit-status--error');
     }
-    if (authMode === 'web') {
-      window.location.href = 'index.html';
-    }
   };
 
   await ensureAuth();

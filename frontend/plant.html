@@ -42,11 +42,10 @@
 
       <form id="edit-form" class="edit-form" novalidate>
         <div class="form-grid">
-          <article class="form-card">
+          <article class="form-card form-card--primary">
             <div class="form-card__header">
               <div>
-                <div class="eyebrow">Основное</div>
-                <h3 class="form-card__title">Название и описание</h3>
+                <div class="eyebrow">Основное + изображение</div>
               </div>
             </div>
 
@@ -64,13 +63,27 @@
               <span class="form-label">Описание</span>
               <textarea id="field-description" name="description" rows="4" placeholder="Краткая памятка"></textarea>
             </label>
+
+            <div class="form-subsection form-subsection--image">
+              <div class="form-field">
+                <span class="form-label">Файл изображения</span>
+                <div class="upload-row">
+                  <button class="button button--ghost" type="button" id="image-upload-btn">Выбрать файл</button>
+                  <span class="upload-filename" id="image-filename">Файл не выбран</span>
+                </div>
+                <input type="file" id="image-input" accept="image/*" hidden />
+              </div>
+
+              <div class="image-preview-wrap" id="image-preview-wrap" hidden>
+                <img class="image-preview" id="image-preview" alt="Предпросмотр изображения" />
+              </div>
+            </div>
           </article>
 
           <article class="form-card">
             <div class="form-card__header">
               <div>
                 <div class="eyebrow">Тёплый период</div>
-                <h3 class="form-card__title">Полив и заметка</h3>
               </div>
             </div>
 
@@ -86,7 +99,34 @@
             </div>
 
             <label class="form-field">
-              <span class="form-label">Заметка</span>
+              <span class="form-label">Тип расписания</span>
+              <select id="field-warm-schedule-type">
+                <option value="weekly">еженедельно</option>
+                <option value="biweekly">раз в 2 недели</option>
+                <option value="monthly">раз в месяц</option>
+              </select>
+            </label>
+
+            <div class="form-field" id="warm-weekdays-group">
+              <span class="form-label">Дни недели</span>
+              <div class="weekday-grid">
+                <label class="checkbox-field"><input type="checkbox" name="warm-weekday" value="0" />Пн</label>
+                <label class="checkbox-field"><input type="checkbox" name="warm-weekday" value="1" />Вт</label>
+                <label class="checkbox-field"><input type="checkbox" name="warm-weekday" value="2" />Ср</label>
+                <label class="checkbox-field"><input type="checkbox" name="warm-weekday" value="3" />Чт</label>
+                <label class="checkbox-field"><input type="checkbox" name="warm-weekday" value="4" />Пт</label>
+                <label class="checkbox-field"><input type="checkbox" name="warm-weekday" value="5" />Сб</label>
+                <label class="checkbox-field"><input type="checkbox" name="warm-weekday" value="6" />Вс</label>
+              </div>
+            </div>
+
+            <label class="form-field" id="warm-monthday-group" hidden>
+              <span class="form-label">Число месяца</span>
+              <input type="number" min="1" max="31" step="1" id="field-warm-monthday" placeholder="15" />
+            </label>
+
+            <label class="form-field">
+              <span class="form-label">Заметка периода</span>
               <textarea id="field-warm-note" rows="2" placeholder="Напоминания по поливу"></textarea>
             </label>
           </article>
@@ -95,7 +135,6 @@
             <div class="form-card__header">
               <div>
                 <div class="eyebrow">Холодный период</div>
-                <h3 class="form-card__title">Полив и заметка</h3>
               </div>
             </div>
 
@@ -111,7 +150,34 @@
             </div>
 
             <label class="form-field">
-              <span class="form-label">Заметка</span>
+              <span class="form-label">Тип расписания</span>
+              <select id="field-cold-schedule-type">
+                <option value="weekly">еженедельно</option>
+                <option value="biweekly">раз в 2 недели</option>
+                <option value="monthly">раз в месяц</option>
+              </select>
+            </label>
+
+            <div class="form-field" id="cold-weekdays-group">
+              <span class="form-label">Дни недели</span>
+              <div class="weekday-grid">
+                <label class="checkbox-field"><input type="checkbox" name="cold-weekday" value="0" />Пн</label>
+                <label class="checkbox-field"><input type="checkbox" name="cold-weekday" value="1" />Вт</label>
+                <label class="checkbox-field"><input type="checkbox" name="cold-weekday" value="2" />Ср</label>
+                <label class="checkbox-field"><input type="checkbox" name="cold-weekday" value="3" />Чт</label>
+                <label class="checkbox-field"><input type="checkbox" name="cold-weekday" value="4" />Пт</label>
+                <label class="checkbox-field"><input type="checkbox" name="cold-weekday" value="5" />Сб</label>
+                <label class="checkbox-field"><input type="checkbox" name="cold-weekday" value="6" />Вс</label>
+              </div>
+            </div>
+
+            <label class="form-field" id="cold-monthday-group" hidden>
+              <span class="form-label">Число месяца</span>
+              <input type="number" min="1" max="31" step="1" id="field-cold-monthday" placeholder="15" />
+            </label>
+
+            <label class="form-field">
+              <span class="form-label">Заметка периода</span>
               <textarea id="field-cold-note" rows="2" placeholder="Что учесть в холодное время"></textarea>
             </label>
           </article>
@@ -119,8 +185,33 @@
           <article class="form-card">
             <div class="form-card__header">
               <div>
-                <div class="eyebrow">Подкормки</div>
-                <h3 class="form-card__title">Частота и сроки</h3>
+                <div class="eyebrow">Даты + подкормки</div>
+              </div>
+            </div>
+
+            <div class="form-subsection">
+              <div class="form-row">
+                <label class="form-field">
+                  <span class="form-label">Последний полив</span>
+                  <input type="date" id="field-last-watered-at" name="last_watered_at" />
+                </label>
+                <label class="form-field">
+                  <span class="form-label">Следующий полив</span>
+                  <input type="date" id="field-next-watering-at" name="next_watering_at" />
+                </label>
+              </div>
+            </div>
+
+            <div class="form-subsection">
+              <div class="form-row">
+                <label class="form-field">
+                  <span class="form-label">Последняя подкормка</span>
+                  <input type="date" id="field-last-fertilized-at" name="last_fertilized_at" />
+                </label>
+                <label class="form-field">
+                  <span class="form-label">Следующая подкормка</span>
+                  <input type="date" id="field-next-fertilizing-at" name="next_fertilizing_at" />
+                </label>
               </div>
             </div>
 
@@ -163,16 +254,6 @@
         </div>
       </form>
 
-      <article class="form-card form-card--inline">
-        <div>
-          <div class="eyebrow">Фото</div>
-          <h3 class="form-card__title">Обновить изображение</h3>
-        </div>
-        <div class="upload">
-          <input type="file" id="field-image" accept="image/*" />
-          <button class="button button--ghost" type="button" id="upload-image">Загрузить</button>
-        </div>
-      </article>
     </section>
   </div>
 

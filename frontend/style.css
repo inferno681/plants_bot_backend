@@ -793,6 +793,20 @@ h1 {
   font-size: 13px;
 }
 
+.form-field input:-webkit-autofill,
+.form-field input:-webkit-autofill:hover,
+.form-field input:-webkit-autofill:focus,
+.form-field textarea:-webkit-autofill,
+.form-field textarea:-webkit-autofill:hover,
+.form-field textarea:-webkit-autofill:focus,
+.form-field select:-webkit-autofill,
+.form-field select:-webkit-autofill:hover,
+.form-field select:-webkit-autofill:focus {
+  -webkit-text-fill-color: var(--text);
+  transition: background-color 9999s ease-in-out 0s;
+  box-shadow: 0 0 0 1000px var(--input-bg) inset;
+}
+
 .form-row .form-field {
   width: 100%;
   min-width: 0;

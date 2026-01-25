@@ -71,73 +71,6 @@
           <article class="form-card">
             <div class="form-card__header">
               <div>
-                <div class="eyebrow">Даты + подкормки</div>
-              </div>
-            </div>
-
-            <div class="form-subsection">
-              <div class="form-row">
-                <label class="form-field">
-                  <span class="form-label">Последний полив</span>
-                  <input type="date" id="field-last-watered-at" name="last_watered_at" />
-                </label>
-                <label class="form-field">
-                  <span class="form-label">Следующий полив</span>
-                  <input type="date" id="field-next-watering-at" name="next_watering_at" />
-                </label>
-              </div>
-            </div>
-
-            <div class="form-subsection">
-              <div class="form-row">
-                <label class="form-field">
-                  <span class="form-label">Последняя подкормка</span>
-                  <input type="date" id="field-last-fertilized-at" name="last_fertilized_at" />
-                </label>
-                <label class="form-field">
-                  <span class="form-label">Следующая подкормка</span>
-                  <input type="date" id="field-next-fertilizing-at" name="next_fertilizing_at" />
-                </label>
-              </div>
-            </div>
-
-            <div class="form-subsection">
-              <div class="form-row">
-                <label class="form-field">
-                  <span class="form-label">Начало, дд.мм</span>
-                  <input type="text" inputmode="numeric" id="field-fert-start" placeholder="01.03" />
-                </label>
-                <label class="form-field">
-                  <span class="form-label">Конец, дд.мм</span>
-                  <input type="text" inputmode="numeric" id="field-fert-end" placeholder="01.09" />
-                </label>
-              </div>
-
-              <div class="form-row">
-                <label class="form-field">
-                  <span class="form-label">Каждые</span>
-                  <input type="number" min="1" step="1" id="field-fert-frequency" placeholder="2" />
-                </label>
-                <label class="form-field">
-                  <span class="form-label">Единица</span>
-                  <select id="field-fert-type">
-                    <option value="days">дней</option>
-                    <option value="weeks">недель</option>
-                    <option value="months">месяцев</option>
-                  </select>
-                </label>
-              </div>
-
-              <label class="form-field">
-                <span class="form-label">Заметка</span>
-                <textarea id="field-fert-note" rows="2" placeholder="Особенности подкормки"></textarea>
-              </label>
-            </div>
-          </article>
-
-          <article class="form-card">
-            <div class="form-card__header">
-              <div>
                 <div class="eyebrow">Тёплый период</div>
               </div>
             </div>
@@ -235,6 +168,73 @@
               <span class="form-label">Заметка периода</span>
               <textarea id="field-cold-note" rows="2" placeholder="Что учесть в холодное время"></textarea>
             </label>
+          </article>
+
+          <article class="form-card">
+            <div class="form-card__header">
+              <div>
+                <div class="eyebrow">Даты + подкормки</div>
+              </div>
+            </div>
+
+            <div class="form-subsection">
+              <div class="form-row">
+                <label class="form-field">
+                  <span class="form-label">Последний полив</span>
+                  <input type="date" id="field-last-watered-at" name="last_watered_at" />
+                </label>
+                <label class="form-field">
+                  <span class="form-label">Следующий полив</span>
+                  <input type="date" id="field-next-watering-at" name="next_watering_at" />
+                </label>
+              </div>
+            </div>
+
+            <div class="form-subsection">
+              <div class="form-row">
+                <label class="form-field">
+                  <span class="form-label">Последняя подкормка</span>
+                  <input type="date" id="field-last-fertilized-at" name="last_fertilized_at" />
+                </label>
+                <label class="form-field">
+                  <span class="form-label">Следующая подкормка</span>
+                  <input type="date" id="field-next-fertilizing-at" name="next_fertilizing_at" />
+                </label>
+              </div>
+            </div>
+
+            <div class="form-subsection">
+              <div class="form-row">
+                <label class="form-field">
+                  <span class="form-label">Начало, дд.мм</span>
+                  <input type="text" inputmode="numeric" id="field-fert-start" placeholder="01.03" />
+                </label>
+                <label class="form-field">
+                  <span class="form-label">Конец, дд.мм</span>
+                  <input type="text" inputmode="numeric" id="field-fert-end" placeholder="01.09" />
+                </label>
+              </div>
+
+              <div class="form-row">
+                <label class="form-field">
+                  <span class="form-label">Каждые</span>
+                  <input type="number" min="1" step="1" id="field-fert-frequency" placeholder="2" />
+                </label>
+                <label class="form-field">
+                  <span class="form-label">Единица</span>
+                  <select id="field-fert-type">
+                    <option value="days">дней</option>
+                    <option value="weeks">недель</option>
+                    <option value="months">месяцев</option>
+                  </select>
+                </label>
+              </div>
+
+              <label class="form-field">
+                <span class="form-label">Заметка</span>
+                <textarea id="field-fert-note" rows="2" placeholder="Особенности подкормки"></textarea>
+              </label>
+            </div>
           </article>
 
         </div>
