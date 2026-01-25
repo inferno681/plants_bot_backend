@@ -355,6 +355,17 @@ const authFetch = async (url, options = {}) => {
     return fetch(url, nextOptions);
   };
 
+  const requestLogin = () => {
+    if (elements.status) {
+      elements.status.textContent = 'Сессия истекла. Пожалуйста, войдите снова.';
+      elements.status.classList.remove('edit-status--ok');
+      elements.status.classList.add('edit-status--error');
+    }
+    if (authMode === 'web') {
+      window.location.href = 'index.html';
+    }
+  };
+
   await ensureAuth();
   let response = await makeRequest();
   if (response.status !== 401) return response;
@@ -372,6 +383,9 @@ const authFetch = async (url, options = {}) => {
     }
   }
 
+  if (response.status === 401) {
+    requestLogin();
+  }
   return response;
 };
 
