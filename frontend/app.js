@@ -79,12 +79,11 @@ const refreshTokens = async () => {
   }
 
   const csrfToken = getCookieValue('csrf_token');
-  if (!csrfToken) return false;
 
   try {
     const response = await fetch(WEB_REFRESH_URL, {
       method: 'POST',
-      headers: { 'X-CSRF-Token': csrfToken },
+      headers: csrfToken ? { 'X-CSRF-Token': csrfToken } : {},
       credentials: 'include',
     });
 
@@ -97,7 +96,6 @@ const refreshTokens = async () => {
     return true;
   } catch (error) {
     console.error('Refresh error', error);
-    setTokens(null, null);
     return false;
   }
 };
@@ -145,10 +143,9 @@ const authFetch = async (url, options = {}) => {
     }
   }
 
+  // Refresh failed: only then clear tokens and request login.
   setTokens(null, null);
-  if (authMode === 'web') {
-    showLoginModal();
-  }
+  if (authMode === 'web') showLoginModal();
   return response;
 };
 

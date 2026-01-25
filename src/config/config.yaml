@@ -27,7 +27,7 @@ service:
     description: "Health endpoints. For services only!"
 
 auth:
-  access_token_ttl: 3600
+  access_token_ttl: 10
   refresh_token_ttl: 14400
   max_sessions_per_user: 10
 

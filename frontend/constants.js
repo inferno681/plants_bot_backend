@@ -2,7 +2,7 @@
 (() => {
   const defaultBase = /^https?:/i.test(window.location.origin)
     ? window.location.origin
-    : 'http://localhost:8000';
+    : 'https://localhost:8000';
   const API_BASE = (window.API_BASE_URL || defaultBase).replace(/\/$/, '');
 
   const ENDPOINTS = {
