@@ -424,8 +424,14 @@ const renderCards = () => {
     if (!matchText) return false;
     if (filters.mode === 'due')
       return plant.status === 'due' || daysUntil(plant.nextWateringAt) <= 0 || daysUntil(plant.nextFertilizingAt) <= 0;
-    if (filters.mode === 'warm') return Boolean(plant.warmPeriod);
-    if (filters.mode === 'cold') return Boolean(plant.coldPeriod);
+    if (filters.mode === 'frequent') {
+      const minDays = Math.min(daysUntil(plant.nextWateringAt), daysUntil(plant.nextFertilizingAt));
+      return Number.isFinite(minDays) && minDays <= 7;
+    }
+    if (filters.mode === 'rare') {
+      const minDays = Math.min(daysUntil(plant.nextWateringAt), daysUntil(plant.nextFertilizingAt));
+      return !Number.isFinite(minDays) || minDays >= 14;
+    }
     return true;
   });
 
