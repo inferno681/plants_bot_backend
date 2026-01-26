@@ -1,4 +1,4 @@
-const { ENDPOINTS, STORAGE_KEYS, THEMES } = window.CONFIG;
+const { ENDPOINTS } = window.CONFIG;
 const API_URL = ENDPOINTS.PLANTS;
 const STATS_URL = ENDPOINTS.STATS;
 const WEB_LOGIN_URL = ENDPOINTS.WEB_LOGIN;
@@ -11,6 +11,7 @@ const pagination = { cursor: null, hasMore: true, loading: false };
 const auth = window.Auth;
 const authFetch = (...args) => auth.authFetch(...args);
 const ensureAuth = () => auth.ensureAuth();
+const { initTheme, toggleTheme, formatDate, formatPeriod, daysUntil } = window.UI;
 let authMode = 'web';
 
 const showLoginModal = () => {
@@ -122,58 +123,10 @@ const elements = {
   registerPasswordConfirm: document.getElementById('register-password-confirm'),
 };
 
-const applyTheme = (theme) => {
-  document.body.classList.toggle('theme-dark', theme === THEMES.DARK);
-  localStorage.setItem(STORAGE_KEYS.THEME, theme);
-};
-
-const initTheme = () => {
-  const stored = localStorage.getItem(STORAGE_KEYS.THEME);
-  const theme = stored === THEMES.LIGHT ? THEMES.LIGHT : THEMES.DARK;
-  applyTheme(theme);
-};
-
-const formatDate = (value) => {
-  if (!value) return '-';
-  const d = new Date(value);
-  if (Number.isNaN(d.getTime())) return '-';
-  return d.toLocaleDateString('ru-RU', { day: '2-digit', month: '2-digit' });
-};
-
-const daysUntil = (value) => {
-  if (!value) return Infinity;
-  const target = new Date(value);
-  if (Number.isNaN(target.getTime())) return Infinity;
-
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  target.setHours(0, 0, 0, 0);
-
-  return Math.floor((target - today) / 86400000);
-};
-
 const statusBadge = (status) => {
   if (status === 'due') return { text: 'Нужно действие', cls: 'badge--due' };
   if (status === 'soon') return { text: 'Скоро', cls: 'badge--soon' };
   return { text: 'Все ок', cls: 'badge--ok' };
-};
-
-const formatMonthDay = (value) => {
-  if (!value || typeof value.day !== 'number' || typeof value.month !== 'number') {
-    return null;
-  }
-  return `${String(value.day).padStart(2, '0')}.${String(value.month).padStart(2, '0')}`;
-};
-
-const formatPeriod = (period) => {
-  if (!period) return null;
-  const start = formatMonthDay(period.start);
-  const end = formatMonthDay(period.end);
-
-  if (start && end) return `${start} - ${end}`;
-  if (start) return `с ${start}`;
-  if (end) return `до ${end}`;
-  return null;
 };
 
 const computeStatus = (plant) => {
@@ -418,8 +371,7 @@ elements.refresh?.addEventListener('click', async () => {
 });
 
 elements.themeToggle?.addEventListener('click', () => {
-  const current = document.body.classList.contains('theme-dark') ? THEMES.DARK : THEMES.LIGHT;
-  applyTheme(current === THEMES.DARK ? THEMES.LIGHT : THEMES.DARK);
+  toggleTheme();
 });
 
 elements.loadMore?.addEventListener('click', () => {
