@@ -66,10 +66,9 @@ class PlantReadScheme(PlantReadSchemeShort):
     model_config = ConfigDict(from_attributes=True)
 
 
-class PlantCreteScheme(BaseModel):
-    """Create plant scheme."""
+class BasePlantCUScheme(BaseModel):
+    """Base plant create, update scheme."""
 
-    name: str
     scientific_name: str | None = None
     description: str | None = None
 
@@ -96,7 +95,13 @@ class PlantCreteScheme(BaseModel):
         return self
 
 
-class PlantUpdateScheme(PlantCreteScheme):
+class PlantCreteScheme(BasePlantCUScheme):
+    """Create plant scheme."""
+
+    name: str
+
+
+class PlantUpdateScheme(BasePlantCUScheme):
 
     name: str | None = None
 
