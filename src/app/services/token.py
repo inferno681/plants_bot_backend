@@ -166,9 +166,9 @@ class SessionStore:
                 user_type,
             ],
         )
-
-        if dropped:
-            for session in dropped:
+        removed = dropped[0] if dropped else []
+        if removed:
+            for session in removed:
                 self.log.info(
                     token_logs.SESSIONS_EVICTED_LOG,
                     user_id,

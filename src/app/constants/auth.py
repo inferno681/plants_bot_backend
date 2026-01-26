@@ -42,7 +42,6 @@ DOC_USER = ObjectId('6971e9e9b6362470dd9341be')
 
 REQUIRED_FIELDS_BOT_INIT_DATA = ('bot_id', 'auth_date', 'hash')
 
-COOKIE_PATH = '/auth/refresh'
 CSRF_LENGTH = 32
 
 SameSite = Literal['lax', 'strict', 'none']

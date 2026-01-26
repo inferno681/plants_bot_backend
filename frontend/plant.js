@@ -272,6 +272,7 @@ const getTelegramInitData = () => {
 
 const authMode = getTelegramInitData() ? 'telegram' : 'web';
 let telegramLoginAttempted = false;
+let refreshPromise = null;
 
 const loginWithTelegram = async () => {
   if (telegramLoginAttempted) return false;
@@ -296,14 +297,32 @@ const loginWithTelegram = async () => {
 };
 
 const refreshTokens = async () => {
-  if (authMode === 'telegram') {
-    if (!auth.refreshToken) return false;
-
+  if (refreshPromise) return refreshPromise;
+  refreshPromise = (async () => {
     try {
-      const response = await fetch(TG_REFRESH_URL, {
+      if (authMode === 'telegram') {
+        if (!auth.refreshToken) return false;
+
+        const response = await fetch(TG_REFRESH_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ refresh_token: auth.refreshToken }),
+        });
+
+        if (!response.ok) {
+          throw new Error(`Refresh failed with status ${response.status}`);
+        }
+
+        const data = await response.json();
+        setTokens(data.access_token || data.accessToken, data.refresh_token || data.refreshToken);
+        return true;
+      }
+
+      const csrfToken = getCookieValue('csrf_token');
+      const response = await fetch(WEB_REFRESH_URL, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ refresh_token: auth.refreshToken }),
+        headers: csrfToken ? { 'X-CSRF-Token': csrfToken } : {},
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -311,35 +330,19 @@ const refreshTokens = async () => {
       }
 
       const data = await response.json();
-      setTokens(data.access_token || data.accessToken, data.refresh_token || data.refreshToken);
+      setTokens(data.access_token || data.accessToken, null);
       return true;
     } catch (error) {
       console.error('Refresh error', error);
-      setTokens(null, null);
+      if (authMode === 'telegram') {
+        setTokens(null, null);
+      }
       return false;
+    } finally {
+      refreshPromise = null;
     }
-  }
-
-  const csrfToken = getCookieValue('csrf_token');
-
-  try {
-    const response = await fetch(WEB_REFRESH_URL, {
-      method: 'POST',
-      headers: csrfToken ? { 'X-CSRF-Token': csrfToken } : {},
-      credentials: 'include',
-    });
-
-    if (!response.ok) {
-      throw new Error(`Refresh failed with status ${response.status}`);
-    }
-
-    const data = await response.json();
-    setTokens(data.access_token || data.accessToken, null);
-    return true;
-  } catch (error) {
-    console.error('Refresh error', error);
-    return false;
-  }
+  })();
+  return refreshPromise;
 };
 
 const ensureAuth = async () => {

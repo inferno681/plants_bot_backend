@@ -1,9 +1,12 @@
 
 (() => {
-  const defaultBase = /^https?:/i.test(window.location.origin)
+  const defaultBase = 'https://localhost:8000';
+  const origin = /^https?:/i.test(window.location.origin)
     ? window.location.origin
-    : 'https://localhost:8000';
-  const API_BASE = (window.API_BASE_URL || defaultBase).replace(/\/$/, '');
+    : '';
+  const isDevServer = /:\/\/(localhost|127\.0\.0\.1):5173$/i.test(origin);
+  const API_BASE = (window.API_BASE_URL || (isDevServer ? defaultBase : origin) || defaultBase)
+    .replace(/\/$/, '');
 
   const ENDPOINTS = {
     PLANTS: `${API_BASE}/api/v1/plants`,

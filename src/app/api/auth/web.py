@@ -5,7 +5,7 @@ from fastapi import APIRouter, Depends, Response
 from fastapi.security import OAuth2PasswordRequestForm
 from pymongo.asynchronous.client_session import AsyncClientSession
 
-from app.constants.auth import COOKIE_PATH, CSRF_LENGTH, LAX_LITERAL
+from app.constants.auth import CSRF_LENGTH, LAX_LITERAL
 from app.dependencies import (
     current_user_id_dep,
     current_user_uid_sid_dep,
@@ -67,7 +67,6 @@ async def login(
         secure=True,
         samesite=LAX_LITERAL,
         max_age=config.auth.refresh_token_ttl,
-        path=COOKIE_PATH,
     )
     response.set_cookie(
         key='csrf_token',
@@ -76,7 +75,6 @@ async def login(
         secure=True,
         samesite=LAX_LITERAL,
         max_age=config.auth.refresh_token_ttl,
-        path=COOKIE_PATH,
     )
 
     return WebTokens(access_token=tokens.access_token)
@@ -92,8 +90,8 @@ async def logout(
     message = await web_auth_service.logout_user(
         session_info.uid, session_info.sid
     )
-    response.delete_cookie('refresh_token', path=COOKIE_PATH)
-    response.delete_cookie('csrf_token', path=COOKIE_PATH)
+    response.delete_cookie('refresh_token')
+    response.delete_cookie('csrf_token')
 
     return {'message': message}
 
@@ -138,7 +136,6 @@ async def refresh_tokens(
         secure=True,
         samesite=LAX_LITERAL,
         max_age=config.auth.refresh_token_ttl,
-        path=COOKIE_PATH,
     )
     response.set_cookie(
         key='csrf_token',
@@ -146,7 +143,6 @@ async def refresh_tokens(
         httponly=False,
         secure=True,
         samesite=LAX_LITERAL,
-        max_age=config.auth.access_token_ttl,
-        path=COOKIE_PATH,
+        max_age=config.auth.refresh_token_ttl,
     )
     return WebTokens(access_token=tokens.access_token)

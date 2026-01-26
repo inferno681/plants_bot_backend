@@ -4,6 +4,7 @@ import time
 import uvicorn
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.staticfiles import StaticFiles
 
 from app.api.auth import auth_router
 from app.api.v1 import v1_router
@@ -44,6 +45,7 @@ async def calculate_process_time(request: Request, call_next):
 
 app.include_router(auth_router)
 app.include_router(v1_router)
+app.mount('/', StaticFiles(directory='frontend', html=True), name='static')
 
 
 if __name__ == '__main__':
