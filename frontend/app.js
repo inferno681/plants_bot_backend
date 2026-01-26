@@ -410,11 +410,11 @@ elements.filterPills.forEach((pill) => {
   });
 });
 
-elements.refresh?.addEventListener('click', () => {
+elements.refresh?.addEventListener('click', async () => {
   pagination.cursor = null;
   pagination.hasMore = true;
-  fetchStats();
-  fetchPlants(true);
+  await fetchStats();
+  await fetchPlants(true);
 });
 
 elements.themeToggle?.addEventListener('click', () => {
@@ -433,8 +433,8 @@ elements.loginForm?.addEventListener('submit', async (e) => {
   if (!email || !password) return;
   const ok = await loginWithCredentials(email, password);
   if (ok) {
-    fetchStats();
-    fetchPlants(true);
+    await fetchStats();
+    await fetchPlants(true);
   }
 });
 
@@ -459,8 +459,8 @@ elements.registerForm?.addEventListener('submit', async (e) => {
   if (!email || !password || !confirmPassword) return;
   const ok = await registerWithCredentials(email, password, confirmPassword);
   if (ok) {
-    fetchStats();
-    fetchPlants(true);
+    await fetchStats();
+    await fetchPlants(true);
   }
 });
 
@@ -492,8 +492,8 @@ const bootstrap = async () => {
   buildStats();
   renderCards();
   renderTasks();
-  fetchStats();
-  fetchPlants(true);
+  await fetchStats();
+  await fetchPlants(true);
 };
 
 bootstrap();

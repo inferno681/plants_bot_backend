@@ -13,7 +13,6 @@
   const channel = typeof BroadcastChannel !== 'undefined' ? new BroadcastChannel(CHANNEL_NAME) : null;
   let authMode = null;
   let refreshPromise = null;
-  let preflightDone = false;
   let telegramLoginAttempted = false;
   let initialized = false;
   let onAuthRequired = null;
@@ -183,7 +182,7 @@
     }
   };
 
-  const refreshTokens = async () => {
+  const refreshTokens = async ({ keepTokensOnFail = false } = {}) => {
     if (refreshPromise) return refreshPromise;
     refreshPromise = (async () => {
       const mode = authMode || computeAuthMode();
@@ -242,7 +241,9 @@
       } catch (error) {
         console.error('Refresh error', error);
         if (mode === 'telegram') {
-          applyTokens(null, null);
+          if (!keepTokensOnFail) {
+            applyTokens(null, null);
+          }
         }
         return false;
       } finally {
@@ -263,10 +264,6 @@
     }
 
     if (auth.accessToken) {
-      if (!preflightDone) {
-        preflightDone = true;
-        await refreshTokens();
-      }
       return true;
     }
     if (await refreshTokens()) return true;
@@ -284,6 +281,15 @@
       }
       return fetch(url, nextOptions);
     };
+
+    const lock = readLock();
+    if (lock && lock.id !== tabId) {
+      await waitForTokensUpdate();
+    }
+
+    if (refreshPromise) {
+      await refreshPromise;
+    }
 
     await ensureAuth();
     let response = await makeRequest();
