@@ -17,6 +17,8 @@ class ServiceSettings(BaseModel):
     timeout: int
     workers: int
 
+    link_ttl: int
+
     service_chat_id: int
 
     debug: bool

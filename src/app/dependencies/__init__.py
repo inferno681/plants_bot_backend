@@ -13,6 +13,7 @@ from app.dependencies.plant import (
     plant_query_dep,
     plant_service_dep,
 )
+from app.dependencies.user import user_service_dep
 
 __all__ = [
     'current_user_id_dep',
@@ -26,4 +27,5 @@ __all__ = [
     'plant_mapper_dep',
     'plant_service_dep',
     'plant_query_dep',
+    'user_service_dep',
 ]

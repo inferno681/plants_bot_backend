@@ -1,9 +1,9 @@
 from app.models.bot import Bot
 from app.models.plant import (
     FertilizingPeriod,
+    FrequencyType,
     Plant,
     WateringPeriod,
-    FrequencyType,
 )
 from app.models.telegram_acc import TelegramAccount
 from app.models.user import User

@@ -34,3 +34,22 @@ class WebUser(BaseModel):
 
     user_id: PydanticObjectId
     email: EmailStr
+
+
+class WebUserInfo(BaseModel):
+    """Web user info scheme."""
+
+    public_username: str | None = None
+    email: EmailStr | None = None
+    email_verified: bool = False
+    telegram_id: int | None = None
+    telegram_linked: bool = False
+
+
+class TelegramLink(BaseModel):
+    """Telegram linking scheme."""
+
+    code: str
+    qr: str
+    link: str
+    expires_at: int

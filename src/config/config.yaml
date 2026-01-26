@@ -6,6 +6,8 @@ service:
   timeout: 60
   workers: 4
 
+  link_ttl: 300
+
   service_chat_id: 459335857
 
   debug: false
@@ -27,7 +29,7 @@ service:
     description: "Health endpoints. For services only!"
 
 auth:
-  access_token_ttl: 40
+  access_token_ttl: 100000
   refresh_token_ttl: 14400
   max_sessions_per_user: 10
 

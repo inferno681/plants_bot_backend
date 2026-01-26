@@ -13,7 +13,9 @@ from config import config, setup_logging
 logger = getLogger(__name__)
 
 
-def init_auth(app: FastAPI, redis: Redis):
+def init_auth(
+    app: FastAPI, redis: Redis, pipeline_builder: services.MongoPipelineBuilder
+):
     """Auth services initialization."""
 
     token_service = services.TokenService(
@@ -54,7 +56,13 @@ def init_auth(app: FastAPI, redis: Redis):
         token_service=token_service,
         init_data_checker=init_data_checker,
     )
-    services.init_user_service(app=app, token_service=token_service)
+    services.init_user_service(
+        app=app,
+        token_service=token_service,
+        pipeline_builder=pipeline_builder,
+        redis=redis,
+        link_ttl=config.service.link_ttl,
+    )
 
 
 async def init_mongo(app: FastAPI):
@@ -72,7 +80,7 @@ async def init_mongo(app: FastAPI):
     return db_helper
 
 
-def init_plant(app: FastAPI):
+def init_plant(app: FastAPI, pipeline_builder: services.MongoPipelineBuilder):
     """Plant services initialization."""
     storage = services.S3StorageService(
         bucket=config.storage.bucket,
@@ -85,7 +93,7 @@ def init_plant(app: FastAPI):
     services.init_plant_service(
         app,
         scheduler=services.Scheduler(),
-        pipeline_builder=services.MongoPipelineBuilder(),
+        pipeline_builder=pipeline_builder,
         image_service=image_service,
         storage=storage,
     )
@@ -100,10 +108,11 @@ async def create_resources(app: FastAPI):
         password=config.secrets.redis_password.get_secret_value(),
         decode_responses=config.redis.decode_responses,
     )
-    init_auth(app, redis)
+    pipeline_builder = services.MongoPipelineBuilder()
+    init_auth(app, redis, pipeline_builder)
 
     db_helper = await init_mongo(app)
-    image_service = init_plant(app)
+    image_service = init_plant(app, pipeline_builder)
 
     services.init_healthz_service(app=app, mongo=db_helper, redis=redis)
 

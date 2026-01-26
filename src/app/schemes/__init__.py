@@ -21,7 +21,7 @@ from app.schemes.token import (
     TokenServiceConfig,
     WebTokens,
 )
-from app.schemes.user import TelegramUser, WebUser
+from app.schemes.user import TelegramLink, TelegramUser, WebUser, WebUserInfo
 from app.schemes.user_session import UserSession
 
 __all__ = [
@@ -36,6 +36,7 @@ __all__ = [
     'TelegramAccountBase',
     'ClientInfo',
     'WebUser',
+    'WebUserInfo',
     'WebAccountRegistration',
     'WebAccountLogin',
     'UserSession',
@@ -48,4 +49,5 @@ __all__ = [
     'TokenServiceConfig',
     'PlantQuery',
     'RefreshRequestCookie',
+    'TelegramLink',
 ]

@@ -1,5 +1,6 @@
 from datetime import date, timedelta
-from beanie.operators import RegEx, Or, And
+
+from beanie.operators import And, Or, RegEx
 from pydantic import BaseModel
 
 from app.models import FrequencyType
@@ -14,7 +15,7 @@ class PlantFilter(BaseModel):
 
     def apply(self, model) -> list:
         """Generate filter expressions for the given model."""
-        expressions = []
+        expressions: list = []
 
         if self.name:
             expressions.append(RegEx(model.name, self.name, options="i"))
