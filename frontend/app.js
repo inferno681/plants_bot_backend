@@ -202,13 +202,9 @@ const renderCards = () => {
     if (!matchText) return false;
     if (filters.mode === 'due')
       return plant.status === 'due' || daysUntil(plant.nextWateringAt) <= 0 || daysUntil(plant.nextFertilizingAt) <= 0;
-    if (filters.mode === 'frequent') {
-      const minDays = Math.min(daysUntil(plant.nextWateringAt), daysUntil(plant.nextFertilizingAt));
-      return Number.isFinite(minDays) && minDays <= 7;
-    }
-    if (filters.mode === 'rare') {
-      const minDays = Math.min(daysUntil(plant.nextWateringAt), daysUntil(plant.nextFertilizingAt));
-      return !Number.isFinite(minDays) || minDays >= 14;
+    if (filters.mode === 'week') {
+      const days = daysUntil(plant.nextWateringAt);
+      return Number.isFinite(days) && days >= 0 && days <= 7;
     }
     return true;
   });
@@ -236,8 +232,6 @@ const renderCards = () => {
         <div class="card__subtitle">${plant.scientificName || '-'}</div>
         <div class="badges">
           <span class="badge ${alertBadge}">${text}</span>
-          <span class="badge badge--ok">Полив: ${formatDate(plant.nextWateringAt)}</span>
-          <span class="badge badge--soon">Подкормка: ${formatDate(plant.nextFertilizingAt)}</span>
         </div>
         <div class="card__dates">
           <div class="date-chip">Полив: ${formatDate(plant.nextWateringAt)}</div>
@@ -338,10 +332,13 @@ const fetchPlants = async (reset = false) => {
 const fetchStats = async () => {
   try {
     const response = await authFetch(STATS_URL);
+    if (response.status === 401) {
+      state.stats = null;
+      return;
+    }
     if (!response.ok) throw new Error(`Status ${response.status}`);
     state.stats = await response.json();
   } catch (error) {
-    console.error('Stats error', error);
     state.stats = null;
   } finally {
     buildStats();

@@ -206,6 +206,7 @@
           });
 
           if (!response.ok) {
+            if (response.status === 401) return false;
             throw new Error(`Refresh failed with status ${response.status}`);
           }
 
@@ -227,6 +228,7 @@
         });
 
         if (!response.ok) {
+          if (response.status === 401) return false;
           throw new Error(`Refresh failed with status ${response.status}`);
         }
 
@@ -281,7 +283,19 @@
       }
       return fetch(url, nextOptions);
     };
-
+    const isAccessTokenExpired = () => {
+      if (!auth.accessToken) return false;
+      const parts = auth.accessToken.split('.');
+      if (parts.length < 2) return false;
+      try {
+        const payload = JSON.parse(atob(parts[1].replace(/-/g, '+').replace(/_/g, '/')));
+        if (typeof payload?.exp !== 'number') return false;
+        const now = Math.floor(Date.now() / 1000);
+        return payload.exp <= now + 30;
+      } catch (error) {
+        return false;
+      }
+    };
     const lock = readLock();
     if (lock && lock.id !== tabId) {
       await waitForTokensUpdate();
@@ -291,7 +305,14 @@
       await refreshPromise;
     }
 
-    await ensureAuth();
+    if (isAccessTokenExpired()) {
+      await refreshTokens();
+    }
+
+    const ok = await ensureAuth();
+    if (!ok) {
+      return new Response(null, { status: 401 });
+    }
     let response = await makeRequest();
 
     if (response.status !== 401) return response;

@@ -79,8 +79,6 @@ const statusBadge = (plant) => {
 const renderBadges = (plant) => {
   const badges = [];
   badges.push(statusBadge(plant));
-  badges.push({ text: `Полив: ${formatDateLong(plant.next_watering_at)}`, cls: 'badge--ok' });
-  badges.push({ text: `Подкормка: ${formatDateLong(plant.next_fertilizing_at)}`, cls: 'badge--soon' });
 
   elements.badges.innerHTML = badges
     .map((b) => `<span class="badge ${b.cls}">${b.text}</span>`)
