@@ -48,5 +48,7 @@ async def link_telegram(
         session=session,
     )
     if old_id:
-        await plant_service.plant_migration(old_user=old_id, new_user=new_id)
-        await web_auth_service.logout_all_sessions(old_id)
+        await plant_service.plant_migration(
+            old_user=old_id, new_user=new_id, session=session
+        )
+        await web_auth_service.logout_all_sessions(str(old_id))

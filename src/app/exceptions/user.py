@@ -18,5 +18,5 @@ class SecondLinkAttempt(UserException):
     """Telegram already linked."""
 
 
-class BusyError:
+class BusyError(UserException):
     """Redis lock error."""
