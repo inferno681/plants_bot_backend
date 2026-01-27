@@ -120,18 +120,26 @@ class UserService:
         if not user_id:
             self.log.info(INVALID_CODE_LOG, code, telegram_id)
             raise InvalidCodeProvided()
-        lock = await self.redis.set(f'LOCK:TG:{telegram_id}', 1, nx=True, ex=5)
+        lock_key = f'LOCK:TG:{telegram_id}'
+        lock = await self.redis.set(lock_key, 1, nx=True, ex=5)
         if not lock:
             raise BusyError()
         user_id_obj = PydanticObjectId(user_id)
 
-        old_user_id = await self._link_process(
-            user_id_obj, session, telegram_id
-        )
-
-        await self.redis.delete(f'{LINK_USER}{user_id}', f'{LINK_CODE}{code}')
-        await self.redis.delete(f'LOCK:TG:{telegram_id}')
+        try:
+            old_user_id = await self._link_process(
+                user_id_obj, session, telegram_id
+            )
+        except Exception:
+            await self.redis.delete(lock_key)
+            raise
+        else:
+            await self.redis.delete(lock_key)
         return old_user_id, user_id_obj
+
+    async def clear_link_code(self, user_id: str, code: str) -> None:
+        """Clear linking code after successful linking."""
+        await self.redis.delete(f'{LINK_USER}{user_id}', f'{LINK_CODE}{code}')
 
     @staticmethod
     def generate_link_code(length=CODE_LENGTH):

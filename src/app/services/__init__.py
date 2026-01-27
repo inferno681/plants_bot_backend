@@ -13,6 +13,7 @@ from app.services.auth_web import (
     get_web_auth_service,
     init_web_auth_service,
 )
+from app.services.bot import BotService, get_bot_service, init_bot_service
 from app.services.healthz import (
     HealthService,
     get_healthz_service,
@@ -67,4 +68,7 @@ __all__ = [
     'PlantService',
     'TokenProvider',
     'SessionStore',
+    'BotService',
+    'init_bot_service',
+    'get_bot_service',
 ]

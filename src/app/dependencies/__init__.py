@@ -6,6 +6,7 @@ from app.dependencies.auth import (
     telegram_auth_service_dep,
     web_auth_service_dep,
 )
+from app.dependencies.bot import get_bot_id_dep
 from app.dependencies.db import session_dependency
 from app.dependencies.healthz import healthz_service_dep
 from app.dependencies.plant import (
@@ -28,4 +29,5 @@ __all__ = [
     'plant_service_dep',
     'plant_query_dep',
     'user_service_dep',
+    'get_bot_id_dep',
 ]

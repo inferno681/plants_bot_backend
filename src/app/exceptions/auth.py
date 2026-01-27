@@ -34,6 +34,10 @@ class InvalidPasswordError(AuthError):
     """Invalid password provided."""
 
 
+class UserPermissionError(AuthError):
+    """Permission denied."""
+
+
 AUTH_ERROR_MAP: MappingProxyType[Type[AuthError], dict[str, Any]] = (
     MappingProxyType(
         {
