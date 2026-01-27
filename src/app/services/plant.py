@@ -1,12 +1,18 @@
-from datetime import date, datetime, time
+from datetime import date, datetime, time, timezone
 from logging import getLogger
 from uuid import uuid4
 
 from beanie import PydanticObjectId, SortDirection
+from beanie.operators import Set
 from fastapi import FastAPI, Request
+from pymongo.asynchronous.client_session import AsyncClientSession
 
 from app.exceptions.plant import PlantNotFoundError
-from app.logs.plant import PLANT_SERVICE_START_LOG
+from app.logs.plant import (
+    NO_PLANTS_FOR_MIGRATION_LOG,
+    PLANT_SERVICE_START_LOG,
+    PLANTS_MIGRATION_SUCCESS_LOG,
+)
 from app.models import Plant
 from app.schemes import (
     ImageUpload,
@@ -179,6 +185,39 @@ class PlantService:
             setattr(plant, key, new_value)
         await plant.save()
         return plant
+
+    async def plant_migration(
+        self,
+        old_user: PydanticObjectId,
+        new_user: PydanticObjectId,
+        session: AsyncClientSession,
+    ):
+        """Plant migration between users."""
+        if old_user == new_user:
+            return
+        migration = await Plant.find(
+            Plant.user_id == old_user, session=session
+        ).update(
+            Set(
+                {
+                    Plant.user_id: new_user,
+                    Plant.updated_at: datetime.now(timezone.utc),
+                }
+            )
+        )
+        if migration.modified_count > 0:
+            self.log.info(
+                PLANTS_MIGRATION_SUCCESS_LOG,
+                migration.modified_count,
+                str(old_user),
+                str(new_user),
+            )
+        else:
+            self.log.info(
+                NO_PLANTS_FOR_MIGRATION_LOG,
+                str(old_user),
+                str(new_user),
+            )
 
     def _build_cursor_filter(
         self,
