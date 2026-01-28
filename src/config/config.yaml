@@ -12,6 +12,8 @@ service:
 
   debug: false
 
+  is_prod: false
+
   tag_metadata_auth_web:
     name: "Auth web"
     description: "Registration and authentication for web"

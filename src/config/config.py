@@ -23,6 +23,8 @@ class ServiceSettings(BaseModel):
 
     debug: bool
 
+    is_prod: bool
+
     tag_metadata_auth_web: dict[str, str]
     tag_metadata_auth_telegram: dict[str, str]
     tag_metadata_auth_bot: dict[str, str]

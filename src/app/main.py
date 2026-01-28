@@ -45,7 +45,8 @@ async def calculate_process_time(request: Request, call_next):
 
 app.include_router(auth_router)
 app.include_router(v1_router)
-app.mount('/', StaticFiles(directory='frontend', html=True), name='static')
+if not config.service.is_prod:
+    app.mount('/', StaticFiles(directory='frontend', html=True), name='static')
 
 
 if __name__ == '__main__':
