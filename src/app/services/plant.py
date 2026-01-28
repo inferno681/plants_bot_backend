@@ -58,24 +58,13 @@ class PlantService:
         plant = Plant(
             user_id=PydanticObjectId(user_id), **plant_data.model_dump()
         )
-        if (
-            (
-                not plant.next_watering_at
-                or plant.next_watering_at <= date.today()
-            )
-            and plant.warm_period
-            and plant.cold_period
-        ):
+        if plant_data.should_recalc_watering:
             plant = self.scheduler.next_watering_date(
-                plant, plant.last_watered_at if plant.last_watered_at else None
+                plant, plant_data.last_watered_at
             )
-        if (
-            not plant.next_fertilizing_at
-            or plant.next_fertilizing_at <= date.today()
-        ) and plant.fertilizing:
+        if plant_data.should_recalc_fertilizing:
             plant = self.scheduler.next_fertilizing_date(
-                plant,
-                plant.last_fertilized_at if plant.last_fertilized_at else None,
+                plant, plant_data.last_fertilized_at
             )
         await plant.insert()
         return plant
@@ -189,28 +178,16 @@ class PlantService:
         if plant_update is None:
             return plant
 
-        for key, new_value in plant_update.model_dump(
-            exclude_unset=True
-        ).items():
+        updates = plant_update.model_dump(exclude_unset=True)
+        for key, new_value in updates.items():
             setattr(plant, key, new_value)
-        if (
-            (
-                not plant.next_watering_at
-                or plant.next_watering_at <= date.today()
-            )
-            and plant.warm_period
-            and plant.cold_period
-        ):
+        if plant_update.should_recalc_watering:
             plant = self.scheduler.next_watering_date(
-                plant, plant.last_watered_at if plant.last_watered_at else None
+                plant, plant_update.last_watered_at
             )
-        if (
-            not plant.next_fertilizing_at
-            or plant.next_fertilizing_at <= date.today()
-        ) and plant.fertilizing:
+        if plant_update.should_recalc_fertilizing:
             plant = self.scheduler.next_fertilizing_date(
-                plant,
-                plant.last_fertilized_at if plant.last_fertilized_at else None,
+                plant, plant_update.last_fertilized_at
             )
         await plant.save_changes()
         return plant

@@ -16,3 +16,7 @@ class NoDaysSchedulerError(InvalidPlantDataError):
 
 class PlantNotFoundError(InvalidPlantDataError):
     """Plant not found."""
+
+
+class OnePeriodMissingError(InvalidPlantDataError):
+    """One of the watering periods is missing."""
