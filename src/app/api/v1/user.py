@@ -9,7 +9,6 @@ from app.dependencies import (
 from app.schemes import TelegramLink, WebUserInfo
 from app.services import UserService, WebAuthService
 
-
 router = APIRouter()
 
 

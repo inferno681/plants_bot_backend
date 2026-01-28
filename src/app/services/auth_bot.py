@@ -11,9 +11,8 @@ from app.logs.auth import (
 )
 from app.models import Bot
 from app.schemes import ClientInfo, Tokens
-from app.services.auth import LoginType
 from app.services.init_data import ClientType, InitDataChecker
-from app.services.token import TokenService
+from app.services.token import LoginType, TokenService
 
 
 class BotAuthService:
@@ -39,7 +38,7 @@ class BotAuthService:
             raise UserNotFoundError()
         self.log.info(USER_LOGIN_LOG, payload['id'], LoginType.bot)
         return await self.token_service.create_and_put_tokens(
-            str(bot.id), client_info, 'bot'
+            str(bot.id), client_info, LoginType.bot
         )
 
     async def logout(self, bot_id: str, sid: str) -> str:

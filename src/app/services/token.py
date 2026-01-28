@@ -1,5 +1,6 @@
 import time
 from datetime import datetime, timezone
+from enum import StrEnum, auto
 from logging import getLogger
 from uuid import uuid4
 
@@ -20,6 +21,15 @@ from app.logs import token as token_logs
 from app.schemes import ClientInfo, Tokens
 
 logger = getLogger(__name__)
+
+
+class LoginType(StrEnum):
+    doc = auto()
+    telegram = auto()
+    web = auto()
+    bot = auto()
+
+    USER_TYPES = frozenset((web, telegram))
 
 
 class TokenProvider:
@@ -43,7 +53,7 @@ class TokenProvider:
         self.log.info(token_logs.TOKEN_PROVIDER_START_LOG)
 
     def issue_access(
-        self, user_id: str, sid: str, user_type: str = auth.USER
+        self, user_id: str, sid: str, user_type: LoginType
     ) -> str:
         """Issue access token."""
         now = int(datetime.now(timezone.utc).timestamp())
@@ -60,7 +70,7 @@ class TokenProvider:
         )
 
     def issue_refresh(
-        self, user_id: str, sid: str, user_type: str = auth.USER
+        self, user_id: str, sid: str, user_type: LoginType
     ) -> str:
         """Issue refresh token."""
         now = int(datetime.now(timezone.utc).timestamp())
@@ -150,13 +160,17 @@ class SessionStore:
         user_id: str,
         sid: str,
         client_info: ClientInfo,
-        user_type: str = auth.USER,
+        user_type: LoginType,
     ) -> None:
         """Store access and refresh sid in Redis."""
         dropped = await self.session_create_script(
             keys=[f'{auth.USER_SESSIONS_PREFIX}{user_id}'],
             args=[
-                self.max_sessions if user_type == auth.USER else 1,
+                (
+                    self.max_sessions
+                    if user_type in LoginType.USER_TYPES
+                    else 1
+                ),
                 self.refresh_ttl,
                 int(time.time()),
                 sid,
@@ -184,8 +198,8 @@ class SessionStore:
         self,
         user_id: str,
         sid: str,
+        user_type: LoginType,
         is_access_token: bool = True,
-        user_type: str = auth.USER,
     ) -> None:
         """Check sid in storage."""
 
@@ -238,7 +252,7 @@ class SessionStore:
         user_id: str,
         sid: str,
         client_info: ClientInfo,
-        user_type: str = auth.USER,
+        user_type: LoginType,
     ) -> str:
         """Refresh sids in storage."""
 
@@ -341,7 +355,7 @@ class TokenService:
         self.log.info(token_logs.TOKEN_SERVICE_START_LOG)
 
     async def create_and_put_tokens(
-        self, user_id: str, client_info: ClientInfo, user_type: str = auth.USER
+        self, user_id: str, client_info: ClientInfo, user_type: LoginType
     ) -> Tokens:
         """Create JWT access and refresh tokens and store them in Redis."""
         sid = str(uuid4())
@@ -362,8 +376,8 @@ class TokenService:
         await self.store.check_sid(
             payload[auth.SUB],
             payload[auth.SID],
-            is_access_token,
             payload[auth.TYPE],
+            is_access_token,
         )
         return payload
 

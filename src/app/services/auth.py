@@ -1,4 +1,3 @@
-from enum import StrEnum, auto
 from logging import getLogger
 
 from app.constants.auth import (
@@ -8,13 +7,6 @@ from app.constants.auth import (
 )
 from app.schemes import ClientInfo, Tokens
 from app.services.token import TokenService
-
-
-class LoginType(StrEnum):
-    doc = auto()
-    telegram = auto()
-    web = auto()
-    bot = auto()
 
 
 class BaseAuthService:

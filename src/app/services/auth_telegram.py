@@ -11,9 +11,9 @@ from app.logs.auth import (
 from app.models import TelegramAccount, User
 from app.schemes import ClientInfo, Tokens
 from app.schemes.auth import TelegramAccountBase
-from app.services.auth import BaseAuthService, LoginType
+from app.services.auth import BaseAuthService
 from app.services.init_data import ClientType, InitDataChecker
-from app.services.token import TokenService
+from app.services.token import LoginType, TokenService
 
 
 class TelegramAuthService(BaseAuthService):
@@ -49,7 +49,7 @@ class TelegramAuthService(BaseAuthService):
         self.log.info(USER_LOGIN_LOG, str(user.user_id), LoginType.telegram)
         await self._update_account_if_changed(user, user_data, session)
         return await self.token_service.create_and_put_tokens(
-            str(user.user_id), client_info
+            str(user.user_id), client_info, LoginType.telegram
         )
 
     async def registration_telegram_user(

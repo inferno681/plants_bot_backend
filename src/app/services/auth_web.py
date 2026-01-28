@@ -20,8 +20,8 @@ from app.logs.auth import (
 from app.models import User, WebAccount
 from app.schemes import ClientInfo, Tokens
 from app.schemes.auth import WebAccountLogin, WebAccountRegistration
-from app.services.auth import BaseAuthService, LoginType
-from app.services.token import TokenService
+from app.services.auth import BaseAuthService
+from app.services.token import LoginType, TokenService
 
 
 class WebAuthService(BaseAuthService):
@@ -70,7 +70,7 @@ class WebAuthService(BaseAuthService):
         ):
             self.log.info(USER_LOGIN_LOG, str(user.user_id), LoginType.web)
             return await self.token_service.create_and_put_tokens(
-                str(user.user_id), client_info
+                str(user.user_id), client_info, LoginType.web
             )
         self.log.warning(INVALID_WEB_PASSWORD_LOG, login_data.email)
         raise InvalidCredentialsError()
@@ -90,7 +90,7 @@ class WebAuthService(BaseAuthService):
             raise UserNotFoundError()
         self.log.info(USER_LOGIN_LOG, DOC_USER, LoginType.doc)
         return await self.token_service.create_and_put_tokens(
-            str(DOC_USER), client_info
+            str(DOC_USER), client_info, LoginType.doc
         )
 
 
