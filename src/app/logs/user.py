@@ -4,3 +4,4 @@ TELEGRAM_ALREADY_CONNECTED_LOG = (
 )
 INVALID_CODE_LOG = 'Invalid linking code provided %s for telegram %s'
 USER_SERVICE_START_LOG = 'User service started'
+USER_DELETE_LOG = 'User %s deleted'

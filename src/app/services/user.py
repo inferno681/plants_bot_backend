@@ -30,6 +30,7 @@ from app.logs.user import (
     ALLOCATION_ERROR_LOG,
     INVALID_CODE_LOG,
     TELEGRAM_ALREADY_CONNECTED_LOG,
+    USER_DELETE_LOG,
     USER_SERVICE_START_LOG,
 )
 from app.models import TelegramAccount, User, UserStatus, WebAccount
@@ -140,6 +141,18 @@ class UserService:
     async def clear_link_code(self, user_id: str, code: str) -> None:
         """Clear linking code after successful linking."""
         await self.redis.delete(f'{LINK_USER}{user_id}', f'{LINK_CODE}{code}')
+
+    async def delete_user(self, user_id: PydanticObjectId) -> None:
+        """Delete user and associated accounts."""
+        user = await User.find_one(User.id == user_id)
+        if not user:
+            raise UserNotFoundError()
+        await TelegramAccount.find(TelegramAccount.user_id == user_id).delete()
+        await WebAccount.find(WebAccount.user_id == user_id).delete()
+        user.status = UserStatus.deleted
+        await user.save_changes()
+        self.log.info(USER_DELETE_LOG, str(user_id))
+        return {'message': 'User deleted successfully.'}
 
     @staticmethod
     def generate_link_code(length=CODE_LENGTH):
