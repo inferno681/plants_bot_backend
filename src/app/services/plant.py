@@ -58,11 +58,21 @@ class PlantService:
         plant = Plant(
             user_id=PydanticObjectId(user_id), **plant_data.model_dump()
         )
-        if plant.warm_period and plant.cold_period:
+        if (
+            (
+                not plant.next_watering_at
+                or plant.next_watering_at <= date.today()
+            )
+            and plant.warm_period
+            and plant.cold_period
+        ):
             plant = self.scheduler.next_watering_date(
                 plant, plant.last_watered_at if plant.last_watered_at else None
             )
-        if plant.fertilizing:
+        if (
+            not plant.next_fertilizing_at
+            or plant.next_fertilizing_at <= date.today()
+        ) and plant.fertilizing:
             plant = self.scheduler.next_fertilizing_date(
                 plant,
                 plant.last_fertilized_at if plant.last_fertilized_at else None,
@@ -183,7 +193,26 @@ class PlantService:
             exclude_unset=True
         ).items():
             setattr(plant, key, new_value)
-        await plant.save()
+        if (
+            (
+                not plant.next_watering_at
+                or plant.next_watering_at <= date.today()
+            )
+            and plant.warm_period
+            and plant.cold_period
+        ):
+            plant = self.scheduler.next_watering_date(
+                plant, plant.last_watered_at if plant.last_watered_at else None
+            )
+        if (
+            not plant.next_fertilizing_at
+            or plant.next_fertilizing_at <= date.today()
+        ) and plant.fertilizing:
+            plant = self.scheduler.next_fertilizing_date(
+                plant,
+                plant.last_fertilized_at if plant.last_fertilized_at else None,
+            )
+        await plant.save_changes()
         return plant
 
     async def plant_migration(
