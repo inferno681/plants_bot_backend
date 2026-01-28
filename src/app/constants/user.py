@@ -4,3 +4,6 @@ BOT_LINK = 'https://t.me/plants_w_f_bot?start={code}'
 CODE_LENGTH = 6
 LINK_CODE = 'tg:link:code:'
 LINK_USER = 'tg:link:user:'
+
+USER_UNLINK_MSG = 'User deleted successfully.'
+USER_DELETE_MSG = 'User deleted successfully.'

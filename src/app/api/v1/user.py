@@ -43,3 +43,14 @@ async def delete_user(
     message = await user_service.delete_user(user_id=PydanticObjectId(user_id))
     await web_auth_service.logout_all_sessions(user_id)
     return message
+
+
+@router.delete('/me/telegram_link')
+async def delete_telegram_link(
+    user_id: str = current_user_id_dep,
+    user_service: UserService = user_service_dep,
+):
+    """Delete telegram link endpoint."""
+    return await user_service.delete_telegram_link(
+        user_id=PydanticObjectId(user_id)
+    )

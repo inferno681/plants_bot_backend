@@ -17,6 +17,8 @@ from app.constants.user import (
     LINK_USER,
     LINKING_CODE_SYMBOLS,
     QR_LINK,
+    USER_DELETE_MSG,
+    USER_UNLINK_MSG,
 )
 from app.exceptions.auth import UserNotFoundError
 from app.exceptions.user import (
@@ -142,7 +144,15 @@ class UserService:
         """Clear linking code after successful linking."""
         await self.redis.delete(f'{LINK_USER}{user_id}', f'{LINK_CODE}{code}')
 
-    async def delete_user(self, user_id: PydanticObjectId) -> None:
+    async def delete_telegram_link(self, user_id: PydanticObjectId):
+        """Delete telegram link from user account."""
+        user = await User.find_one(User.id == user_id)
+        if not user:
+            raise UserNotFoundError()
+        await TelegramAccount.find(TelegramAccount.user_id == user_id).delete()
+        return {'message': USER_UNLINK_MSG}
+
+    async def delete_user(self, user_id: PydanticObjectId) -> dict:
         """Delete user and associated accounts."""
         user = await User.find_one(User.id == user_id)
         if not user:
@@ -152,7 +162,7 @@ class UserService:
         user.status = UserStatus.deleted
         await user.save_changes()
         self.log.info(USER_DELETE_LOG, str(user_id))
-        return {'message': 'User deleted successfully.'}
+        return {'message': USER_DELETE_MSG}
 
     @staticmethod
     def generate_link_code(length=CODE_LENGTH):
