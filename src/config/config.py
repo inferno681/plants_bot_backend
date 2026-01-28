@@ -28,6 +28,9 @@ class ServiceSettings(BaseModel):
     tag_metadata_auth_web: dict[str, str]
     tag_metadata_auth_telegram: dict[str, str]
     tag_metadata_auth_bot: dict[str, str]
+    tag_metadata_bot: dict[str, str]
+    tag_metadata_user: dict[str, str]
+    tag_metadata_link: dict[str, str]
     tag_metadata_plant: dict[str, str]
     tag_metadata_health: dict[str, str]
 

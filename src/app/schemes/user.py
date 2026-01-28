@@ -44,19 +44,3 @@ class WebUserInfo(BaseModel):
     email_verified: bool = False
     telegram_id: int | None = None
     telegram_linked: bool = False
-
-
-class TelegramLink(BaseModel):
-    """Telegram linking scheme."""
-
-    code: str
-    qr: str
-    link: str
-    expires_at: int
-
-
-class TelegramLinkRequest(BaseModel):
-    """Link request scheme."""
-
-    code: str
-    telegram_id: int

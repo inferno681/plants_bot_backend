@@ -5,7 +5,7 @@ from fastapi import FastAPI, Request
 from app.constants.auth import SUB, TYPE
 from app.exceptions.auth import UserPermissionError
 from app.logs.bot import BOT_SERVICE_START_LOG
-from app.services import TokenService
+from app.services.token import TokenService
 
 
 class BotService:

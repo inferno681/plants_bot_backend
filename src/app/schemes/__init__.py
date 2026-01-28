@@ -7,6 +7,7 @@ from app.schemes.auth import (
 from app.schemes.client_info import ClientInfo
 from app.schemes.dashboard import PlantDashboardStats, PlantTask
 from app.schemes.image import ImageUpload
+from app.schemes.link import TelegramLink, TelegramLinkRequest
 from app.schemes.pagination import CursorPaginatedResponse, PlantQuery
 from app.schemes.plant import (
     PlantCreteScheme,
@@ -21,13 +22,7 @@ from app.schemes.token import (
     TokenServiceConfig,
     WebTokens,
 )
-from app.schemes.user import (
-    TelegramLink,
-    TelegramLinkRequest,
-    TelegramUser,
-    WebUser,
-    WebUserInfo,
-)
+from app.schemes.user import TelegramUser, WebUser, WebUserInfo
 from app.schemes.user_session import UserSession
 
 __all__ = [

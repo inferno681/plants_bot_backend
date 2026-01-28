@@ -22,10 +22,19 @@ service:
     description: "Registration and authentication for telegram"
   tag_metadata_auth_bot:
     name: "Auth bot"
-    description: "Registration and authentication for bot"
+    description: "Authentication for bot"
   tag_metadata_plant:
     name: "Plant"
-    description: "Plants info"
+    description: "Plants operations"
+  tag_metadata_bot:
+    name: "Bot API"
+    description: "Bot operations"
+  tag_metadata_user:
+    name: "User"
+    description: "User operations"
+  tag_metadata_link:
+    name: "Telegram link"
+    description: "Telegram links operations"
   tag_metadata_health:
     name: "Health"
     description: "Health endpoints. For services only!"

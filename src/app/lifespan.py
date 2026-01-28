@@ -60,10 +60,11 @@ def init_auth(
         app=app,
         token_service=token_service,
         pipeline_builder=pipeline_builder,
-        redis=redis,
-        link_ttl=config.service.link_ttl,
     )
     services.init_bot_service(app=app, token_service=token_service)
+    services.init_link_service(
+        app=app, redis=redis, link_ttl=config.service.link_ttl
+    )
 
 
 async def init_mongo(app: FastAPI):

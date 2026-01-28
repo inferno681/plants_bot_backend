@@ -1,6 +1,7 @@
 import time
 from datetime import datetime, timezone
 from enum import StrEnum, auto
+from functools import lru_cache
 from logging import getLogger
 from types import SimpleNamespace
 from uuid import uuid4
@@ -29,7 +30,10 @@ class LoginType(StrEnum):
     web = auto()
     bot = auto()
 
-    USER_TYPES = frozenset((web, telegram))
+    @classmethod
+    @lru_cache
+    def user_types(cls):
+        return frozenset((cls.web, cls.telegram))
 
 
 class TokenProvider:
@@ -178,7 +182,7 @@ class SessionStore:
             args=[
                 (
                     self.max_sessions
-                    if user_type in LoginType.USER_TYPES
+                    if user_type in LoginType.user_types()
                     else 1
                 ),
                 self.refresh_ttl,

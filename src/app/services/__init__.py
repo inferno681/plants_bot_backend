@@ -21,6 +21,7 @@ from app.services.healthz import (
 )
 from app.services.image import ImageService
 from app.services.init_data import InitDataChecker
+from app.services.link import LinkService, get_link_service, init_link_service
 from app.services.mapper import (
     PlantReadMapper,
     get_plant_mapper,
@@ -77,4 +78,7 @@ __all__ = [
     'init_bot_service',
     'get_bot_service',
     'LoginType',
+    'LinkService',
+    'init_link_service',
+    'get_link_service',
 ]
