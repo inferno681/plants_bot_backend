@@ -3,6 +3,7 @@ SESSION_STORE_START_LOG = 'Session store started'
 TOKEN_SERVICE_START_LOG = 'Token service started'
 TOKEN_REFRESH_SCRIPT_LOADED_LOG = 'Refresh Lua script loaded: %s'
 SESSION_CREATE_SCRIPT_LOADED_LOG = 'Session creation Lua script loaded: %s'
+DELETE_SESSIONS_SCRIPT_LOADED_LOG = 'Delete sessions Lua script loaded: %s'
 INVALID_ACCESS_TOKEN_LOG = 'Invalid access token: %s'
 INVALID_REFRESH_TOKEN_LOG = 'Invalid refresh token: %s'
 SESSION_DELETED_LOG = 'Session deleted for user %s'
@@ -28,3 +29,4 @@ TOKEN_MISSED_UID_TYPE_LOG = (
 )
 TOKEN_OWNER_MISMATCH_LOG = 'Token owner mismatch: expected=%s got=%s'
 TOKEN_TYPE_MISMATCH_LOG = 'Token type mismatch: expected=%s got=%s'
+SESSIONS_DELETED_BY_TYPE_LOG = 'Deleted %i sessions for user %s with type %s'

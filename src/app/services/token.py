@@ -2,11 +2,11 @@ import time
 from datetime import datetime, timezone
 from enum import StrEnum, auto
 from logging import getLogger
+from types import SimpleNamespace
 from uuid import uuid4
 
 import jwt
 from redis.asyncio.client import Redis
-from redis.commands.core import AsyncScript
 
 from app.constants import auth
 from app.exceptions.token import (
@@ -127,32 +127,42 @@ class SessionStore:
         self.redis = redis
         self.refresh_ttl = refresh_ttl
         self.log = logger
-        self.refresh_script: AsyncScript
-        self.session_create_script: AsyncScript
+        self.lua = SimpleNamespace()
         self.load_lua_scripts(
             refresh_filename='token_refresh.lua',
             session_create_filename='session_create.lua',
+            delete_sessions_filename='delete_sessions_by_type.lua',
         )
         self.max_sessions = max_session
         self.log.info(token_logs.SESSION_STORE_START_LOG)
 
     def load_lua_scripts(
-        self, refresh_filename: str, session_create_filename: str
+        self,
+        refresh_filename: str,
+        session_create_filename: str,
+        delete_sessions_filename: str,
     ) -> None:
         """Load Lua scripts into Redis."""
-        self.refresh_script = self.redis.register_script(
+        self.lua.refresh_script = self.redis.register_script(
             auth.SCRIPTS_DIR.joinpath(refresh_filename).read_text()
         )
         self.log.info(
             token_logs.TOKEN_REFRESH_SCRIPT_LOADED_LOG,
-            self.refresh_script.sha,  # type: ignore[attr-defined]
+            self.lua.refresh_script.sha,
         )
-        self.session_create_script = self.redis.register_script(
+        self.lua.session_create_script = self.redis.register_script(
             auth.SCRIPTS_DIR.joinpath(session_create_filename).read_text()
         )
         self.log.info(
             token_logs.SESSION_CREATE_SCRIPT_LOADED_LOG,
-            self.session_create_script.sha,  # type: ignore[attr-defined]
+            self.lua.session_create_script.sha,
+        )
+        self.lua.delete_sessions_script = self.redis.register_script(
+            auth.SCRIPTS_DIR.joinpath(delete_sessions_filename).read_text()
+        )
+        self.log.info(
+            token_logs.DELETE_SESSIONS_SCRIPT_LOADED_LOG,
+            self.lua.delete_sessions_script.sha,
         )
 
     async def create_session(
@@ -163,7 +173,7 @@ class SessionStore:
         user_type: LoginType,
     ) -> None:
         """Store access and refresh sid in Redis."""
-        dropped = await self.session_create_script(
+        dropped = await self.lua.session_create_script(
             keys=[f'{auth.USER_SESSIONS_PREFIX}{user_id}'],
             args=[
                 (
@@ -259,7 +269,7 @@ class SessionStore:
         new_sid = str(uuid4())
 
         try:
-            script_result = await self.refresh_script(
+            script_result = await self.lua.refresh_script(
                 keys=[
                     f"{auth.SESSION_PREFIX}{sid}",
                     f"{auth.USER_SESSIONS_PREFIX}{user_id}",
@@ -300,6 +310,30 @@ class SessionStore:
                 raise TokenInvalidError()
 
         return new_sid
+
+    async def delete_sessions_by_type(
+        self,
+        user_id: str,
+        user_type: LoginType,
+    ) -> int:
+        """Delete all sessions of a specific type for a user."""
+        deleted_count = await self.lua.delete_sessions_script(
+            keys=[f'{auth.USER_SESSIONS_PREFIX}{user_id}'],
+            args=[
+                auth.SESSION_PREFIX,
+                user_type,
+            ],
+        )
+
+        if deleted_count > 0:
+            self.log.info(
+                token_logs.SESSIONS_DELETED_BY_TYPE_LOG,
+                deleted_count,
+                user_id,
+                user_type,
+            )
+
+        return deleted_count
 
     def _validate_base(
         self,
@@ -413,3 +447,11 @@ class TokenService:
     ) -> None:
         """Delete sessions."""
         return await self.store.delete_sessions(user_id, sid, current_sid)
+
+    async def delete_sessions_by_type(
+        self,
+        user_id: str,
+        user_type: LoginType,
+    ) -> int:
+        """Delete all sessions of a specific type for a user."""
+        return await self.store.delete_sessions_by_type(user_id, user_type)

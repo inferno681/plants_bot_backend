@@ -7,7 +7,7 @@ from app.dependencies import (
     web_auth_service_dep,
 )
 from app.schemes import TelegramLink, WebUserInfo
-from app.services import UserService, WebAuthService
+from app.services import LoginType, UserService, WebAuthService
 
 router = APIRouter()
 
@@ -48,8 +48,13 @@ async def delete_user(
 async def delete_telegram_link(
     user_id: str = current_user_id_dep,
     user_service: UserService = user_service_dep,
+    web_auth_service: WebAuthService = web_auth_service_dep,
 ):
     """Delete telegram link endpoint."""
-    return await user_service.delete_telegram_link(
+    message = await user_service.delete_telegram_link(
         user_id=PydanticObjectId(user_id)
     )
+    await web_auth_service.token_service.delete_sessions_by_type(
+        user_id, LoginType.telegram
+    )
+    return message

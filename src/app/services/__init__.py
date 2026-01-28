@@ -34,7 +34,12 @@ from app.services.plant import (
 )
 from app.services.scheduler import Scheduler
 from app.services.storage import S3StorageService
-from app.services.token import SessionStore, TokenProvider, TokenService
+from app.services.token import (
+    LoginType,
+    SessionStore,
+    TokenProvider,
+    TokenService,
+)
 from app.services.user import UserService, get_user_service, init_user_service
 
 __all__ = [
@@ -71,4 +76,5 @@ __all__ = [
     'BotService',
     'init_bot_service',
     'get_bot_service',
+    'LoginType',
 ]
