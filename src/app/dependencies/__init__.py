@@ -14,7 +14,7 @@ from app.dependencies.plant import (
     plant_query_dep,
     plant_service_dep,
 )
-from app.dependencies.user import user_service_dep
+from app.dependencies.user import link_telegram_deps, user_service_dep
 
 __all__ = [
     'current_user_id_dep',
@@ -29,5 +29,6 @@ __all__ = [
     'plant_service_dep',
     'plant_query_dep',
     'user_service_dep',
+    'link_telegram_deps',
     'get_bot_id_dep',
 ]
