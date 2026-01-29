@@ -4,3 +4,4 @@ TELEGRAM_ALREADY_CONNECTED_LOG = (
     'Telegram account already connected for user %s'
 )
 INVALID_CODE_LOG = 'Invalid linking code provided %s for telegram %s'
+LINK_CODE_SCRIPT_LOADED_LOG = 'Link code Lua script loaded: %s'

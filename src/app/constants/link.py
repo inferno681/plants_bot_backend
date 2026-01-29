@@ -6,3 +6,4 @@ LINK_CODE = 'tg:link:code:'
 LINK_USER = 'tg:link:user:'
 
 USER_UNLINK_MSG = 'User deleted successfully.'
+MIN_TTL_SECONDS = 30

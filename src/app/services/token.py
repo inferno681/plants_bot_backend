@@ -10,6 +10,7 @@ import jwt
 from redis.asyncio.client import Redis
 
 from app.constants import auth
+from app.constants.general import SCRIPTS_DIR
 from app.exceptions.token import (
     TokenExpiredError,
     TokenIntegrityError,
@@ -148,21 +149,21 @@ class SessionStore:
     ) -> None:
         """Load Lua scripts into Redis."""
         self.lua.refresh_script = self.redis.register_script(
-            auth.SCRIPTS_DIR.joinpath(refresh_filename).read_text()
+            SCRIPTS_DIR.joinpath(refresh_filename).read_text()
         )
         self.log.info(
             token_logs.TOKEN_REFRESH_SCRIPT_LOADED_LOG,
             self.lua.refresh_script.sha,
         )
         self.lua.session_create_script = self.redis.register_script(
-            auth.SCRIPTS_DIR.joinpath(session_create_filename).read_text()
+            SCRIPTS_DIR.joinpath(session_create_filename).read_text()
         )
         self.log.info(
             token_logs.SESSION_CREATE_SCRIPT_LOADED_LOG,
             self.lua.session_create_script.sha,
         )
         self.lua.delete_sessions_script = self.redis.register_script(
-            auth.SCRIPTS_DIR.joinpath(delete_sessions_filename).read_text()
+            SCRIPTS_DIR.joinpath(delete_sessions_filename).read_text()
         )
         self.log.info(
             token_logs.DELETE_SESSIONS_SCRIPT_LOADED_LOG,

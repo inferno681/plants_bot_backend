@@ -1,3 +1,5 @@
+from importlib.resources import files
+
 MONTHS_IN_YEAR = 12
 DAYS_IN_MONTH = 31
 
@@ -8,3 +10,4 @@ MSG = 'msg'
 TYPE = 'type'
 STATUS = 'status'
 OK = 'ok'
+SCRIPTS_DIR = files('app.redis_service.scripts')

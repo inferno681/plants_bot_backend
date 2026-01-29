@@ -2,6 +2,7 @@ import secrets
 import time
 from datetime import datetime, timezone
 from logging import getLogger
+from types import SimpleNamespace
 
 from beanie import PydanticObjectId
 from beanie.operators import Set
@@ -9,12 +10,14 @@ from fastapi import FastAPI, Request
 from pymongo.asynchronous.client_session import AsyncClientSession
 from redis.asyncio import Redis
 
+from app.constants.general import SCRIPTS_DIR
 from app.constants.link import (
     BOT_LINK,
     CODE_LENGTH,
     LINK_CODE,
     LINK_USER,
     LINKING_CODE_SYMBOLS,
+    MIN_TTL_SECONDS,
     QR_LINK,
     USER_UNLINK_MSG,
 )
@@ -29,6 +32,7 @@ from app.exceptions.link import (
 from app.logs.link import (
     ALLOCATION_ERROR_LOG,
     INVALID_CODE_LOG,
+    LINK_CODE_SCRIPT_LOADED_LOG,
     LINK_SERVICE_START_LOG,
     TELEGRAM_ALREADY_CONNECTED_LOG,
 )
@@ -48,8 +52,19 @@ class LinkService:
 
         self.redis = redis
         self.link_ttl = link_ttl
+        self.lua = SimpleNamespace()
         self.log = getLogger(__name__)
+        self.load_lua_scripts(link_code_pair_filename='link_code_pair.lua')
         self.log.info(LINK_SERVICE_START_LOG)
+
+    def load_lua_scripts(self, link_code_pair_filename: str) -> None:
+        """Load Lua scripts into Redis."""
+        self.lua.link_code_pair_script = self.redis.register_script(
+            SCRIPTS_DIR.joinpath(link_code_pair_filename).read_text()
+        )
+        self.log.info(
+            LINK_CODE_SCRIPT_LOADED_LOG, self.lua.link_code_pair_script.sha
+        )
 
     async def create_telegram_link(self, user_id: str) -> TelegramLink:
         """Code generation for telegram linking."""
@@ -61,7 +76,7 @@ class LinkService:
         existing = await self.redis.get(f'{LINK_USER}{user_id}')
         if existing:
             ttl = await self.redis.ttl(f'{LINK_USER}{user_id}')
-            if ttl > 0:
+            if ttl > MIN_TTL_SECONDS:
                 return TelegramLink(
                     code=existing,
                     qr=QR_LINK.format(code=existing),
@@ -71,12 +86,12 @@ class LinkService:
 
         for _ in range(5):
             code = self.generate_link_code()
-            pipe = self.redis.pipeline()
-            pipe.set(f'{LINK_CODE}{code}', user_id, ex=self.link_ttl, nx=True)
-            pipe.set(f'{LINK_USER}{user_id}', code, ex=self.link_ttl, nx=True)
-            pipe_result = await pipe.execute()  # noqa: WPS476
+            created = await self.lua.link_code_pair_script(  # noqa: WPS47
+                keys=[f'{LINK_CODE}{code}', f'{LINK_USER}{user_id}'],
+                args=[user_id, code, self.link_ttl],
+            )
 
-            if pipe_result[0] and pipe_result[1]:
+            if created:
                 return TelegramLink(
                     code=code,
                     qr=QR_LINK.format(code=code),
