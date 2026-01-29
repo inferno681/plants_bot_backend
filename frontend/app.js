@@ -1,12 +1,13 @@
 const { ENDPOINTS } = window.CONFIG;
 const API_URL = ENDPOINTS.PLANTS;
 const STATS_URL = ENDPOINTS.STATS;
+const USER_ME_URL = ENDPOINTS.USER_ME;
 const WEB_LOGIN_URL = ENDPOINTS.WEB_LOGIN;
 const WEB_REGISTER_URL = ENDPOINTS.WEB_REGISTER;
 
 let plants = [];
 const filters = { text: '', mode: 'all' };
-const state = { loading: true, error: null, stats: null };
+const state = { loading: true, error: null, stats: null, user: null };
 const pagination = { cursor: null, hasMore: true, loading: false };
 const auth = window.Auth;
 const authFetch = (...args) => auth.authFetch(...args);
@@ -167,15 +168,27 @@ const showNotice = (target, message, tone = 'muted') => {
   target.innerHTML = `<div class="notice notice--${tone}">${message}</div>`;
 };
 
+const buildUserCard = () => {
+  const user = state.user;
+  if (!user) return { label: 'Пользователь', value: '—' };
+  if (user.email) return { label: 'Пользователь', value: user.email };
+  if (user.telegram_linked || user.telegram_id) {
+    const value = user.telegram_id ? `Telegram ${user.telegram_id}` : 'Telegram подключен';
+    return { label: 'Telegram', value };
+  }
+  return { label: 'Пользователь', value: '—' };
+};
+
 const buildStats = () => {
   const total = state.stats?.total ?? plants.length;
   const attention = state.stats?.attention ?? 0;
   const weekTasks = state.stats?.watering_week ?? 0;
+  const userCard = buildUserCard();
   const blocks = [
     { label: 'Всего растений', value: total },
-    { label: 'Требуют внимания', value: attention },
+    userCard,
     { label: 'Полив на неделю', value: weekTasks },
-    { label: 'Синхронизация', value: 'Онлайн' },
+    { label: 'Требуют внимания', value: attention },
   ];
 
   elements.stats.innerHTML = blocks
@@ -346,6 +359,22 @@ const fetchStats = async () => {
   }
 };
 
+const fetchUser = async () => {
+  try {
+    const response = await authFetch(USER_ME_URL);
+    if (response.status === 401) {
+      state.user = null;
+      return;
+    }
+    if (!response.ok) throw new Error(`Status ${response.status}`);
+    state.user = await response.json();
+  } catch (error) {
+    state.user = null;
+  } finally {
+    buildStats();
+  }
+};
+
 elements.search?.addEventListener('input', (e) => {
   filters.text = e.target.value.toLowerCase();
   renderCards();
@@ -364,6 +393,7 @@ elements.refresh?.addEventListener('click', async () => {
   pagination.cursor = null;
   pagination.hasMore = true;
   await fetchStats();
+  await fetchUser();
   await fetchPlants(true);
 });
 
@@ -383,6 +413,7 @@ elements.loginForm?.addEventListener('submit', async (e) => {
   const ok = await loginWithCredentials(email, password);
   if (ok) {
     await fetchStats();
+    await fetchUser();
     await fetchPlants(true);
   }
 });
@@ -409,6 +440,7 @@ elements.registerForm?.addEventListener('submit', async (e) => {
   const ok = await registerWithCredentials(email, password, confirmPassword);
   if (ok) {
     await fetchStats();
+    await fetchUser();
     await fetchPlants(true);
   }
 });
@@ -442,6 +474,7 @@ const bootstrap = async () => {
   renderCards();
   renderTasks();
   await fetchStats();
+  await fetchUser();
   await fetchPlants(true);
 };
 

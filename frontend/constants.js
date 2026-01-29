@@ -11,6 +11,8 @@
   const ENDPOINTS = {
     PLANTS: `${API_BASE}/api/v1/plants`,
     STATS: `${API_BASE}/api/v1/plants/stats`,
+    USER_ME: `${API_BASE}/api/v1/users/me`,
+    LINK: `${API_BASE}/api/v1/link`,
     TG_LOGIN: `${API_BASE}/auth/telegram/login`,
     TG_REFRESH: `${API_BASE}/auth/telegram/refresh`,
     WEB_LOGIN: `${API_BASE}/auth/web/login`,

@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Профиль пользователя</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="page">
+    <header class="detail-header">
+      <div class="detail-header__group">
+        <button class="button button--ghost" id="back-btn" type="button">↩ Назад</button>
+      </div>
+      <div class="detail-header__group">
+        <button class="button button--ghost" id="theme-toggle" type="button">Тема</button>
+      </div>
+    </header>
+
+    <section class="detail-hero" aria-live="polite">
+      <div class="detail-hero__image user-hero__image">
+        <div class="avatar-initials" id="user-initials">U</div>
+      </div>
+      <div class="detail-hero__meta">
+        <p class="eyebrow">Профиль</p>
+        <h1 id="user-title">Пользователь</h1>
+        <div class="card__subtitle" id="user-subtitle">Загрузка...</div>
+        <p class="lede" id="user-description">Загружаем данные профиля.</p>
+        <div class="badges" id="user-badges"></div>
+      </div>
+    </section>
+
+    <section class="detail-grid" id="user-details"></section>
+
+    <section class="edit-panel" id="link-panel" hidden>
+      <div class="edit-panel__header">
+        <div>
+          <p class="eyebrow">Привязка аккаунта Telegram</p>
+        </div>
+        <div class="edit-status" id="link-status" aria-live="polite"></div>
+      </div>
+
+      <div class="form-grid">
+        <article class="form-card form-card--primary" id="link-card">
+          <div class="form-card__header">
+            <div>
+              <div class="eyebrow">Код для привязки</div>
+            </div>
+            <div class="link-timer" id="link-timer"></div>
+          </div>
+
+          <div class="link-grid">
+            <div class="qr-box">
+              <img class="qr-image" id="link-qr" alt="QR код для Telegram" />
+            </div>
+            <div class="link-meta">
+              <div class="link-row">
+                <span class="label">Ссылка</span>
+                <a class="link-value" id="link-url" href="#" target="_blank" rel="noopener">—</a>
+              </div>
+              <div class="link-row">
+                <span class="label">Код</span>
+                <button class="code-pill" id="link-code" type="button">—</button>
+                <span class="link-hint" id="link-hint">Нажмите, чтобы скопировать</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="link-actions">
+            <button class="button button--primary" id="link-generate" type="button">Получить код</button>
+          </div>
+        </article>
+
+      </div>
+    </section>
+
+    <section class="edit-panel">
+      <div class="edit-panel__header">
+        <div>
+          <p class="eyebrow">Аккаунт</p>
+        </div>
+        <div class="edit-status" id="delete-status" aria-live="polite"></div>
+      </div>
+      <div class="form-card danger-card">
+        <div>
+          <div class="label">Удаление пользователя</div>
+          <p class="detail-subvalue">Все данные будут удалены без возможности восстановления.</p>
+        </div>
+        <button class="button button--ghost danger-button" id="delete-user" type="button">Удалить пользователя</button>
+      </div>
+    </section>
+  </div>
+
+  <div class="modal" id="delete-modal" hidden>
+    <div class="modal__dialog">
+      <h3>Удалить пользователя?</h3>
+      <p class="modal__note">Действие необратимо. Все данные аккаунта будут удалены.</p>
+      <div class="modal__actions">
+        <button type="button" class="button button--primary" id="delete-confirm">Удалить</button>
+        <button type="button" class="button button--ghost" id="delete-cancel">Отмена</button>
+      </div>
+      <div class="modal__error" id="delete-error" hidden></div>
+    </div>
+  </div>
+
+  <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <script src="constants.js?v=3"></script>
+  <script src="auth.js?v=3"></script>
+  <script src="ui-utils.js?v=3"></script>
+  <script src="user.js?v=1"></script>
+</body>
+</html>

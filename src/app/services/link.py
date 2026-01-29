@@ -83,7 +83,10 @@ class LinkService:
                     link=BOT_LINK.format(code=existing),
                     expires_at=int(time.time()) + ttl,
                 )
-
+            else:
+                await self.redis.unlink(
+                    f'{LINK_USER}{user_id}', f'{LINK_CODE}{existing}'
+                )
         for _ in range(5):
             code = self.generate_link_code()
             created = await self.lua.link_code_pair_script(  # noqa: WPS47
