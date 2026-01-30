@@ -153,3 +153,10 @@ class PlantUpdateScheme(BasePlantCUScheme):
 
 class PlantBotCreateScheme(PlantCreteScheme):
     image: str | None = None
+    user_id: str
+
+
+class PlantBotUpdateScheme(PlantUpdateScheme):
+    image: str | None = None
+    user_id: str
+    plant_id: str

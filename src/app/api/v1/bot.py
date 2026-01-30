@@ -1,18 +1,53 @@
-from fastapi import APIRouter, status
+from fastapi import APIRouter
 from pymongo.asynchronous.client_session import AsyncClientSession
 
+from app.constants.link import USER_LINK_MSG
 from app.dependencies import (
     get_bot_id_dep,
     link_service_dep,
     link_telegram_deps,
+    plant_service_dep,
 )
-from app.schemes import TelegramLinkRequest
+from app.schemes import (
+    PlantBotCreateScheme,
+    PlantBotUpdateScheme,
+    PlantReadScheme,
+    TelegramLinkRequest,
+    MessageScheme,
+)
 from app.services import LinkService, PlantService, WebAuthService
 
 router = APIRouter()
 
 
-@router.patch('/link_telegram', status_code=status.HTTP_204_NO_CONTENT)
+@router.post('/add_plant', response_model=PlantReadScheme)
+async def add_plant_via_bot(
+    plant_data: PlantBotCreateScheme,
+    plant_service: PlantService = plant_service_dep,
+    bot_id: str = get_bot_id_dep,
+):
+    """Add plant via bot endpoint."""
+    return await plant_service.add_plant(
+        user_id=plant_data.user_id,
+        plant_data=plant_data,
+    )
+
+
+@router.patch('/update_plant', response_model=PlantReadScheme)
+async def update_plant_via_bot(
+    plant_update: PlantBotUpdateScheme,
+    plant_service: PlantService = plant_service_dep,
+    bot_id: str = get_bot_id_dep,
+):
+    """Update plant via bot endpoint."""
+    return await plant_service.update_plant(
+        plant_id=plant_update.plant_id,
+        user_id=plant_update.user_id,
+        plant_update=plant_update,
+    )
+
+
+@router.patch('/link_telegram', response_model=MessageScheme)
 async def link_telegram(
     link_request: TelegramLinkRequest,
     link_service: LinkService = link_service_dep,
@@ -33,3 +68,4 @@ async def link_telegram(
         )
         await web_auth_service.logout_all_sessions(str(old_id))
     await link_service.clear_link_code(str(new_id), link_request.code)
+    return {'message': USER_LINK_MSG}

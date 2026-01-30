@@ -7,3 +7,4 @@ LINK_USER = 'tg:link:user:'
 
 USER_UNLINK_MSG = 'User deleted successfully.'
 MIN_TTL_SECONDS = 30
+USER_LINK_MSG = 'Telegram linked successfully'

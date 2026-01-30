@@ -10,6 +10,8 @@ from app.schemes.image import ImageUpload
 from app.schemes.link import TelegramLink, TelegramLinkRequest
 from app.schemes.pagination import CursorPaginatedResponse, PlantQuery
 from app.schemes.plant import (
+    PlantBotCreateScheme,
+    PlantBotUpdateScheme,
     PlantCreteScheme,
     PlantReadScheme,
     PlantReadSchemeShort,
@@ -24,6 +26,7 @@ from app.schemes.token import (
 )
 from app.schemes.user import TelegramUser, WebUser, WebUserInfo
 from app.schemes.user_session import UserSession
+from app.schemes.general import MessageScheme
 
 __all__ = [
     'Tokens',
@@ -52,4 +55,7 @@ __all__ = [
     'RefreshRequestCookie',
     'TelegramLink',
     'TelegramLinkRequest',
+    'PlantBotCreateScheme',
+    'PlantBotUpdateScheme',
+    'MessageScheme',
 ]

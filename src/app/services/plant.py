@@ -16,6 +16,8 @@ from app.logs.plant import (
 from app.models import Plant
 from app.schemes import (
     ImageUpload,
+    PlantBotCreateScheme,
+    PlantBotUpdateScheme,
     PlantCreteScheme,
     PlantDashboardStats,
     PlantTask,
@@ -52,11 +54,14 @@ class PlantService:
         self.log = getLogger(__name__)
         self.log.info(PLANT_SERVICE_START_LOG)
 
-    async def add_plant(self, user_id: str, plant_data: PlantCreteScheme):
+    async def add_plant(
+        self, user_id: str, plant_data: PlantCreteScheme | PlantBotCreateScheme
+    ):
         """Add plant."""
 
         plant = Plant(
-            user_id=PydanticObjectId(user_id), **plant_data.model_dump()
+            user_id=PydanticObjectId(user_id),
+            **plant_data.model_dump(exclude={'user_id'}),
         )
         if plant_data.should_recalc_watering:
             plant = self.scheduler.next_watering_date(
@@ -164,21 +169,23 @@ class PlantService:
         )
         plant.storage_key = storage_key
         plant.image = file_id
-        await plant.save()
+        await plant.save_changes()
         return plant
 
     async def update_plant(
         self,
         plant_id: str,
         user_id: str,
-        plant_update: PlantUpdateScheme,
+        plant_update: PlantUpdateScheme | PlantBotUpdateScheme,
     ) -> Plant:
         plant = await self.get_plant_by_id(plant_id, user_id)
 
         if plant_update is None:
             return plant
 
-        updates = plant_update.model_dump(exclude_unset=True)
+        updates = plant_update.model_dump(
+            exclude={'user_id', 'plant_id'}, exclude_unset=True
+        )
         for key, new_value in updates.items():
             setattr(plant, key, new_value)
         if plant_update.should_recalc_watering:
