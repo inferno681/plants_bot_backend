@@ -7,17 +7,39 @@ from app.dependencies import (
     link_service_dep,
     link_telegram_deps,
     plant_service_dep,
+    session_dependency,
+    telegram_auth_service_dep,
 )
 from app.schemes import (
+    MessageScheme,
     PlantBotCreateScheme,
     PlantBotUpdateScheme,
     PlantReadScheme,
+    TelegramAccountBase,
     TelegramLinkRequest,
-    MessageScheme,
+    TelegramUser,
 )
-from app.services import LinkService, PlantService, WebAuthService
+from app.services import (
+    LinkService,
+    PlantService,
+    TelegramAuthService,
+    WebAuthService,
+)
 
 router = APIRouter()
+
+
+@router.post('/registration', response_model=TelegramUser)
+async def user_registration_via_bot(
+    account_data: TelegramAccountBase,
+    telegram_auth_service: TelegramAuthService = telegram_auth_service_dep,
+    session: AsyncClientSession = session_dependency,
+    bot_id: str = get_bot_id_dep,
+):
+    """User registration via bot endpoint."""
+    return await telegram_auth_service.registration_telegram_user(
+        account_data=account_data, session=session
+    )
 
 
 @router.post('/add_plant', response_model=PlantReadScheme)

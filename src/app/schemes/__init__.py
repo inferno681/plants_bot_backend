@@ -6,6 +6,7 @@ from app.schemes.auth import (
 )
 from app.schemes.client_info import ClientInfo
 from app.schemes.dashboard import PlantDashboardStats, PlantTask
+from app.schemes.general import MessageScheme
 from app.schemes.image import ImageUpload
 from app.schemes.link import TelegramLink, TelegramLinkRequest
 from app.schemes.pagination import CursorPaginatedResponse, PlantQuery
@@ -26,7 +27,6 @@ from app.schemes.token import (
 )
 from app.schemes.user import TelegramUser, WebUser, WebUserInfo
 from app.schemes.user_session import UserSession
-from app.schemes.general import MessageScheme
 
 __all__ = [
     'Tokens',
