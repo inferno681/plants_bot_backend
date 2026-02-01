@@ -9,7 +9,7 @@ from app.exceptions.auth import UserNotFoundError
 from app.logs.user import USER_DELETE_LOG, USER_SERVICE_START_LOG
 from app.models import User, UserStatus
 from app.schemes import UserSession, WebUserInfo
-from app.services import MongoPipelineBuilder, TokenService
+from app.services import TokenService
 
 
 class UserService:
@@ -18,11 +18,9 @@ class UserService:
     def __init__(
         self,
         token_service: TokenService,
-        pipeline_builder: MongoPipelineBuilder,
     ):
         """User service initialization."""
         self.token_service = token_service
-        self.pipeline_builder = pipeline_builder
 
         self.log = getLogger(__name__)
         self.log.info(USER_SERVICE_START_LOG)
@@ -40,14 +38,13 @@ class UserService:
         self, user_id: PydanticObjectId
     ) -> WebUserInfo:
         """Get user info."""
-        pipeline = self.pipeline_builder.build_user_info_pipeline(
-            user_id=user_id
+        user = await User.find_one(
+            User.id == user_id, projection_model=WebUserInfo
         )
-        docs = await User.aggregate(pipeline).to_list()
-        if not docs:
+        if not user:
             raise UserNotFoundError()
 
-        return WebUserInfo(**docs[0])
+        return user
 
     async def delete_user(self, user_id: PydanticObjectId) -> dict:
         """Delete user and associated accounts."""
@@ -63,12 +60,10 @@ class UserService:
 def init_user_service(
     app: FastAPI,
     token_service: TokenService,
-    pipeline_builder: MongoPipelineBuilder,
 ) -> None:
     """Create UserService once and store on app.state."""
     app.state.user_service = UserService(
         token_service=token_service,
-        pipeline_builder=pipeline_builder,
     )
 
 

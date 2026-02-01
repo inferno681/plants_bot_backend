@@ -59,7 +59,6 @@ def init_auth(
     services.init_user_service(
         app=app,
         token_service=token_service,
-        pipeline_builder=pipeline_builder,
     )
     services.init_bot_service(app=app, token_service=token_service)
     services.init_link_service(
