@@ -65,12 +65,12 @@ class TelegramAuthService(BaseAuthService):
             await user.insert(session=session)
 
         except DuplicateKeyError:
-            user = await User.find_one(
+            existing_user = await User.find_one(
                 User.telegram_id == account_data.telegram_id, session=session
             )
-            if not user:
+            if not existing_user:
                 raise UserNotFoundError()
-            return user
+            return existing_user
 
         return user
 

@@ -104,18 +104,24 @@ class DbHelper:
                 ],
             }
         }
-        validation_opts = {
-            'validationLevel': 'strict',
-            'validationAction': 'error',
-        }
+        validation_level = 'strict'
+        validation_action = 'error'
         collections = await db.list_collection_names()
         if 'users' in collections:
             await db.command(
-                {'collMod': 'users', 'validator': validator, **validation_opts}
+                {
+                    'collMod': 'users',
+                    'validator': validator,
+                    'validationLevel': validation_level,
+                    'validationAction': validation_action,
+                }
             )
         else:
             await db.create_collection(
-                'users', validator=validator, **validation_opts
+                'users',
+                validator=validator,
+                validationLevel=validation_level,
+                validationAction=validation_action,
             )
 
 

@@ -5,11 +5,7 @@ from beanie import PydanticObjectId
 from pydantic import EmailStr, model_validator
 from pymongo import ASCENDING, IndexModel
 
-from app.exceptions.auth import (
-    MissingPasswordError,
-    NoContactsError,
-    OrphanContactFieldsError,
-)
+from app.exceptions.auth import MissingPasswordError, NoContactsError
 from app.models.base import BaseDocument
 from app.schemes.user import Language
 
@@ -91,5 +87,5 @@ class User(BaseDocument):
             field is not None for field in tg_fields
         )
         if orphan_email or orphan_tg:
-            raise OrphanContactFieldsError()
+            raise NoContactsError()
         return self

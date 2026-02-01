@@ -30,16 +30,8 @@ class InvalidSignatureError(AuthError):
     """Invalid signature."""
 
 
-class InvalidPasswordError(AuthError):
-    """Invalid password provided."""
-
-
 class MissingPasswordError(AuthError):
     """Missing password for email-based user."""
-
-
-class OrphanContactFieldsError(AuthError):
-    """Contact fields set without corresponding identifier."""
 
 
 class UserPermissionError(AuthError):
@@ -68,19 +60,9 @@ AUTH_ERROR_MAP: MappingProxyType[Type[AuthError], dict[str, Any]] = (
                 TYPE: 'invalid_credentials',
                 STATUS: status.HTTP_401_UNAUTHORIZED,
             },
-            InvalidPasswordError: {
-                MSG: 'auth.invalid_password',
-                TYPE: 'invalid_password',
-                STATUS: status.HTTP_401_UNAUTHORIZED,
-            },
             MissingPasswordError: {
                 MSG: 'auth.missing_password',
                 TYPE: 'missing_password',
-                STATUS: status.HTTP_400_BAD_REQUEST,
-            },
-            OrphanContactFieldsError: {
-                MSG: 'auth.orphan_contact_fields',
-                TYPE: 'orphan_contact_fields',
                 STATUS: status.HTTP_400_BAD_REQUEST,
             },
             InvalidInitDataError: {
