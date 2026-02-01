@@ -1,8 +1,10 @@
+from datetime import datetime
 from enum import StrEnum, auto
 from typing import Annotated
-from app.models.base import BaseDocument
+
 from beanie import Indexed, PydanticObjectId
-from datetime import datetime
+
+from app.models.base import BaseDocument
 
 
 class NotificationStatus(StrEnum):

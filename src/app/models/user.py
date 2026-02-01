@@ -1,7 +1,8 @@
 from datetime import datetime
 from enum import StrEnum, auto
+
 from beanie import PydanticObjectId
-from pydantic import model_validator, EmailStr
+from pydantic import EmailStr, model_validator
 from pymongo import ASCENDING, IndexModel
 
 from app.exceptions.auth import (
@@ -25,7 +26,7 @@ class User(BaseDocument):
     """Core user model."""
 
     public_username: str | None = None
-    language_code: Language | None = None
+    language: Language | None = None
     status: UserStatus = UserStatus.active
     merged_into: PydanticObjectId | None = None
     merged_at: datetime | None = None
@@ -39,6 +40,7 @@ class User(BaseDocument):
     last_name: str | None = None
     username: str | None = None
     is_premium: bool | None = None
+    language_code: str | None = None
 
     telegram_notifications_enabled: bool = False
     email_notifications_enabled: bool = False
@@ -83,6 +85,7 @@ class User(BaseDocument):
             self.last_name,
             self.username,
             self.is_premium,
+            self.language_code,
         )
         orphan_tg = self.telegram_id is None and any(
             field is not None for field in tg_fields

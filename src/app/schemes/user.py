@@ -14,13 +14,11 @@ class Language(StrEnum):
 class WebAccountUpdate(BaseModel):
     """Web account update scheme."""
 
-    language_code: Language | None = None
+    language: Language | None = None
 
 
 class TelegramUser(BaseModel):
     """Telegram user scheme."""
-
-    user_id: PydanticObjectId
 
     telegram_id: int
     first_name: str | None = None

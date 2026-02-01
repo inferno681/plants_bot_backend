@@ -7,7 +7,7 @@ from app.constants.auth import SID, SUB
 from app.constants.user import USER_DELETE_MSG
 from app.exceptions.auth import UserNotFoundError
 from app.logs.user import USER_DELETE_LOG, USER_SERVICE_START_LOG
-from app.models import TelegramAccount, User, UserStatus, WebAccount
+from app.models import User, UserStatus
 from app.schemes import UserSession, WebUserInfo
 from app.services import MongoPipelineBuilder, TokenService
 
@@ -54,8 +54,6 @@ class UserService:
         user = await User.find_one(User.id == user_id)
         if not user:
             raise UserNotFoundError()
-        await TelegramAccount.find(TelegramAccount.user_id == user_id).delete()
-        await WebAccount.find(WebAccount.user_id == user_id).delete()
         user.status = UserStatus.deleted
         await user.save_changes()
         self.log.info(USER_DELETE_LOG, str(user_id))

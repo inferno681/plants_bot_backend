@@ -17,8 +17,8 @@ from app.logs.auth import (
     USER_LOGIN_LOG,
     WEB_AUTH_SERVICE_START_LOG,
 )
-from app.models import User, WebAccount
-from app.schemes import ClientInfo, Tokens
+from app.models import User
+from app.schemes import ClientInfo, Tokens, WebUserView
 from app.schemes.auth import WebAccountLogin, WebAccountRegistration
 from app.services.auth import BaseAuthService
 from app.services.token import LoginType, TokenService
@@ -36,41 +36,40 @@ class WebAuthService(BaseAuthService):
 
     async def registration_web_user(
         self, account_data: WebAccountRegistration, session: AsyncClientSession
-    ) -> WebAccount:
+    ) -> User:
         """User registration."""
-        user = User(language_code=account_data.language_code)
-        await user.insert(session=session)
 
         try:
-            web_account = WebAccount(
-                user_id=user.id,
+            user = User(
                 email=account_data.email,
                 hashed_password=self.password_hasher.hash(
                     account_data.password
                 ),
             )
-            await web_account.insert(session=session)
+            await user.insert(session=session)
 
         except DuplicateKeyError:
             self.log.info(SAME_EMAIL_REGISTRATION_LOG, account_data.email)
             raise UserAlreadyExistsError()
 
-        return web_account
+        return user
 
     async def login(
         self, login_data: WebAccountLogin, client_info: ClientInfo
     ) -> Tokens:
         """User login."""
-        user = await WebAccount.find_one(WebAccount.email == login_data.email)
+        user = await User.find_one(
+            User.email == login_data.email, projection_model=WebUserView
+        )
         if not user:
             self.log.info(UNREGISTERED_USER_LOG, login_data.email)
             raise InvalidCredentialsError()
         if self.password_hasher.verify(
             login_data.password, user.hashed_password
         ):
-            self.log.info(USER_LOGIN_LOG, str(user.user_id), LoginType.web)
+            self.log.info(USER_LOGIN_LOG, str(user.id), LoginType.web)
             return await self.token_service.create_and_put_tokens(
-                str(user.user_id), client_info, LoginType.web
+                str(user.id), client_info, LoginType.web
             )
         self.log.warning(INVALID_WEB_PASSWORD_LOG, login_data.email)
         raise InvalidCredentialsError()

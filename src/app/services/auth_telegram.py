@@ -2,14 +2,15 @@ from fastapi import FastAPI, Request
 from pymongo.asynchronous.client_session import AsyncClientSession
 from pymongo.errors import DuplicateKeyError
 
+from app.exceptions.auth import UserNotFoundError
 from app.logs.auth import (
     TELEGRAM_AUTH_SERVICE_START_LOG,
     UNREGISTERED_USER_LOG,
     USER_DATA_UPDATED_LOG,
     USER_LOGIN_LOG,
 )
-from app.models import TelegramAccount, User
-from app.schemes import ClientInfo, Tokens
+from app.models import User
+from app.schemes import ClientInfo, TelegramUserView, Tokens
 from app.schemes.auth import TelegramAccountBase
 from app.services.auth import BaseAuthService
 from app.services.init_data import ClientType, InitDataChecker
@@ -37,8 +38,9 @@ class TelegramAuthService(BaseAuthService):
         user_data = self.init_data_checker.verify_init_data(
             init_data, ClientType.user
         )
-        user = await TelegramAccount.find_one(
-            TelegramAccount.telegram_id == user_data['id']
+        user = await User.find_one(
+            User.telegram_id == user_data['id'],
+            projection_model=TelegramUserView,
         )
         if not user:
             self.log.info(UNREGISTERED_USER_LOG, user_data['id'])
@@ -46,39 +48,35 @@ class TelegramAuthService(BaseAuthService):
             user = await self.registration_telegram_user(
                 account_data=account_data, session=session
             )
-        self.log.info(USER_LOGIN_LOG, str(user.user_id), LoginType.telegram)
+        self.log.info(USER_LOGIN_LOG, str(user.id), LoginType.telegram)
         await self._update_account_if_changed(user, user_data, session)
         return await self.token_service.create_and_put_tokens(
-            str(user.user_id), client_info, LoginType.telegram
+            str(user.id), client_info, LoginType.telegram
         )
 
     async def registration_telegram_user(
         self, account_data: TelegramAccountBase, session: AsyncClientSession
-    ):
+    ) -> User:
         """Telegram user registration."""
-        user = User(language_code=account_data.language_code)
-        await user.insert(session=session)
-
         try:
-            telegram_account = TelegramAccount(
-                user_id=user.id,
-                **account_data.model_dump(
-                    exclude={'language_code'}, exclude_unset=True
-                ),
+            user = User(
+                **account_data.model_dump(exclude_unset=True),
             )
-            await telegram_account.insert(session=session)
+            await user.insert(session=session)
 
         except DuplicateKeyError:
-            tg_account = await TelegramAccount.find_one(
-                TelegramAccount.telegram_id == account_data.telegram_id
+            user = await User.find_one(
+                User.telegram_id == account_data.telegram_id, session=session
             )
-            return tg_account
+            if not user:
+                raise UserNotFoundError()
+            return user
 
-        return telegram_account
+        return user
 
     async def _update_account_if_changed(
         self,
-        tg_account: TelegramAccount,
+        user: TelegramUserView,
         user_data: dict,
         session: AsyncClientSession,
     ):
@@ -87,16 +85,20 @@ class TelegramAuthService(BaseAuthService):
             'last_name',
             'username',
             'is_premium',
+            'language_code',
         ]
         update_fields = {
             field: user_data.get(field)
             for field in fields
-            if user_data.get(field) != getattr(tg_account, field)
+            if user_data.get(field) != getattr(user, field)
         }
 
         if update_fields:
-            await tg_account.set(update_fields, session=session)
-            self.log.info(USER_DATA_UPDATED_LOG, tg_account.user_id)
+            await User.find_one(User.id == user.id).update(
+                {'$set': update_fields},
+                session=session,
+            )
+            self.log.info(USER_DATA_UPDATED_LOG, user.id)
 
 
 def init_telegram_auth_service(

@@ -8,7 +8,7 @@ from fastapi import FastAPI, Request
 from pymongo import AsyncMongoClient
 from pymongo.errors import PyMongoError
 
-from app.models import Bot, Plant, TelegramAccount, User, WebAccount
+from app.models import Bot, Notification, Plant, User
 
 
 class DbHelper:
@@ -34,7 +34,7 @@ class DbHelper:
         await self._ensure_users_validator()
         await init_beanie(
             database=self.client[self.db],
-            document_models=[User, WebAccount, TelegramAccount, Plant, Bot],
+            document_models=[User, Notification, Plant, Bot],
         )
 
     @asynccontextmanager

@@ -1,11 +1,10 @@
 import secrets
 import time
-from datetime import datetime, timezone
 from logging import getLogger
 from types import SimpleNamespace
 
 from beanie import PydanticObjectId
-from beanie.operators import Set
+from beanie.operators import Exists
 from fastapi import FastAPI, Request
 from pymongo.asynchronous.client_session import AsyncClientSession
 from redis.asyncio import Redis
@@ -23,10 +22,10 @@ from app.constants.link import (
 )
 from app.exceptions.auth import UserNotFoundError
 from app.exceptions.link import (
+    AlreadyLinkedError,
     BusyError,
     CodeAllocationError,
     InvalidCodeProvided,
-    SecondLinkAttempt,
     TelegramConnectError,
 )
 from app.logs.link import (
@@ -36,7 +35,7 @@ from app.logs.link import (
     LINK_SERVICE_START_LOG,
     TELEGRAM_ALREADY_CONNECTED_LOG,
 )
-from app.models import TelegramAccount, User, UserStatus, WebAccount
+from app.models import User
 from app.schemes import TelegramLink
 
 
@@ -68,8 +67,8 @@ class LinkService:
 
     async def create_telegram_link(self, user_id: str) -> TelegramLink:
         """Code generation for telegram linking."""
-        if await TelegramAccount.find_one(
-            TelegramAccount.user_id == PydanticObjectId(user_id)
+        if await User.find_one(
+            User.id == PydanticObjectId(user_id), Exists(User.telegram_id)
         ):
             self.log.info(TELEGRAM_ALREADY_CONNECTED_LOG, user_id)
             raise TelegramConnectError()
@@ -138,7 +137,13 @@ class LinkService:
         user = await User.find_one(User.id == user_id)
         if not user:
             raise UserNotFoundError()
-        await TelegramAccount.find(TelegramAccount.user_id == user_id).delete()
+        user.telegram_id = None
+        user.first_name = None
+        user.last_name = None
+        user.username = None
+        user.is_premium = None
+        user.language_code = None
+        await user.save_changes()
         return {'message': USER_UNLINK_MSG}
 
     @staticmethod
@@ -149,43 +154,20 @@ class LinkService:
 
     async def _link_process(
         self,
-        user_id_obj: PydanticObjectId,
+        user_id: PydanticObjectId,
         session: AsyncClientSession,
         telegram_id: int,
     ) -> PydanticObjectId | None:
         """Linking process."""
-        old_acc = await TelegramAccount.find_one(
-            TelegramAccount.telegram_id == telegram_id, session=session
-        )
-        if old_acc:
-            if old_acc.user_id == user_id_obj:
-                raise SecondLinkAttempt()
-            old_user_id = old_acc.user_id
-            old_acc.user_id = user_id_obj
-            await old_acc.save_changes(session=session)
-            await WebAccount.find(
-                WebAccount.user_id == old_user_id, session=session
-            ).delete()
-            now = datetime.now(timezone.utc)
-            await User.find_one(
-                User.id == old_user_id, session=session
-            ).update(
-                Set(
-                    {
-                        User.status: UserStatus.merged,
-                        User.merged_into: user_id_obj,
-                        User.merged_at: now,
-                        User.updated_at: now,
-                    }
-                )
-            )
+        user = await User.find_one(User.id == user_id, session=session)
+        if not user:
+            raise UserNotFoundError()
+        if user.telegram_id:
+            raise AlreadyLinkedError()
         else:
-            old_user_id = None
-            new_acc = TelegramAccount(
-                telegram_id=telegram_id, user_id=user_id_obj
-            )
-            await new_acc.insert(session=session)
-        return old_user_id
+            user.telegram_id = telegram_id
+            await user.save_changes(session=session)
+        return user.id
 
 
 def init_link_service(

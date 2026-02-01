@@ -39,7 +39,7 @@ class WebAccountLogin(BaseModel):
 class WebAccountRegistration(WebAccountLogin):
     """Web account registration scheme."""
 
-    language_code: Language | None = None
+    language: Language | None = None
 
 
 class WebAccountPasswordChange(BaseModel):

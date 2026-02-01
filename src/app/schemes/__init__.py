@@ -27,6 +27,7 @@ from app.schemes.token import (
 )
 from app.schemes.user import TelegramUser, WebUser, WebUserInfo
 from app.schemes.user_session import UserSession
+from app.schemes.user_view import TelegramUserView, WebUserView
 
 __all__ = [
     'Tokens',
@@ -58,4 +59,6 @@ __all__ = [
     'PlantBotCreateScheme',
     'PlantBotUpdateScheme',
     'MessageScheme',
+    'TelegramUserView',
+    'WebUserView',
 ]
