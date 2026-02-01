@@ -8,6 +8,7 @@ from app.models.plant import (
 from app.models.telegram_acc import TelegramAccount
 from app.models.user import User, UserStatus
 from app.models.web_acc import WebAccount
+from app.models.notification import Notification, NotificationStatus
 
 __all__ = [
     'Plant',
@@ -19,4 +20,6 @@ __all__ = [
     'Bot',
     'FrequencyType',
     'UserStatus',
+    'Notification',
+    'NotificationStatus',
 ]

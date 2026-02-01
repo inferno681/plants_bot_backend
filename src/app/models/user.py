@@ -25,6 +25,10 @@ class User(BaseDocument):
     merged_into: PydanticObjectId | None = None
     merged_at: datetime | None = None
 
+    web_notifications_enabled: bool = False
+    telegram_notifications_enabled: bool = False
+    email_notifications_enabled: bool = False
+
     class Settings(BaseDocument.Settings):
         name = 'users'
         indexes = [
