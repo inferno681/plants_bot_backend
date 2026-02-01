@@ -31,6 +31,7 @@ class DbHelper:
 
     async def init_db(self):
         """Beanie initialization."""
+        await self._ensure_users_validator()
         await init_beanie(
             database=self.client[self.db],
             document_models=[User, WebAccount, TelegramAccount, Plant, Bot],
@@ -82,6 +83,40 @@ class DbHelper:
         return self.backoff_base * (2**attempt) + random.uniform(
             0, self.backoff_jitter
         )
+
+    async def _ensure_users_validator(self) -> None:
+        """Ensure collection-level validation for users."""
+        db = self.client[self.db]
+        validator = {
+            '$jsonSchema': {
+                'bsonType': 'object',
+                'anyOf': [
+                    {
+                        'required': ['email'],
+                        'properties': {'email': {'bsonType': 'string'}},
+                    },
+                    {
+                        'required': ['telegram_id'],
+                        'properties': {
+                            'telegram_id': {'bsonType': ['int', 'long']}
+                        },
+                    },
+                ],
+            }
+        }
+        validation_opts = {
+            'validationLevel': 'strict',
+            'validationAction': 'error',
+        }
+        collections = await db.list_collection_names()
+        if 'users' in collections:
+            await db.command(
+                {'collMod': 'users', 'validator': validator, **validation_opts}
+            )
+        else:
+            await db.create_collection(
+                'users', validator=validator, **validation_opts
+            )
 
 
 def init_db_helper(

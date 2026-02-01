@@ -34,8 +34,20 @@ class InvalidPasswordError(AuthError):
     """Invalid password provided."""
 
 
+class MissingPasswordError(AuthError):
+    """Missing password for email-based user."""
+
+
+class OrphanContactFieldsError(AuthError):
+    """Contact fields set without corresponding identifier."""
+
+
 class UserPermissionError(AuthError):
     """Permission denied."""
+
+
+class NoContactsError(AuthError):
+    """No contact methods available for user."""
 
 
 AUTH_ERROR_MAP: MappingProxyType[Type[AuthError], dict[str, Any]] = (
@@ -60,6 +72,16 @@ AUTH_ERROR_MAP: MappingProxyType[Type[AuthError], dict[str, Any]] = (
                 MSG: 'auth.invalid_password',
                 TYPE: 'invalid_password',
                 STATUS: status.HTTP_401_UNAUTHORIZED,
+            },
+            MissingPasswordError: {
+                MSG: 'auth.missing_password',
+                TYPE: 'missing_password',
+                STATUS: status.HTTP_400_BAD_REQUEST,
+            },
+            OrphanContactFieldsError: {
+                MSG: 'auth.orphan_contact_fields',
+                TYPE: 'orphan_contact_fields',
+                STATUS: status.HTTP_400_BAD_REQUEST,
             },
             InvalidInitDataError: {
                 MSG: 'auth.invalid_init_data',
