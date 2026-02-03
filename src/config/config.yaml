@@ -51,8 +51,13 @@ auth:
 redis:
   host: localhost
   port: 6379
-  db: 7
   decode_responses: true
+  sid_db: 0
+
+  queue_db: 1
+
+  taskiq_db: 2
+  results_db: 3
 
 mongodb:
   host: "127.0.0.1"

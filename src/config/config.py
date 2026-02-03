@@ -85,8 +85,12 @@ class RedisSettings(BaseModel):
 
     host: str
     port: int
-    db: int
     decode_responses: bool
+
+    sid_db: int
+    queue_db: int
+    taskiq_db: int
+    results_db: int
 
 
 class CORS(BaseModel):
@@ -216,13 +220,12 @@ class AppConfig(BaseSettings):
             port='' if is_srv else f':{self.mongodb.port}',
         )
 
-    @property
-    def redis_url(self) -> str:
+    def redis_url(self, db: int) -> str:
         return 'redis://:{pwd}@{host}:{port}/{db}'.format(
             pwd=self.secrets.redis_password.get_secret_value(),
             host=self.redis.host,
             port=self.redis.port,
-            db=self.redis.db,
+            db=db,
         )
 
     @property

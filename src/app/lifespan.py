@@ -104,7 +104,7 @@ def init_plant(app: FastAPI, pipeline_builder: services.MongoPipelineBuilder):
 async def create_resources(app: FastAPI):
     """Services initialization."""
     redis = init_redis(
-        url=config.redis_url,
+        url=config.redis_url(db=config.redis.sid_db),
         db=config.redis.db,
         password=config.secrets.redis_password.get_secret_value(),
         decode_responses=config.redis.decode_responses,

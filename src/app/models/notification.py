@@ -3,6 +3,7 @@ from enum import StrEnum, auto
 from typing import Annotated
 
 from beanie import Indexed, PydanticObjectId
+from pydantic import model_validator
 
 from app.models.base import BaseDocument
 
@@ -37,12 +38,23 @@ class Notification(BaseDocument):
     destination: str | int | None = None
 
     scheduled_for: datetime
-    dedup_key: Annotated[str, Indexed(unique=True)]
+    dedup_key: Annotated[str | None, Indexed(unique=True)]
 
     status: NotificationStatus = NotificationStatus.queued
     attempts: int = 0
     last_attempt_at: datetime | None = None
     enqueued_at: datetime | None = None
+
+    @model_validator(mode='after')
+    def set_dedup(self):
+        if not self.dedup_key:
+            self.dedup_key = ':'.join(
+                str(self.user_id),
+                str(self.plant_id),
+                str(self.channel),
+                self.scheduled_for.isoformat(),
+            )
+        return self
 
     class Settings(BaseDocument.Settings):
         name = 'notifications'

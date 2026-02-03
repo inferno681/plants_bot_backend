@@ -1,5 +1,9 @@
 from app.models.bot import Bot
-from app.models.notification import Notification, NotificationStatus
+from app.models.notification import (
+    DeliveryChannel,
+    Notification,
+    NotificationStatus,
+)
 from app.models.plant import (
     FertilizingPeriod,
     FrequencyType,
@@ -18,4 +22,5 @@ __all__ = [
     'UserStatus',
     'Notification',
     'NotificationStatus',
+    'DeliveryChannel',
 ]
