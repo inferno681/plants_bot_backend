@@ -47,12 +47,12 @@ class Notification(BaseDocument):
 
     def to_queue_dict(self) -> dict[str, str]:
         return {
-            'key': self.dedup_key,
+            'key': self.dedup_key or '',
             'user_id': str(self.user_id),
             'plant_id': str(self.plant_id),
             'name': self.plant_name,
             'image': self.image or '',
-            'destination': self.destination,
+            'destination': self.destination or '',
         }
 
     @model_validator(mode='after')

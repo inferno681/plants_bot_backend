@@ -10,4 +10,5 @@ def redis_dep(context: Annotated[Context, TaskiqDepends()]) -> Redis:
     return Redis(
         connection_pool=context.state.redis,
         decode_responses=config.redis.decode_responses,
+        # type: ignore[call-overload]
     )

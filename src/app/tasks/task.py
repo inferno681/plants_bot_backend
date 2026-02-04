@@ -58,66 +58,124 @@ async def process_watering_batch(
     redis: Annotated[Redis, TaskiqDepends(redis_dep)],
     tg_queue_key: str = 'tg_notifications',
 ):
-
-    user_map: dict[PydanticObjectId, UserSchedulerViewScheme] = get_user_map(
-        {plant.user_id for plant in plants}
-    )
-    notifications = []
     pipe = redis.pipeline()
-
-    for plant in plants:
-        user = user_map.get(plant.user_id)
-        if not user:
-            continue
-
-        if user.telegram_notifications_enabled and user.telegram_id:
-            notification = Notification(
-                user_id=user.id,
-                plant_id=plant.id,
-                plant_name=plant.name,
-                image=plant.image,
-                channel=DeliveryChannel.telegram,
-                destination=user.telegram_id,
-                scheduled_for=scheduled_for,
-                status=NotificationStatus.queued,
-            )
-            notifications.append(notification)
-            pipe.xadd(
-                tg_queue_key,
-                notification.to_queue_dict(),
-            )
-
-        if user.email_notifications_enabled and user.email:
-            notifications.append(
-                Notification(
-                    user_id=user.id,
-                    plant_id=plant.id,
-                    plant_name=plant.name,
-                    image=plant.image,
-                    channel=DeliveryChannel.email,
-                    destination=user.email,
-                    scheduled_for=scheduled_for,
-                    status=NotificationStatus.queued,
-                )
-            )
-        notifications.append(
-            Notification(
-                user_id=user.id,
-                plant_id=plant.id,
-                plant_name=plant.name,
-                image=plant.image,
-                channel=DeliveryChannel.web,
-                destination=None,
-                scheduled_for=scheduled_for,
-                status=NotificationStatus.sent,
-            )
-        )
+    user_map = await get_user_map({plant.user_id for plant in plants})
+    notifications = _collect_notifications(
+        plants=plants,
+        scheduled_for=scheduled_for,
+        user_map=user_map,
+        pipe=pipe,
+        tg_queue_key=tg_queue_key,
+    )
 
     if notifications:
         await Notification.insert_many(notifications, ordered=False)
         await pipe.execute()
 
     return notifications
+
+
+def _collect_notifications(
+    *,
+    plants: list[PlantSchedulerViewScheme],
+    scheduled_for: datetime,
+    user_map: dict[PydanticObjectId, UserSchedulerViewScheme],
+    pipe,
+    tg_queue_key: str,
+) -> list[Notification]:
+    notifications: list[Notification] = []
+
+    for plant in plants:
+        user = user_map.get(plant.user_id)
+        if not user:
+            continue
+
+        telegram_notification = _build_telegram_notification(
+            user=user,
+            plant=plant,
+            scheduled_for=scheduled_for,
+        )
+        if telegram_notification:
+            notifications.append(telegram_notification)
+            pipe.xadd(tg_queue_key, telegram_notification.to_queue_dict())
+
+        email_notification = _build_email_notification(
+            user=user,
+            plant=plant,
+            scheduled_for=scheduled_for,
+        )
+        if email_notification:
+            notifications.append(email_notification)
+
+        notifications.append(
+            _build_web_notification(
+                user=user,
+                plant=plant,
+                scheduled_for=scheduled_for,
+            )
+        )
+
+    return notifications
+
+
+def _build_telegram_notification(
+    *,
+    user: UserSchedulerViewScheme,
+    plant: PlantSchedulerViewScheme,
+    scheduled_for: datetime,
+) -> Notification | None:
+    if not (user.telegram_notifications_enabled and user.telegram_id):
+        return None
+
+    return Notification(
+        user_id=user.id,
+        plant_id=plant.id,
+        plant_name=plant.name,
+        image=plant.image,
+        channel=DeliveryChannel.telegram,
+        destination=user.telegram_id,
+        scheduled_for=scheduled_for,
+        status=NotificationStatus.queued,
+    )
+
+
+def _build_email_notification(
+    *,
+    user: UserSchedulerViewScheme,
+    plant: PlantSchedulerViewScheme,
+    scheduled_for: datetime,
+) -> Notification | None:
+    if not (user.email_notifications_enabled and user.email):
+        return None
+
+    return Notification(
+        user_id=user.id,
+        plant_id=plant.id,
+        plant_name=plant.name,
+        image=plant.image,
+        channel=DeliveryChannel.email,
+        destination=user.email,
+        scheduled_for=scheduled_for,
+        status=NotificationStatus.queued,
+    )
+
+
+def _build_web_notification(
+    *,
+    user: UserSchedulerViewScheme,
+    plant: PlantSchedulerViewScheme,
+    scheduled_for: datetime,
+) -> Notification:
+    return Notification(
+        user_id=user.id,
+        plant_id=plant.id,
+        plant_name=plant.name,
+        image=plant.image,
+        channel=DeliveryChannel.web,
+        destination=None,
+        scheduled_for=scheduled_for,
+        status=NotificationStatus.sent,
+    )
 
 
 async def get_user_map(
