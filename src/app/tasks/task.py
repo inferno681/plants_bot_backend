@@ -1,6 +1,7 @@
 from datetime import datetime, timezone
 
-from beanie import PydanticObjectId
+from beanie import PydanticObjectId, SortDirection
+from beanie.operators import In
 from redis.asyncio import Redis
 from taskiq import TaskiqDepends
 from typing_extensions import Annotated
@@ -29,13 +30,13 @@ async def get_plants_watering(
 
     cursor: PydanticObjectId | None = None
     while True:
-        query = [Plant.next_watering_at <= now]
+        query = [Plant.next_watering_at <= now]  # type: ignore[operator]
         if cursor is not None:
             query.append(Plant.id > cursor)
 
         plants = (
             await Plant.find(*query, projection_model=PlantSchedulerViewScheme)
-            .sort([('_id', 1)])
+            .sort([('_id', SortDirection.ASCENDING)])
             .limit(batch_size)
             .to_list()
         )
@@ -45,7 +46,7 @@ async def get_plants_watering(
         await process_watering_batch.kiq(
             plants=plants,
             scheduled_for=scheduled_for,
-        )
+        )  # type: ignore[call-overload]
         cursor = plants[-1].id
 
     return True
@@ -182,6 +183,6 @@ async def get_user_map(
     user_ids: set[PydanticObjectId],
 ) -> dict[PydanticObjectId, UserSchedulerViewScheme]:
     users = await User.find(
-        User.id.in_(user_ids), projection_model=UserSchedulerViewScheme
+        In(User.id, user_ids), projection_model=UserSchedulerViewScheme
     ).to_list()
     return {user.id: user for user in users}

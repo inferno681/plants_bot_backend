@@ -105,7 +105,7 @@ async def create_resources(app: FastAPI):
     """Services initialization."""
     redis = init_redis(
         url=config.redis_url(db=config.redis.sid_db),
-        db=config.redis.db,
+        db=config.redis.sid_db,
         password=config.secrets.redis_password.get_secret_value(),
         decode_responses=config.redis.decode_responses,
     )
