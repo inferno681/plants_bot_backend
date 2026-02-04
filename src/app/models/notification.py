@@ -45,6 +45,16 @@ class Notification(BaseDocument):
     last_attempt_at: datetime | None = None
     enqueued_at: datetime | None = None
 
+    def to_queue_dict(self) -> dict[str, str]:
+        return {
+            'key': self.dedup_key,
+            'user_id': str(self.user_id),
+            'plant_id': str(self.plant_id),
+            'name': self.plant_name,
+            'image': self.image or '',
+            'destination': self.destination,
+        }
+
     @model_validator(mode='after')
     def set_dedup(self):
         if not self.dedup_key:

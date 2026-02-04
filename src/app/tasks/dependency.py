@@ -1,6 +1,8 @@
 from typing import Annotated
+
 from redis.asyncio import Redis
 from taskiq import Context, TaskiqDepends
+
 from config import config
 
 

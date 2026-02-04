@@ -16,6 +16,7 @@ from app.schemes.plant import (
     PlantCreteScheme,
     PlantReadScheme,
     PlantReadSchemeShort,
+    PlantSchedulerViewScheme,
     PlantUpdateScheme,
 )
 from app.schemes.token import (
@@ -27,7 +28,11 @@ from app.schemes.token import (
 )
 from app.schemes.user import TelegramUser, WebUser, WebUserInfo
 from app.schemes.user_session import UserSession
-from app.schemes.user_view import TelegramUserView, WebUserView
+from app.schemes.user_view import (
+    TelegramUserView,
+    UserSchedulerViewScheme,
+    WebUserView,
+)
 
 __all__ = [
     'Tokens',
@@ -61,4 +66,6 @@ __all__ = [
     'MessageScheme',
     'TelegramUserView',
     'WebUserView',
+    'PlantSchedulerViewScheme',
+    'UserSchedulerViewScheme',
 ]

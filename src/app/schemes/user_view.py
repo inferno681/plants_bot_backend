@@ -1,5 +1,5 @@
 from beanie import PydanticObjectId
-from pydantic import BaseModel
+from pydantic import BaseModel, ConfigDict
 
 from app.schemes.user import Language
 
@@ -18,3 +18,13 @@ class WebUserView(BaseModel):
     email: str
     language: Language | None
     hashed_password: str
+
+
+class UserSchedulerViewScheme(BaseModel):
+    id: PydanticObjectId
+    telegram_id: int | None = None
+    email: str | None = None
+    telegram_notifications_enabled: bool
+    email_notifications_enabled: bool
+
+    model_config = ConfigDict(from_attributes=True)

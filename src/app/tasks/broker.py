@@ -1,4 +1,5 @@
 from logging import basicConfig, getLogger
+
 from redis.asyncio import ConnectionPool
 from taskiq import SmartRetryMiddleware, TaskiqEvents, TaskiqState
 from taskiq_redis import RedisAsyncResultBackend, RedisStreamBroker
@@ -26,7 +27,7 @@ async def on_worker_startup(state: TaskiqState) -> None:
     state.redis = ConnectionPool.from_url(
         config.redis_url(config.redis.queue_db)
     )
-    log.info(BROKER_START_LOG, state)
+    log.info(BROKER_START_LOG)
 
 
 @broker.on_event(TaskiqEvents.WORKER_SHUTDOWN)

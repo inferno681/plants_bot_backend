@@ -1,5 +1,6 @@
 from datetime import date, timedelta
 
+from beanie import PydanticObjectId
 from pydantic import (
     BaseModel,
     ConfigDict,
@@ -160,3 +161,12 @@ class PlantBotUpdateScheme(PlantUpdateScheme):
     image: str | None = None
     user_id: str
     plant_id: str
+
+
+class PlantSchedulerViewScheme(BaseModel):
+    id: PydanticObjectId
+    user_id: PydanticObjectId
+    name: str
+    image: str | None = None
+
+    model_config = ConfigDict(from_attributes=True)
