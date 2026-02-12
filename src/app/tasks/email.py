@@ -5,8 +5,9 @@ from app.constants.email import (
     EN_CONFIRMATION_EMAIL_TEMPLATE_ID,
 )
 from app.tasks.broker import broker
+from config import config
 
-ms = MailerSendClient()
+ms = MailerSendClient(api_key=config.secrets.email_token.get_secret_value())
 
 
 @broker.task

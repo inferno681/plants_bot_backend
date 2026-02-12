@@ -168,6 +168,9 @@ class Secrets(BaseSettings):
     doc_password: SecretStr = Field(
         default=SecretStr('secret_password'), alias='DOC_PASSWORD'
     )
+    email_token: SecretStr = Field(
+        default=SecretStr('secret_token'), alias='MAILERSEND_API_KEY'
+    )
 
     model_config = SettingsConfigDict(
         env_file='.env', env_file_encoding='utf-8'
