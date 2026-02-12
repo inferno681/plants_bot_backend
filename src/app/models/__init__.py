@@ -1,4 +1,5 @@
 from app.models.bot import Bot
+from app.models.email import EmailConfirmation
 from app.models.notification import (
     DeliveryChannel,
     Notification,
@@ -23,4 +24,5 @@ __all__ = [
     'Notification',
     'NotificationStatus',
     'DeliveryChannel',
+    'EmailConfirmation',
 ]

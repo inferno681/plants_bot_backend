@@ -14,6 +14,11 @@ from app.services.auth_web import (
     init_web_auth_service,
 )
 from app.services.bot import BotService, get_bot_service, init_bot_service
+from app.services.email import (
+    EmailService,
+    get_email_service,
+    init_email_service,
+)
 from app.services.healthz import (
     HealthService,
     get_healthz_service,
@@ -81,4 +86,7 @@ __all__ = [
     'LinkService',
     'init_link_service',
     'get_link_service',
+    'EmailService',
+    'get_email_service',
+    'init_email_service',
 ]

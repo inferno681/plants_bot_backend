@@ -15,13 +15,9 @@ from app.services import TokenService
 class UserService:
     """User service."""
 
-    def __init__(
-        self,
-        token_service: TokenService,
-    ):
+    def __init__(self, token_service: TokenService):
         """User service initialization."""
         self.token_service = token_service
-
         self.log = getLogger(__name__)
         self.log.info(USER_SERVICE_START_LOG)
 

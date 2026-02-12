@@ -13,9 +13,7 @@ from config import config, setup_logging
 logger = getLogger(__name__)
 
 
-def init_auth(
-    app: FastAPI, redis: Redis, pipeline_builder: services.MongoPipelineBuilder
-):
+def init_auth(app: FastAPI, redis: Redis):
     """Auth services initialization."""
 
     token_service = services.TokenService(
@@ -105,25 +103,32 @@ async def create_resources(app: FastAPI):
     """Services initialization."""
     redis = init_redis(
         url=config.redis_url(db=config.redis.sid_db),
-        db=config.redis.sid_db,
+        password=config.secrets.redis_password.get_secret_value(),
+        decode_responses=config.redis.decode_responses,
+    )
+    conf_redis = init_redis(
+        url=config.redis_url(db=config.redis.conf_db),
         password=config.secrets.redis_password.get_secret_value(),
         decode_responses=config.redis.decode_responses,
     )
     pipeline_builder = services.MongoPipelineBuilder()
-    init_auth(app, redis, pipeline_builder)
+    init_auth(app, redis)
 
     db_helper = await init_mongo(app)
     image_service = init_plant(app, pipeline_builder)
 
+    services.init_email_service(app=app, redis=conf_redis)
+
     services.init_healthz_service(app=app, mongo=db_helper, redis=redis)
 
-    return redis, db_helper, image_service
+    return redis, db_helper, image_service, conf_redis
 
 
 async def close_resources(
     redis: Redis | None,
     db_helper,
     image_service,
+    conf_redis: Redis | None,
 ):
     """Services closing."""
     if db_helper:
@@ -132,6 +137,8 @@ async def close_resources(
         await redis.close()
     if image_service:
         image_service.close()
+    if conf_redis:
+        await conf_redis.close()
     logger.info('connections closed')
 
 
@@ -139,7 +146,9 @@ async def close_resources(
 async def lifespan(app: FastAPI):
     setup_logging(config.logger.exclude, config.logger.level)
     try:
-        redis, db_helper, image_service = await create_resources(app)
+        redis, db_helper, image_service, conf_redis = await create_resources(
+            app
+        )
         yield
     finally:
-        await close_resources(redis, db_helper, image_service)
+        await close_resources(redis, db_helper, image_service, conf_redis)

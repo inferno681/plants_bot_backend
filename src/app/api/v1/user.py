@@ -1,13 +1,19 @@
 from beanie import PydanticObjectId
 from fastapi import APIRouter
 
+from app.constants.email import (
+    EMAIL_CONFIRMATION_MSG,
+    EMAIL_CONFIRMATION_SENT_MSG,
+)
 from app.dependencies import (
     current_user_id_dep,
+    email_service_dep,
     user_service_dep,
     web_auth_service_dep,
 )
-from app.schemes import WebUserInfo
-from app.services import UserService, WebAuthService
+from app.schemes import ClientInfo, WebUserInfo
+from app.services import EmailService, UserService, WebAuthService
+from app.utils import client_info_dependency
 
 router = APIRouter()
 
@@ -33,3 +39,27 @@ async def delete_user(
     message = await user_service.delete_user(user_id=PydanticObjectId(user_id))
     await web_auth_service.logout_all_sessions(user_id)
     return message
+
+
+@router.post('/email/confirmation')
+async def resend_confirmation_email(
+    user_id: str = current_user_id_dep,
+    client_info: ClientInfo = client_info_dependency,
+    email_service: EmailService = email_service_dep,
+):
+    """Resend confirmation email endpoint."""
+    await email_service.send_confirmation_email(
+        user_id=PydanticObjectId(user_id), client_info=client_info
+    )
+    return {'message': EMAIL_CONFIRMATION_SENT_MSG}
+
+
+@router.post('/email/confirm')
+async def confirm_email(
+    token: str,
+    client_info: ClientInfo = client_info_dependency,
+    email_service: EmailService = email_service_dep,
+):
+    """Confirm email endpoint."""
+    await email_service.confirm_email(token=token, client_info=client_info)
+    return {'message': EMAIL_CONFIRMATION_MSG}

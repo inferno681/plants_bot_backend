@@ -8,6 +8,7 @@ from app.dependencies.auth import (
 )
 from app.dependencies.bot import get_bot_id_dep
 from app.dependencies.db import session_dependency
+from app.dependencies.email import email_service_dep
 from app.dependencies.healthz import healthz_service_dep
 from app.dependencies.link import link_service_dep
 from app.dependencies.plant import (
@@ -33,4 +34,5 @@ __all__ = [
     'link_telegram_deps',
     'get_bot_id_dep',
     'link_service_dep',
+    'email_service_dep',
 ]

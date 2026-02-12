@@ -91,6 +91,7 @@ class RedisSettings(BaseModel):
     queue_db: int
     taskiq_db: int
     results_db: int
+    conf_db: int
 
 
 class CORS(BaseModel):
