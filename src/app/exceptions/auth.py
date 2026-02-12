@@ -75,6 +75,16 @@ AUTH_ERROR_MAP: MappingProxyType[Type[AuthError], dict[str, Any]] = (
                 TYPE: 'invalid_signature',
                 STATUS: status.HTTP_401_UNAUTHORIZED,
             },
+            UserPermissionError: {
+                MSG: 'auth.permission_denied',
+                TYPE: 'permission_denied',
+                STATUS: status.HTTP_403_FORBIDDEN,
+            },
+            NoContactsError: {
+                MSG: 'auth.no_contacts',
+                TYPE: 'no_contacts',
+                STATUS: status.HTTP_400_BAD_REQUEST,
+            },
         }
     )
 )
