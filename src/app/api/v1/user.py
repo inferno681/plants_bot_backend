@@ -11,7 +11,7 @@ from app.dependencies import (
     user_service_dep,
     web_auth_service_dep,
 )
-from app.schemes import ClientInfo, WebUserInfo
+from app.schemes import ClientInfo, UserSettings, WebUserInfo
 from app.services import EmailService, UserService, WebAuthService
 from app.utils import client_info_dependency
 
@@ -27,6 +27,16 @@ async def get_web_user_info(
     return await user_service.get_web_user_info(
         user_id=PydanticObjectId(user_id)
     )
+
+
+@router.patch('/me', response_model=WebUserInfo)
+async def user_info_update(
+    update_info: UserSettings,
+    user_id: str = current_user_id_dep,
+    user_service: UserService = user_service_dep,
+):
+    """User data update endpoint."""
+    await user_service.update_info(PydanticObjectId(user_id), update_info)
 
 
 @router.delete('/me')

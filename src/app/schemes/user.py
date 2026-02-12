@@ -42,3 +42,10 @@ class WebUserInfo(BaseModel):
     email_verified: bool = False
     telegram_id: int | None = None
     telegram_linked: bool = False
+
+
+class UserSettings(BaseModel):
+    """User settings scheme."""
+
+    telegram_notifications_enabled: bool | None = None
+    email_notifications_enabled: bool | None = None

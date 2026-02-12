@@ -6,9 +6,10 @@ from fastapi import FastAPI, Request
 from app.constants.auth import SID, SUB
 from app.constants.user import USER_DELETE_MSG
 from app.exceptions.auth import UserNotFoundError
+from app.exceptions.email import EmailNotConfirmedError
 from app.logs.user import USER_DELETE_LOG, USER_SERVICE_START_LOG
 from app.models import User, UserStatus
-from app.schemes import UserSession, WebUserInfo
+from app.schemes import UserSession, UserSettings, WebUserInfo
 from app.services import TokenService
 
 
@@ -40,6 +41,25 @@ class UserService:
         if not user:
             raise UserNotFoundError()
 
+        return user
+
+    async def update_info(
+        self, user_id: PydanticObjectId, update_info: UserSettings
+    ):
+        """User info update."""
+        user = await User.find_one(User.id == user_id)
+        if not user:
+            raise UserNotFoundError()
+        if (
+            update_info.email_notifications_enabled
+            and not user.email_verified_at
+        ):
+            raise EmailNotConfirmedError()
+        update_data = update_info.model_dump(exclude_unset=True)
+        for field, new_value in update_data.items():
+            setattr(user, field, new_value)
+
+        await user.save_changes()
         return user
 
     async def delete_user(self, user_id: PydanticObjectId) -> dict:

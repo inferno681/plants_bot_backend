@@ -16,3 +16,7 @@ class TokenAlreadyUsedError(EmailError):
 
 class EmailAlreadyConfirmedError(EmailError):
     """Raised when an email already confirmed."""
+
+
+class EmailNotConfirmedError(EmailError):
+    """Raise when an email not confirmed."""

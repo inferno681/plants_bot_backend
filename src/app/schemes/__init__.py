@@ -26,7 +26,7 @@ from app.schemes.token import (
     TokenServiceConfig,
     WebTokens,
 )
-from app.schemes.user import TelegramUser, WebUser, WebUserInfo
+from app.schemes.user import TelegramUser, UserSettings, WebUser, WebUserInfo
 from app.schemes.user_session import UserSession
 from app.schemes.user_view import (
     TelegramUserView,
@@ -68,4 +68,5 @@ __all__ = [
     'WebUserView',
     'PlantSchedulerViewScheme',
     'UserSchedulerViewScheme',
+    'UserSettings',
 ]
