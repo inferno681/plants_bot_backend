@@ -1,11 +1,11 @@
 from beanie import PydanticObjectId
-from pydantic import BaseModel, ConfigDict
+from pydantic import BaseModel, ConfigDict, Field
 
 from app.schemes.user import Language
 
 
 class TelegramUserView(BaseModel):
-    id: PydanticObjectId
+    id: PydanticObjectId = Field(alias='_id')
     first_name: str | None = None
     last_name: str | None = None
     username: str | None = None
@@ -14,17 +14,17 @@ class TelegramUserView(BaseModel):
 
 
 class WebUserView(BaseModel):
-    id: PydanticObjectId
+    id: PydanticObjectId = Field(alias='_id')
     email: str
-    language: Language | None
+    language: Language | None = None
     hashed_password: str
 
 
 class UserSchedulerViewScheme(BaseModel):
-    id: PydanticObjectId
+    id: PydanticObjectId = Field(alias='_id')
     telegram_id: int | None = None
     email: str | None = None
     telegram_notifications_enabled: bool
     email_notifications_enabled: bool
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, populate_by_name=True)

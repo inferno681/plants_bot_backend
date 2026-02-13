@@ -30,7 +30,7 @@ class TelegramUser(BaseModel):
 class WebUser(BaseModel):
     """Web user scheme."""
 
-    user_id: PydanticObjectId
+    id: PydanticObjectId
     email: EmailStr
 
 

@@ -65,19 +65,14 @@
     return match ? decodeURIComponent(match[1]) : null;
   };
 
-  const getTelegramInitData = () => {
-    const sdkData = window.Telegram?.WebApp?.initData;
-    if (sdkData) return sdkData;
+  const isTelegramWebApp = () => Boolean(window.Telegram?.WebApp?.initData);
 
-    const params = new URLSearchParams(window.location.search);
-    return (
-      params.get('tgWebAppData') ||
-      params.get('tgwebappdata') ||
-      params.get('init_data')
-    );
+  const getTelegramInitData = () => {
+    if (!isTelegramWebApp()) return null;
+    return window.Telegram?.WebApp?.initData || null;
   };
 
-  const computeAuthMode = () => (getTelegramInitData() ? 'telegram' : 'web');
+  const computeAuthMode = () => (isTelegramWebApp() ? 'telegram' : 'web');
 
   const authHeaders = () => (auth.accessToken ? { Authorization: `Bearer ${auth.accessToken}` } : {});
 
@@ -161,6 +156,7 @@
     });
 
   const loginWithTelegram = async () => {
+    if (!isTelegramWebApp()) return false;
     if (telegramLoginAttempted) return false;
     const initData = getTelegramInitData();
     if (!initData) return false;
@@ -187,7 +183,9 @@
     refreshPromise = (async () => {
       const mode = authMode || computeAuthMode();
       loadTokens();
-      if (mode === 'telegram' && !auth.refreshToken) return false;
+      if (mode === 'telegram') {
+        if (!isTelegramWebApp() || !auth.refreshToken) return false;
+      }
 
       let lockAcquired = acquireLock();
       if (!lockAcquired) {
@@ -259,6 +257,7 @@
   const ensureAuth = async () => {
     const mode = authMode || computeAuthMode();
     if (mode === 'telegram') {
+      if (!isTelegramWebApp()) return false;
       if (auth.accessToken) return true;
       if (await refreshTokens()) return true;
       if (await loginWithTelegram()) return true;
@@ -340,6 +339,50 @@
     onAuthRequired = typeof callback === 'function' ? callback : null;
   };
 
+  const postAuthAction = async (endpoint, { requireTelegramWebApp = false } = {}) => {
+    const mode = authMode || computeAuthMode();
+    if (requireTelegramWebApp && !isTelegramWebApp()) {
+      return new Response(null, { status: 400 });
+    }
+    const headers = { ...authHeaders() };
+    const requestOptions = { method: 'POST', headers };
+    if (mode === 'web') {
+      requestOptions.credentials = 'include';
+    }
+    return fetch(endpoint, requestOptions);
+  };
+
+  const logoutCurrent = async () => {
+    const mode = authMode || computeAuthMode();
+    const response =
+      mode === 'telegram'
+        ? await postAuthAction(ENDPOINTS.TG_LOGOUT, { requireTelegramWebApp: true })
+        : await postAuthAction(ENDPOINTS.WEB_LOGOUT);
+    if (response.ok) {
+      applyTokens(null, null);
+    }
+    return response;
+  };
+
+  const logoutOthers = async () => {
+    const mode = authMode || computeAuthMode();
+    return mode === 'telegram'
+      ? postAuthAction(ENDPOINTS.TG_LOGOUT_OTHERS, { requireTelegramWebApp: true })
+      : postAuthAction(ENDPOINTS.WEB_LOGOUT_OTHERS);
+  };
+
+  const logoutAll = async () => {
+    const mode = authMode || computeAuthMode();
+    const response =
+      mode === 'telegram'
+        ? await postAuthAction(ENDPOINTS.TG_LOGOUT_ALL, { requireTelegramWebApp: true })
+        : await postAuthAction(ENDPOINTS.WEB_LOGOUT_ALL);
+    if (response.ok) {
+      applyTokens(null, null);
+    }
+    return response;
+  };
+
   const init = () => {
     if (initialized) return;
     authMode = computeAuthMode();
@@ -364,6 +407,7 @@
   window.Auth = {
     init,
     setOnAuthRequired,
+    isTelegramWebApp,
     getAuthMode: () => (authMode ? authMode : computeAuthMode()),
     getAccessToken: () => auth.accessToken,
     getRefreshToken: () => auth.refreshToken,
@@ -373,5 +417,8 @@
     refreshTokens,
     authFetch,
     loginWithTelegram,
+    logoutCurrent,
+    logoutOthers,
+    logoutAll,
   };
 })();

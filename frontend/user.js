@@ -1,7 +1,10 @@
 const { ENDPOINTS } = window.CONFIG;
 const UI = window.UI;
 const USER_ME_URL = ENDPOINTS.USER_ME;
+const USER_EMAIL_CONFIRMATION_URL = ENDPOINTS.USER_EMAIL_CONFIRMATION;
+const USER_EMAIL_CONFIRM_URL = ENDPOINTS.USER_EMAIL_CONFIRM;
 const LINK_URL = ENDPOINTS.LINK;
+const WEB_LOGIN_DOC_URL = ENDPOINTS.WEB_LOGIN_DOC;
 
 const auth = window.Auth;
 const authFetch = (...args) => auth.authFetch(...args);
@@ -16,6 +19,10 @@ const state = {
   unlinkLoading: false,
   linkPanelOpen: false,
   deleteLoading: false,
+  settingsSaving: false,
+  emailPending: false,
+  sessionPending: false,
+  docPending: false,
 };
 
 const elements = {
@@ -36,6 +43,22 @@ const elements = {
   linkCode: document.getElementById('link-code'),
   linkHint: document.getElementById('link-hint'),
   linkGenerate: document.getElementById('link-generate'),
+  settingsStatus: document.getElementById('settings-status'),
+  settingsForm: document.getElementById('settings-form'),
+  telegramNotifications: document.getElementById('telegram-notifications'),
+  emailNotifications: document.getElementById('email-notifications'),
+  emailStatus: document.getElementById('email-status'),
+  resendEmailConfirmation: document.getElementById('resend-email-confirmation'),
+  emailConfirmForm: document.getElementById('email-confirm-form'),
+  emailConfirmToken: document.getElementById('email-confirm-token'),
+  sessionStatus: document.getElementById('session-status'),
+  logoutCurrent: document.getElementById('logout-current'),
+  logoutOthers: document.getElementById('logout-others'),
+  logoutAll: document.getElementById('logout-all'),
+  docStatus: document.getElementById('doc-status'),
+  docLoginForm: document.getElementById('doc-login-form'),
+  docPassword: document.getElementById('doc-password'),
+  docToken: document.getElementById('doc-token'),
   deleteStatus: document.getElementById('delete-status'),
   deleteUser: document.getElementById('delete-user'),
   deleteModal: document.getElementById('delete-modal'),
@@ -49,6 +72,16 @@ const requestLogin = () => {
 };
 
 const setLinkStatus = (message = '', tone = 'muted') => UI.setStatus(elements.linkStatus, message, tone);
+const setSettingsStatus = (message = '', tone = 'muted') => UI.setStatus(elements.settingsStatus, message, tone);
+const setEmailStatus = (message = '', tone = 'muted') => UI.setStatus(elements.emailStatus, message, tone);
+const setSessionStatus = (message = '', tone = 'muted') => UI.setStatus(elements.sessionStatus, message, tone);
+const setDocStatus = (message = '', tone = 'muted') => UI.setStatus(elements.docStatus, message, tone);
+
+const parseNullableBool = (value) => {
+  if (value === 'true') return true;
+  if (value === 'false') return false;
+  return null;
+};
 
 const formatIdentity = (user) => {
   if (!user) return { title: 'Пользователь', subtitle: 'Данные недоступны' };
@@ -159,6 +192,15 @@ const updateUserUI = () => {
   buildBadges(user);
   buildDetails(user);
   updateLinkPanelVisibility();
+
+  if (elements.telegramNotifications) elements.telegramNotifications.value = 'null';
+  if (elements.emailNotifications) elements.emailNotifications.value = 'null';
+
+  const telegramWebApp = auth.isTelegramWebApp?.() === true;
+  const disableSessionButtons = authMode === 'telegram' && !telegramWebApp;
+  if (elements.logoutCurrent) elements.logoutCurrent.disabled = disableSessionButtons;
+  if (elements.logoutOthers) elements.logoutOthers.disabled = disableSessionButtons;
+  if (elements.logoutAll) elements.logoutAll.disabled = disableSessionButtons;
 };
 
 const clearTimer = () => {
@@ -343,6 +385,148 @@ const handleDetailAction = (event) => {
   }
 };
 
+const handleSettingsSave = async (event) => {
+  event?.preventDefault();
+  if (state.settingsSaving) return;
+
+  const telegramNotifications = parseNullableBool(elements.telegramNotifications?.value);
+  const emailNotifications = parseNullableBool(elements.emailNotifications?.value);
+  if (telegramNotifications === null && emailNotifications === null) {
+    setSettingsStatus('Измените хотя бы один параметр.', 'muted');
+    return;
+  }
+  const payload = {};
+  if (telegramNotifications !== null) {
+    payload.telegram_notifications_enabled = telegramNotifications;
+  }
+  if (emailNotifications !== null) {
+    payload.email_notifications_enabled = emailNotifications;
+  }
+
+  state.settingsSaving = true;
+  setSettingsStatus('Сохраняем настройки...', 'muted');
+  try {
+    const response = await authFetch(USER_ME_URL, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload),
+    });
+    if (!response.ok) throw new Error(`Status ${response.status}`);
+    setSettingsStatus('Настройки сохранены.', 'ok');
+    await fetchUser();
+  } catch (error) {
+    console.error('Settings update failed', error);
+    setSettingsStatus('Не удалось сохранить настройки.', 'error');
+  } finally {
+    state.settingsSaving = false;
+  }
+};
+
+const handleResendEmailConfirmation = async () => {
+  if (state.emailPending) return;
+  state.emailPending = true;
+  setEmailStatus('Отправляем письмо...', 'muted');
+  try {
+    const response = await authFetch(USER_EMAIL_CONFIRMATION_URL, { method: 'POST' });
+    if (!response.ok) throw new Error(`Status ${response.status}`);
+    setEmailStatus('Письмо отправлено.', 'ok');
+  } catch (error) {
+    console.error('Email confirmation resend failed', error);
+    setEmailStatus('Не удалось отправить письмо.', 'error');
+  } finally {
+    state.emailPending = false;
+  }
+};
+
+const handleEmailConfirm = async (event) => {
+  event?.preventDefault();
+  if (state.emailPending) return;
+
+  const token = (elements.emailConfirmToken?.value || '').trim();
+  if (!token) {
+    setEmailStatus('Введите токен подтверждения.', 'error');
+    return;
+  }
+
+  const url = new URL(USER_EMAIL_CONFIRM_URL);
+  url.searchParams.set('token', token);
+
+  state.emailPending = true;
+  setEmailStatus('Подтверждаем email...', 'muted');
+  try {
+    const response = await authFetch(url.toString(), { method: 'POST' });
+    if (!response.ok) throw new Error(`Status ${response.status}`);
+    setEmailStatus('Email подтвержден.', 'ok');
+    if (elements.emailConfirmToken) elements.emailConfirmToken.value = '';
+    await fetchUser();
+  } catch (error) {
+    console.error('Email confirmation failed', error);
+    setEmailStatus('Не удалось подтвердить email.', 'error');
+  } finally {
+    state.emailPending = false;
+  }
+};
+
+const runSessionAction = async (label, action) => {
+  if (state.sessionPending) return;
+  if (authMode === 'telegram' && auth.isTelegramWebApp?.() !== true) {
+    setSessionStatus('Эта операция доступна только в Telegram WebApp.', 'error');
+    return;
+  }
+
+  state.sessionPending = true;
+  setSessionStatus(`${label}...`, 'muted');
+  try {
+    const response = await action();
+    if (!response.ok) throw new Error(`Status ${response.status}`);
+    setSessionStatus('Готово.', 'ok');
+    if (!auth.getAccessToken()) {
+      window.location.href = 'index.html';
+      return;
+    }
+    await fetchUser();
+  } catch (error) {
+    console.error('Session action failed', error);
+    setSessionStatus('Не удалось выполнить действие.', 'error');
+  } finally {
+    state.sessionPending = false;
+  }
+};
+
+const handleDocLogin = async (event) => {
+  event?.preventDefault();
+  if (state.docPending) return;
+  const password = elements.docPassword?.value || '';
+  if (!password) {
+    setDocStatus('Введите пароль.', 'error');
+    return;
+  }
+
+  const body = new URLSearchParams();
+  body.set('username', 'docs');
+  body.set('password', password);
+
+  state.docPending = true;
+  setDocStatus('Запрашиваем токен...', 'muted');
+  try {
+    const response = await fetch(WEB_LOGIN_DOC_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+      body: body.toString(),
+    });
+    if (!response.ok) throw new Error(`Status ${response.status}`);
+    const data = await response.json();
+    if (elements.docToken) elements.docToken.value = data?.access_token || data?.accessToken || '';
+    if (elements.docPassword) elements.docPassword.value = '';
+    setDocStatus('Токен получен.', 'ok');
+  } catch (error) {
+    console.error('Doc login failed', error);
+    setDocStatus('Не удалось получить токен.', 'error');
+  } finally {
+    state.docPending = false;
+  }
+};
+
 const showDeleteModal = () => {
   if (!elements.deleteModal) return;
   elements.deleteModal.hidden = false;
@@ -405,6 +589,13 @@ const bootstrap = async () => {
   elements.linkGenerate?.addEventListener('click', createLink);
   elements.linkCode?.addEventListener('click', copyCode);
   elements.details?.addEventListener('click', handleDetailAction);
+  elements.settingsForm?.addEventListener('submit', handleSettingsSave);
+  elements.resendEmailConfirmation?.addEventListener('click', handleResendEmailConfirmation);
+  elements.emailConfirmForm?.addEventListener('submit', handleEmailConfirm);
+  elements.logoutCurrent?.addEventListener('click', () => runSessionAction('Завершаем текущую сессию', auth.logoutCurrent));
+  elements.logoutOthers?.addEventListener('click', () => runSessionAction('Завершаем другие сессии', auth.logoutOthers));
+  elements.logoutAll?.addEventListener('click', () => runSessionAction('Завершаем все сессии', auth.logoutAll));
+  elements.docLoginForm?.addEventListener('submit', handleDocLogin);
   elements.deleteUser?.addEventListener('click', showDeleteModal);
   elements.deleteCancel?.addEventListener('click', hideDeleteModal);
   elements.deleteConfirm?.addEventListener('click', handleDeleteUser);
