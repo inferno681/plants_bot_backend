@@ -215,6 +215,7 @@ class AppConfig(BaseSettings):
 
     @property
     def mongo_url(self):
+        """Get mongo url."""
         is_srv = self.is_srv_mongo(self.mongodb.host)
         return '{scheme}://{user}:{pwd}@{host}{port}/'.format(
             scheme='mongodb+srv' if is_srv else 'mongodb',
@@ -225,6 +226,7 @@ class AppConfig(BaseSettings):
         )
 
     def redis_url(self, db: int) -> str:
+        """Get redis url."""
         return 'redis://:{pwd}@{host}:{port}/{db}'.format(
             pwd=self.secrets.redis_password.get_secret_value(),
             host=self.redis.host,
@@ -234,12 +236,14 @@ class AppConfig(BaseSettings):
 
     @property
     def send_photo_link(self) -> str:
+        """Send photo telegram api."""
         return 'https://api.telegram.org/bot{token}/sendPhoto'.format(
             token=self.secrets.bot_token.get_secret_value()
         )
 
     @staticmethod
     def is_srv_mongo(host: str) -> bool:
+        """Check mongo connection type."""
         try:
             resolve(f'_mongodb._tcp.{host}', 'SRV')
             return True
