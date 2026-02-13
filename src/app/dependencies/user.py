@@ -14,6 +14,7 @@ async def get_link_telegram_deps(
     web_auth_service: WebAuthService = web_auth_service_dep,
     session: AsyncClientSession = session_dependency,
 ) -> tuple[PlantService, WebAuthService, AsyncClientSession]:
+    """Get link telegram deps."""
     return plant_service, web_auth_service, session
 
 

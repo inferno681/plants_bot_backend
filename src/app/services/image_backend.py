@@ -21,6 +21,7 @@ logger = getLogger(__name__)
 
 
 class IImageBackend(Protocol):
+    """Image backend protocol."""
     def open(self, file_bytes: bytes):
         """Load image from raw bytes."""
 
@@ -41,7 +42,9 @@ class IImageBackend(Protocol):
 
 
 class PillowBackend(IImageBackend):
+    """Pillow backend."""
     def __init__(self, cfg: ImageSettings):
+        """Initialize PillowBackend."""
         try:
             from PIL import Image, ImageOps
         except ImportError:
@@ -104,7 +107,9 @@ class PillowBackend(IImageBackend):
 
 
 class VipsBackend(IImageBackend):
+    """Vips backend."""
     def __init__(self, cfg: ImageSettings):
+        """Initialize VipsBackend."""
         try:
             import pyvips
         except ImportError:
@@ -163,6 +168,7 @@ class VipsBackend(IImageBackend):
 
 
 def get_backend(cfg: ImageSettings):
+    """Get backend."""
     if cfg.backend == 'pillow':
         return PillowBackend(cfg)
     if cfg.backend == 'vips':

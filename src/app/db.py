@@ -56,6 +56,7 @@ class DbHelper:
                 attempt += 1
 
     async def ping(self):
+        """Ping."""
         await self.client[self.db].command('ping')
 
     async def close(self):

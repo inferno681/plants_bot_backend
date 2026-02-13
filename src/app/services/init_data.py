@@ -40,6 +40,7 @@ class InitDataChecker:
         bot_init_data_ttl: int,
         skew: int,
     ):
+        """Initialize InitDataChecker."""
         self.secret = secret
         self.user_init_data_ttl = user_init_data_ttl
         self.bot_init_data_ttl = bot_init_data_ttl
@@ -49,6 +50,7 @@ class InitDataChecker:
     def verify_init_data(
         self, init_data: str, client_type: ClientType = ClientType.user
     ) -> dict:
+        """Verify init data."""
         parsed = self._parse_init_data(init_data, client_type)
         user_data = self._check_init_data(parsed, client_type)
 

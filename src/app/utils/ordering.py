@@ -7,6 +7,7 @@ from pydantic import BaseModel, Field, field_validator
 
 
 class OrderField(StrEnum):
+    """Order Field model."""
     ID = '_id'
     NAME = 'name'
     NEXT_WATERING_AT = 'next_watering_at'
@@ -22,6 +23,7 @@ class OrderItem(BaseModel):
 
     @property
     def sort_string(self) -> str:
+        """Handle sort string."""
         sign = (
             '+'
             if self.direction == SortDirection.ASCENDING
@@ -31,6 +33,7 @@ class OrderItem(BaseModel):
 
     @property
     def sort_tuple(self) -> Tuple[str, SortDirection]:
+        """Handle sort tuple."""
         return self.field.value, self.direction
 
 
@@ -44,6 +47,7 @@ class OrderParams(BaseModel):
     @field_validator('order', mode='before')
     @classmethod
     def parse_order(cls, value: Any) -> list['OrderItem']:
+        """Parse order."""
         if value is None:
             return [OrderItem(field=OrderField.ID)]
 
@@ -106,8 +110,10 @@ class OrderParams(BaseModel):
 
     @property
     def sort_strings(self) -> list[str]:
+        """Handle sort strings."""
         return [item.sort_string for item in self.with_tie_breaker()]
 
     @property
     def sort_tuples(self) -> list[Tuple[str, SortDirection]]:
+        """Handle sort tuples."""
         return [item.sort_tuple for item in self.with_tie_breaker()]

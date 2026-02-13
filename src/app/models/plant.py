@@ -61,6 +61,7 @@ class WateringPeriod(BaseModel):
 
 
 class CurrentPeriod(BaseModel):
+    """Current Period model."""
     period: WateringPeriod
     next_period: WateringPeriod
     start: date
@@ -85,6 +86,7 @@ class FertilizingPeriod(BaseModel):
     note: str | None = None
 
     def build_delta(self) -> relativedelta:
+        """Build delta."""
         match self.type:
             case FertilizingType.days:
                 return relativedelta(days=self.frequency)
@@ -130,7 +132,7 @@ class Plant(BaseDocument):
     next_fertilizing_at: date | None = None
 
     def period_info(self, date: date) -> CurrentPeriod | None:
-
+        """Handle period info."""
         if self.warm_period and self.cold_period:
             start, end = self.warm_period.as_period()
             if start <= date <= end:
@@ -152,4 +154,5 @@ class Plant(BaseDocument):
         return None
 
     class Settings(BaseDocument.Settings):
+        """Settings for Plant model."""
         name = 'plants'

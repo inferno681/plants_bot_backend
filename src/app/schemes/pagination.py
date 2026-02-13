@@ -17,6 +17,7 @@ class CursorPaginatedResponse(BaseModel, Generic[model]):
 
 
 class PlantQuery(BaseModel):
+    """Plant Query scheme."""
     filters: PlantFilter
     paginator: CursorPaginatorParams
     ordering: OrderParams

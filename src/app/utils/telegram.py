@@ -5,7 +5,7 @@ from config import config
 
 
 async def send_photo_to_telegram(file_info: ImageUpload) -> str:
-
+    """Send photo to telegram."""
     async with AsyncClient() as client:
         resp = await client.post(
             config.send_photo_link,

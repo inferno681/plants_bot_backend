@@ -144,6 +144,7 @@ async def close_resources(
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
+    """Lifespan."""
     setup_logging(config.logger.exclude, config.logger.level)
     try:
         redis, db_helper, image_service, conf_redis = await create_resources(

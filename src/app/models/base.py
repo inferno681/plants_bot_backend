@@ -11,15 +11,18 @@ class BaseDocument(Document):
 
     @before_event(Insert)
     def on_insert_set_timestamps(self):
+        """Handle insert set timestamps."""
         now = datetime.now(timezone.utc)
         self.created_at = now
         self.updated_at = now
 
     @before_event([Replace, SaveChanges])
     def on_update_set_timestamps(self):
+        """Handle update set timestamps."""
         self.updated_at = datetime.now(timezone.utc)
 
     class Settings:
+        """Settings for BaseDocument model."""
         use_state_management = True
         exclude_none = True
         keep_nulls = False

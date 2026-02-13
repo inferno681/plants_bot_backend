@@ -10,6 +10,7 @@ from app.utils import CursorPaginatorParams, OrderParams, PlantFilter
 def ordering_params(
     order: Annotated[list[str] | None, Query(alias='order')] = None,
 ) -> OrderParams:
+    """Ordering params."""
     return OrderParams.model_validate({'order': order})
 
 
@@ -18,6 +19,7 @@ async def plant_query_dependency(
     paginator: Annotated[CursorPaginatorParams, Depends()],
     ordering: Annotated[OrderParams, Depends(ordering_params)],
 ) -> PlantQuery:
+    """Plant query dependency."""
     return PlantQuery(filters=filters, paginator=paginator, ordering=ordering)
 
 

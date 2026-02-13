@@ -23,6 +23,7 @@ from app.tasks.dependency import redis_dep
 async def get_plants_watering(
     batch_size: int = WATERING_BATCH_SIZE,
 ):
+    """Get plants watering."""
     now = datetime.now(timezone.utc)
     scheduled_for = now.replace(
         hour=WATERING_SCHEDULE_HOUR, minute=0, second=0, microsecond=0
@@ -59,6 +60,7 @@ async def process_watering_batch(
     redis: Annotated[Redis, TaskiqDepends(redis_dep)],
     tg_queue_key: str = 'tg_notifications',
 ):
+    """Process watering batch."""
     pipe = redis.pipeline()
     user_map = await get_user_map({plant.user_id for plant in plants})
     notifications = _collect_notifications(
@@ -84,6 +86,7 @@ def _collect_notifications(
     pipe,
     tg_queue_key: str,
 ) -> list[Notification]:
+    """Collect notifications."""
     notifications: list[Notification] = []
 
     for plant in plants:
@@ -125,6 +128,7 @@ def _build_telegram_notification(
     plant: PlantSchedulerViewScheme,
     scheduled_for: datetime,
 ) -> Notification | None:
+    """Build telegram notification."""
     if not (user.telegram_notifications_enabled and user.telegram_id):
         return None
 
@@ -146,6 +150,7 @@ def _build_email_notification(
     plant: PlantSchedulerViewScheme,
     scheduled_for: datetime,
 ) -> Notification | None:
+    """Build email notification."""
     if not (user.email_notifications_enabled and user.email):
         return None
 
@@ -167,6 +172,7 @@ def _build_web_notification(
     plant: PlantSchedulerViewScheme,
     scheduled_for: datetime,
 ) -> Notification:
+    """Build web notification."""
     return Notification(
         user_id=user.id,
         plant_id=plant.id,
@@ -182,6 +188,7 @@ def _build_web_notification(
 async def get_user_map(
     user_ids: set[PydanticObjectId],
 ) -> dict[PydanticObjectId, UserSchedulerViewScheme]:
+    """Get user map."""
     users = await User.find(
         In(User.id, user_ids), projection_model=UserSchedulerViewScheme
     ).to_list()

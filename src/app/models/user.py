@@ -42,6 +42,7 @@ class User(BaseDocument):
     email_notifications_enabled: bool = False
 
     class Settings(BaseDocument.Settings):
+        """Settings for User model."""
         name = 'users'
         indexes = [
             IndexModel(

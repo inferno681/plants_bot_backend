@@ -122,6 +122,7 @@ class EmailService:
         self, token: str
     ) -> tuple[PydanticObjectId, EmailConfirmation]:
 
+        """Validate confirmation."""
         user_id = await self.redis.get(f'{CONFIRM_TOKEN_PREFIX}{token}')
         if not user_id:
             raise InvalidTokenError()

@@ -21,6 +21,7 @@ async def get_current_user_id(
     user_service: Annotated[UserService, Depends(get_user_service)],
     token: str = oauth2_dependency,
 ) -> str:
+    """Get current user id."""
     return await user_service.get_current_user_id(token)
 
 
@@ -28,6 +29,7 @@ async def get_current_user_uid_sid(
     user_service: Annotated[UserService, Depends(get_user_service)],
     token: str = oauth2_dependency,
 ) -> UserSession:
+    """Get current user uid sid."""
     return await user_service.get_current_user_uid_sid(token)
 
 
@@ -36,6 +38,7 @@ async def refresh_request(
     csrf_cookie: Annotated[str | None, Cookie(alias='csrf_token')] = None,
     csrf_header: Annotated[str | None, Header(alias='X-CSRF-Token')] = None,
 ) -> RefreshRequestCookie:
+    """Refresh request."""
     if refresh_token is None:
         raise HTTPException(
             status.HTTP_401_UNAUTHORIZED, MISSING_REFRESH_TOKEN

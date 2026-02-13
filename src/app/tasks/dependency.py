@@ -7,6 +7,7 @@ from config import config
 
 
 def redis_dep(context: Annotated[Context, TaskiqDepends()]) -> Redis:
+    """Redis dependency."""
     return Redis(
         connection_pool=context.state.redis,
         decode_responses=config.redis.decode_responses,

@@ -7,6 +7,7 @@ from app.models.base import BaseDocument
 
 
 class EmailConfirmation(BaseDocument):
+    """Email Confirmation model."""
     user_id: PydanticObjectId
     email: EmailStr
 
@@ -20,6 +21,7 @@ class EmailConfirmation(BaseDocument):
     confirmed_user_agent: str | None = None
 
     class Settings(BaseDocument.Settings):
+        """Settings for EmailConfirmation model."""
         name = 'email_confirmations'
         indexes = [
             IndexModel(

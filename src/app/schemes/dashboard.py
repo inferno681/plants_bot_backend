@@ -6,6 +6,7 @@ from pydantic import BaseModel
 
 
 class PlantTask(BaseModel):
+    """Plant Task scheme."""
     plant_id: PydanticObjectId
     name: str
     date: date
@@ -13,6 +14,7 @@ class PlantTask(BaseModel):
 
 
 class PlantDashboardStats(BaseModel):
+    """Plant Dashboard Stats scheme."""
     total: int
     attention: int
     watering_week: int

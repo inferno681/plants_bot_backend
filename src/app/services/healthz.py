@@ -16,6 +16,7 @@ class HealthService:
     """Health check service."""
 
     def __init__(self, mongo: DbHelper, redis: Redis):
+        """Initialize HealthService."""
         self.mongo = mongo
         self.redis = redis
         self.log = getLogger(__name__)

@@ -148,6 +148,7 @@ class LinkService:
 
     @staticmethod
     def generate_link_code(length=CODE_LENGTH):
+        """Handle generate link code."""
         return ''.join(
             secrets.choice(LINKING_CODE_SYMBOLS) for _ in range(length)
         )

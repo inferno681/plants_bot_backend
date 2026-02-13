@@ -78,6 +78,7 @@ async def link_telegram(
     ),
     bot_id: str = get_bot_id_dep,
 ):
+    """Link telegram account endpoint."""
     plant_service, web_auth_service, session = deps
     old_id, new_id = await link_service.link_telegram(
         code=link_request.code,

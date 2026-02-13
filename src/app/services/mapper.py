@@ -8,6 +8,8 @@ from app.services.storage import S3StorageService
 
 
 class PlantReadMapper:
+    """Plant read mapper."""
+
     def __init__(self, storage: S3StorageService):
         """Mapper constructor."""
         self.storage = storage

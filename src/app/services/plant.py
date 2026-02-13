@@ -82,6 +82,7 @@ class PlantService:
         ordering: OrderParams,
     ) -> tuple[list[Plant], bool]:
 
+        """Get plants."""
         query = [Plant.user_id == PydanticObjectId(user_id)]
 
         query.extend(filters.apply(Plant))
@@ -114,6 +115,7 @@ class PlantService:
         return plants, has_more
 
     async def get_plant_by_id(self, plant_id: str, user_id: str) -> Plant:
+        """Get plant by id."""
         plant = await Plant.find_one(
             Plant.id == PydanticObjectId(plant_id),
             Plant.user_id == PydanticObjectId(user_id),
@@ -163,6 +165,7 @@ class PlantService:
         user_id: str,
         file_info: ImageUpload,
     ) -> Plant:
+        """Update plant image."""
         plant = await self.get_plant_by_id(plant_id, user_id)
         file_id, storage_key = await self._process_image(
             user_id, file_info, plant
@@ -178,6 +181,7 @@ class PlantService:
         user_id: str,
         plant_update: PlantUpdateScheme | PlantBotUpdateScheme,
     ) -> Plant:
+        """Update plant."""
         plant = await self.get_plant_by_id(plant_id, user_id)
 
         if plant_update is None:

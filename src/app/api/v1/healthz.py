@@ -16,6 +16,7 @@ async def healthz(health_service: HealthService = healthz_service_dep):
 
 @router.get('/readyz', response_model=dict)
 async def readyz(health_service: HealthService = healthz_service_dep):
+    """Readiness check endpoint."""
     readiness = await health_service.ready_check()
     return JSONResponse(
         status_code=(

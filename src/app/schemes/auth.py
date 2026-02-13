@@ -16,10 +16,13 @@ from app.schemes.validator import PasswordStr
 
 
 class InitData(BaseModel):
+    """Init Data scheme."""
+
     init_data: str = Field(..., description='Signed initData string.')
 
     @field_validator('init_data')
     def validate_format(cls, init_data: str):
+        """Validate init data format."""
         parts = init_data.split('&')
         if any('=' not in part for part in parts):
             raise HTTPException(
@@ -50,6 +53,7 @@ class WebAccountPasswordChange(BaseModel):
 
     @model_validator(mode='after')
     def check_diff(self):
+        """Check password diff."""
         if self.old_password == self.new_password:
             raise ValueError(PASSWORD_CHANGE_SAME_AS_OLD)
         return self

@@ -5,6 +5,7 @@ from app.schemes.user import Language
 
 
 class TelegramUserView(BaseModel):
+    """Telegram User View scheme."""
     id: PydanticObjectId = Field(alias='_id')
     first_name: str | None = None
     last_name: str | None = None
@@ -14,6 +15,7 @@ class TelegramUserView(BaseModel):
 
 
 class WebUserView(BaseModel):
+    """Web User View scheme."""
     id: PydanticObjectId = Field(alias='_id')
     email: str
     language: Language | None = None
@@ -21,6 +23,7 @@ class WebUserView(BaseModel):
 
 
 class UserSchedulerViewScheme(BaseModel):
+    """User Scheduler View scheme."""
     id: PydanticObjectId = Field(alias='_id')
     telegram_id: int | None = None
     email: str | None = None

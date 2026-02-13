@@ -2,6 +2,7 @@ from pydantic import BaseModel
 
 
 class TokenServiceConfig(BaseModel):
+    """Token Service Config scheme."""
     access_secret: str
     refresh_secret: str
     access_ttl: int
@@ -11,11 +12,13 @@ class TokenServiceConfig(BaseModel):
 
 
 class Tokens(BaseModel):
+    """Tokens scheme."""
     access_token: str
     refresh_token: str
 
 
 class WebTokens(BaseModel):
+    """Web Tokens scheme."""
     access_token: str
 
 
@@ -26,5 +29,6 @@ class RefreshRequest(BaseModel):
 
 
 class RefreshRequestCookie(BaseModel):
+    """Refresh Request Cookie scheme."""
     refresh_token: str
     csrf: str

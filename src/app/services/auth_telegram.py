@@ -80,6 +80,7 @@ class TelegramAuthService(BaseAuthService):
         user_data: dict,
         session: AsyncClientSession,
     ):
+        """Update account if changed."""
         fields = [
             'first_name',
             'last_name',

@@ -5,6 +5,7 @@ from app.schemes import ClientInfo
 
 
 def get_client_info(request: Request) -> ClientInfo:
+    """Get client info."""
     xff = request.headers.get('x-forwarded-for')
     if xff:
         ip = xff.split(',')[0].strip()

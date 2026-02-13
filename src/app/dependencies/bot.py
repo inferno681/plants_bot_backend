@@ -10,6 +10,7 @@ async def get_bot_id(
     bot_service: Annotated[BotService, Depends(get_bot_service)],
     token: str = oauth2_dependency,
 ) -> str:
+    """Get bot id."""
     return await bot_service.check_bot_permission(token)
 
 

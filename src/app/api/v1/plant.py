@@ -29,6 +29,7 @@ async def add_plant(
     user_id: str = current_user_id_dep,
     plant_service: PlantService = plant_service_dep,
 ):
+    """Add plant endpoint."""
     return await plant_service.add_plant(
         user_id=user_id, plant_data=plant_data
     )
@@ -41,6 +42,7 @@ async def get_plants(
     plant_mapper: PlantReadMapper = plant_mapper_dep,
     user_id: str = current_user_id_dep,
 ):
+    """Get user plants endpoint."""
     plants, has_more = await plant_service.get_plants(
         user_id, query.filters, query.paginator, query.ordering
     )
@@ -59,6 +61,7 @@ async def get_plants_stats(
     user_id: str = current_user_id_dep,
     plant_service: PlantService = plant_service_dep,
 ):
+    """Get plants dashboard stats endpoint."""
     return await plant_service.get_stats(user_id)
 
 
@@ -69,6 +72,7 @@ async def update_plant_image(
     user_id: str = current_user_id_dep,
     plant_service: PlantService = plant_service_dep,
 ):
+    """Update plant image endpoint."""
     file_info = ImageUpload(
         file_bytes=await image.read(),
         filename=image.filename or 'upload.jpg',
@@ -84,6 +88,7 @@ async def get_plant(
     plant_service: PlantService = plant_service_dep,
     plant_mapper: PlantReadMapper = plant_mapper_dep,
 ):
+    """Get plant by id endpoint."""
     plant = await plant_service.get_plant_by_id(plant_id, user_id)
 
     return await plant_mapper.to_full(plant)
@@ -97,6 +102,7 @@ async def update_plant(
     plant_service: PlantService = plant_service_dep,
     plant_mapper: PlantReadMapper = plant_mapper_dep,
 ):
+    """Update plant endpoint."""
     plant = await plant_service.update_plant(plant_id, user_id, plant_update)
 
     return await plant_mapper.to_full(plant)

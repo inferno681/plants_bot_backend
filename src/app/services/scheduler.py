@@ -15,6 +15,7 @@ class Scheduler:
     """Scheduler service."""
 
     def __init__(self):
+        """Initialize Scheduler."""
         self.log = getLogger(__name__)
         self.log.info(SCHEDULER_SERVICE_START_LOG)
 

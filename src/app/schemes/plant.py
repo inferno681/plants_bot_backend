@@ -14,6 +14,7 @@ from app.models.plant import FertilizingPeriod, WateringPeriod
 
 
 class PlantReadSchemeShort(BaseModel):
+    """Plant short scheme."""
 
     id: str
     name: str
@@ -30,10 +31,12 @@ class PlantReadSchemeShort(BaseModel):
     @field_validator('id', mode='before')
     @classmethod
     def cast_id(cls, id):
+        """Cast id."""
         return str(id)
 
     @computed_field
     def status(self) -> str:
+        """Handle status."""
         today = date.today()
         if self.next_watering_at:
             if self.next_watering_at < today:
@@ -46,6 +49,7 @@ class PlantReadSchemeShort(BaseModel):
 
 
 class PlantReadScheme(PlantReadSchemeShort):
+    """Plant Read scheme."""
 
     id: str
     name: str
@@ -85,6 +89,7 @@ class BasePlantCUScheme(BaseModel):
 
     @model_validator(mode='after')
     def check_periods_do_not_overlap(self):
+        """Check periods do not overlap."""
         fields_set = self.model_fields_set
         has_warm = 'warm_period' in fields_set
         has_cold = 'cold_period' in fields_set
@@ -108,12 +113,14 @@ class BasePlantCUScheme(BaseModel):
 
     @model_validator(mode='after')
     def reset_fertilizing_next_date(self):
+        """Reset fertilizing next date."""
         if 'fertilizing' in self.model_fields_set and self.fertilizing is None:
             setattr(self, 'next_fertilizing_at', None)
         return self
 
     @property
     def should_recalc_watering(self) -> bool:
+        """Should recalc watering."""
         fields_set = self.model_fields_set
         if not (
             {'warm_period', 'cold_period', 'last_watered_at'} & fields_set
@@ -129,6 +136,7 @@ class BasePlantCUScheme(BaseModel):
 
     @property
     def should_recalc_fertilizing(self) -> bool:
+        """Should recalc fertilizing."""
         fields_set = self.model_fields_set
         if not ({'fertilizing', 'last_fertilized_at'} & fields_set):
             return False
@@ -148,22 +156,29 @@ class PlantCreteScheme(BasePlantCUScheme):
 
 
 class PlantUpdateScheme(BasePlantCUScheme):
+    """Plant Update scheme."""
 
     name: str | None = None
 
 
 class PlantBotCreateScheme(PlantCreteScheme):
+    """Plant Bot Create scheme."""
+
     image: str | None = None
     user_id: str
 
 
 class PlantBotUpdateScheme(PlantUpdateScheme):
+    """Plant Bot Update scheme."""
+
     image: str | None = None
     user_id: str
     plant_id: str
 
 
 class PlantSchedulerViewScheme(BaseModel):
+    """Plant Scheduler View scheme."""
+
     id: PydanticObjectId
     user_id: PydanticObjectId
     name: str

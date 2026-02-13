@@ -9,4 +9,5 @@ class Bot(BaseDocument):
     is_active: bool = False
 
     class Settings(BaseDocument.Settings):
+        """Settings for Bot model."""
         name = 'bots'

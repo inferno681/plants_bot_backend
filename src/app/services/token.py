@@ -26,6 +26,7 @@ logger = getLogger(__name__)
 
 
 class LoginType(StrEnum):
+    """Login Type model."""
     doc = auto()
     telegram = auto()
     web = auto()
@@ -34,6 +35,7 @@ class LoginType(StrEnum):
     @classmethod
     @lru_cache
     def user_types(cls):
+        """Handle user types."""
         return frozenset((cls.web, cls.telegram))
 
 

@@ -20,6 +20,7 @@ class NotificationStatus(StrEnum):
 
 
 class DeliveryChannel(StrEnum):
+    """Delivery Channel model."""
     telegram = auto()
     email = auto()
     web = auto()
@@ -46,7 +47,7 @@ class Notification(BaseDocument):
     enqueued_at: datetime | None = None
 
     def to_queue_dict(self) -> dict[str, str]:
-
+        """Convert to queue dict."""
         return {
             'key': self.dedup_key or '',
             'user_id': str(self.user_id),
@@ -58,6 +59,7 @@ class Notification(BaseDocument):
 
     @model_validator(mode='after')
     def set_dedup(self):
+        """Set dedup."""
         if not self.dedup_key:
             self.dedup_key = ':'.join(
                 str(self.user_id),
@@ -68,4 +70,5 @@ class Notification(BaseDocument):
         return self
 
     class Settings(BaseDocument.Settings):
+        """Settings for Notification model."""
         name = 'notifications'

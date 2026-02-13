@@ -187,6 +187,7 @@ async def plant_exception_handler(
 
 
 async def pydantic_validation_error_handler(request, exc: ValidationError):
+    """Pydantic validation error handler."""
     return JSONResponse(
         status_code=status.HTTP_400_BAD_REQUEST,
         content={

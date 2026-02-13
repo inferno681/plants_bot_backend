@@ -10,6 +10,7 @@ class CursorPaginatorParams(BaseModel):
 
     @field_validator('cursor', mode='after')
     def validate_cursor(cls, cursor):
+        """Validate cursor."""
         if cursor:
             return PydanticObjectId(cursor)
         return cursor

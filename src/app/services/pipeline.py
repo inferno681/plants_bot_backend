@@ -8,6 +8,7 @@ class MongoPipelineBuilder:
 
     @staticmethod
     def build_dashboard_pipeline(user_id: str, today: datetime) -> list:
+        """Build dashboard pipeline."""
         week_limit = today + timedelta(days=7)
 
         return [
