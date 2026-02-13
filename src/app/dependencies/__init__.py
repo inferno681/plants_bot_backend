@@ -1,7 +1,9 @@
 from app.dependencies.auth import (
     bot_auth_service_dep,
+    current_telegram_uid_sid_dep,
     current_user_id_dep,
     current_user_uid_sid_dep,
+    current_web_uid_sid_dep,
     refresh_request_dep,
     telegram_auth_service_dep,
     web_auth_service_dep,
@@ -35,4 +37,6 @@ __all__ = [
     'get_bot_id_dep',
     'link_service_dep',
     'email_service_dep',
+    'current_web_uid_sid_dep',
+    'current_telegram_uid_sid_dep',
 ]

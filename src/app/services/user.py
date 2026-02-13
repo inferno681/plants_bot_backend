@@ -3,14 +3,15 @@ from logging import getLogger
 from beanie import PydanticObjectId
 from fastapi import FastAPI, Request
 
-from app.constants.auth import SID, SUB
+from app.constants.auth import SID, SUB, TYPE
 from app.constants.user import USER_DELETE_MSG
-from app.exceptions.auth import UserNotFoundError
+from app.exceptions.auth import UserNotFoundError, UserPermissionError
 from app.exceptions.email import EmailNotConfirmedError
 from app.logs.user import USER_DELETE_LOG, USER_SERVICE_START_LOG
 from app.models import User, UserStatus
 from app.schemes import UserSession, UserSettings, WebUserInfo
 from app.services import TokenService
+from app.services.token import LoginType
 
 
 class UserService:
@@ -25,11 +26,25 @@ class UserService:
     async def get_current_user_uid_sid(self, token: str) -> UserSession:
         """Get current user DI."""
         payload = await self.token_service.check_token(token)
+        if payload[TYPE] == LoginType.bot:
+            raise UserPermissionError()
         return UserSession(uid=payload[SUB], sid=payload[SID])
 
     async def get_current_user_id(self, token: str) -> str:
         """Get current user DI."""
-        return (await self.token_service.check_token(token))[SUB]
+        payload = await self.token_service.check_token(token)
+        if payload[TYPE] == LoginType.bot:
+            raise UserPermissionError()
+        return payload[SUB]
+
+    async def check_user_by_type(
+        self, token: str, types: set[LoginType]
+    ) -> UserSession:
+        """Check current user by type"""
+        payload = await self.token_service.check_token(token)
+        if payload[TYPE] not in types:
+            raise UserPermissionError()
+        return UserSession(uid=payload[SUB], sid=payload[SID])
 
     async def get_web_user_info(
         self, user_id: PydanticObjectId

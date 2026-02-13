@@ -9,6 +9,7 @@ from app.constants.auth import (
 from app.schemes import RefreshRequestCookie, UserSession
 from app.security import oauth2_dependency
 from app.services import (
+    LoginType,
     UserService,
     get_bot_auth_service,
     get_telegram_auth_service,
@@ -57,6 +58,24 @@ async def refresh_request(
     )
 
 
+async def get_current_web_uid_sid(
+    user_service: Annotated[UserService, Depends(get_user_service)],
+    token: str = oauth2_dependency,
+) -> UserSession:
+    """Get current web user id."""
+    return await user_service.check_user_by_type(
+        token, {LoginType.web, LoginType.doc}
+    )
+
+
+async def get_current_telegram_uid_sid(
+    user_service: Annotated[UserService, Depends(get_user_service)],
+    token: str = oauth2_dependency,
+) -> UserSession:
+    """Get current web user id."""
+    return await user_service.check_user_by_type(token, {LoginType.telegram})
+
+
 current_user_id_dep = Depends(get_current_user_id)
 current_user_uid_sid_dep = Depends(get_current_user_uid_sid)
 
@@ -65,3 +84,6 @@ telegram_auth_service_dep = Depends(get_telegram_auth_service)
 web_auth_service_dep = Depends(get_web_auth_service)
 
 refresh_request_dep = Depends(refresh_request)
+
+current_web_uid_sid_dep = Depends(get_current_web_uid_sid)
+current_telegram_uid_sid_dep = Depends(get_current_telegram_uid_sid)

@@ -7,8 +7,7 @@ from pymongo.asynchronous.client_session import AsyncClientSession
 
 from app.constants.auth import CSRF_LENGTH, LAX_LITERAL
 from app.dependencies import (
-    current_user_id_dep,
-    current_user_uid_sid_dep,
+    current_web_uid_sid_dep,
     refresh_request_dep,
     session_dependency,
     web_auth_service_dep,
@@ -83,7 +82,7 @@ async def login(
 @router.post('/logout')
 async def logout(
     response: Response,
-    session_info: UserSession = current_user_uid_sid_dep,
+    session_info: UserSession = current_web_uid_sid_dep,
     web_auth_service: WebAuthService = web_auth_service_dep,
 ):
     """Current session logout."""
@@ -98,7 +97,7 @@ async def logout(
 
 @router.post('/logout_others')
 async def logout_other(
-    session_info: UserSession = current_user_uid_sid_dep,
+    session_info: UserSession = current_web_uid_sid_dep,
     web_auth_service: WebAuthService = web_auth_service_dep,
 ):
     """Other session logout."""
@@ -111,11 +110,13 @@ async def logout_other(
 
 @router.post('/logout_all')
 async def logout_all(
-    user_id: str = current_user_id_dep,
+    session_info: UserSession = current_web_uid_sid_dep,
     web_auth_service: WebAuthService = web_auth_service_dep,
 ):
     """All session logout."""
-    return {'message': await web_auth_service.logout_all_sessions(user_id)}
+    return {
+        'message': await web_auth_service.logout_all_sessions(session_info.uid)
+    }
 
 
 @router.post('/refresh', response_model=WebTokens)
