@@ -11,7 +11,7 @@ async def get_bot_id(
     token: str = oauth2_dependency,
 ) -> str:
     """Get bot id."""
-    return await bot_service.check_bot_permission(token)
+    return await bot_service.get_bot_id(token)
 
 
 get_bot_id_dep = Depends(get_bot_id)

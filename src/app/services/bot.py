@@ -5,7 +5,7 @@ from fastapi import FastAPI, Request
 from app.constants.auth import SUB, TYPE
 from app.exceptions.auth import UserPermissionError
 from app.logs.bot import BOT_SERVICE_START_LOG
-from app.services.token import TokenService
+from app.services.token import LoginType, TokenService
 
 
 class BotService:
@@ -20,10 +20,10 @@ class BotService:
         self.log = getLogger(__name__)
         self.log.info(BOT_SERVICE_START_LOG)
 
-    async def check_bot_permission(self, token: str) -> str:
+    async def get_bot_id(self, token: str) -> str:
         """Get current bot id."""
         payload = await self.token_service.check_token(token)
-        if payload[TYPE] != 'bot':
+        if payload[TYPE] != LoginType.bot:
             raise UserPermissionError()
         return payload[SUB]
 
