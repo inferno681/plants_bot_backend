@@ -4,12 +4,13 @@ from pymongo.errors import DuplicateKeyError
 
 from app.exceptions.auth import UserNotFoundError
 from app.logs.auth import (
+    INACTIVE_USER_LOGIN_ATTEMPT_LOG,
     TELEGRAM_AUTH_SERVICE_START_LOG,
     UNREGISTERED_USER_LOG,
     USER_DATA_UPDATED_LOG,
     USER_LOGIN_LOG,
 )
-from app.models import User
+from app.models import User, UserStatus
 from app.schemes import ClientInfo, TelegramUserView, Tokens
 from app.schemes.auth import TelegramAccountBase
 from app.services.auth import BaseAuthService
@@ -48,6 +49,9 @@ class TelegramAuthService(BaseAuthService):
             user = await self.registration_telegram_user(
                 account_data=account_data, session=session
             )
+        if user.status != UserStatus.active:
+            self.log.warning(INACTIVE_USER_LOGIN_ATTEMPT_LOG, user.id)
+            raise UserNotFoundError()
         self.log.info(USER_LOGIN_LOG, str(user.id), LoginType.telegram)
         await self._update_account_if_changed(user, user_data, session)
         return await self.token_service.create_and_put_tokens(

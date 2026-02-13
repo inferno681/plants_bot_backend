@@ -10,6 +10,7 @@ from app.exceptions.auth import (
     UserNotFoundError,
 )
 from app.logs.auth import (
+    INACTIVE_USER_LOGIN_ATTEMPT_LOG,
     INVALID_DOC_PASSWORD_LOG,
     INVALID_WEB_PASSWORD_LOG,
     SAME_EMAIL_REGISTRATION_LOG,
@@ -17,7 +18,7 @@ from app.logs.auth import (
     USER_LOGIN_LOG,
     WEB_AUTH_SERVICE_START_LOG,
 )
-from app.models import User
+from app.models import User, UserStatus
 from app.schemes import ClientInfo, Tokens, WebUserView
 from app.schemes.auth import WebAccountLogin, WebAccountRegistration
 from app.services.auth import BaseAuthService
@@ -64,6 +65,9 @@ class WebAuthService(BaseAuthService):
         if not user:
             self.log.info(UNREGISTERED_USER_LOG, login_data.email)
             raise InvalidCredentialsError()
+        if user.status != UserStatus.active:
+            self.log.warning(INACTIVE_USER_LOGIN_ATTEMPT_LOG, user.id)
+            raise UserNotFoundError()
         if self.password_hasher.verify(
             login_data.password, user.hashed_password
         ):
@@ -86,6 +90,9 @@ class WebAuthService(BaseAuthService):
         user = await User.find_one(User.id == DOC_USER)
         if not user:
             self.log.info(UNREGISTERED_USER_LOG, DOC_USER)
+            raise UserNotFoundError()
+        if user.status != UserStatus.active:
+            self.log.warning(INACTIVE_USER_LOGIN_ATTEMPT_LOG, user.id)
             raise UserNotFoundError()
         self.log.info(USER_LOGIN_LOG, DOC_USER, LoginType.doc)
         return await self.token_service.create_and_put_tokens(

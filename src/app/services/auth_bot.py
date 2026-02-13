@@ -9,6 +9,7 @@ from app.logs.auth import (
     UNREGISTERED_BOT_LOG,
     USER_LOGIN_LOG,
 )
+from app.logs.bot import INACTIVE_BOT_LOGIN_ATTEMPT_LOG
 from app.models import Bot
 from app.schemes import ClientInfo, Tokens
 from app.services.init_data import ClientType, InitDataChecker
@@ -35,6 +36,9 @@ class BotAuthService:
         bot = await Bot.find_one(Bot.id == payload['id'])
         if not bot:
             self.log.info(UNREGISTERED_BOT_LOG, payload['id'])
+            raise UserNotFoundError()
+        if not bot.is_active:
+            self.log.warning(INACTIVE_BOT_LOGIN_ATTEMPT_LOG, bot.id)
             raise UserNotFoundError()
         self.log.info(USER_LOGIN_LOG, payload['id'], LoginType.bot)
         return await self.token_service.create_and_put_tokens(
