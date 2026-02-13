@@ -36,7 +36,9 @@ async def user_info_update(
     user_service: UserService = user_service_dep,
 ):
     """User data update endpoint."""
-    await user_service.update_info(PydanticObjectId(user_id), update_info)
+    return await user_service.update_info(
+        PydanticObjectId(user_id), update_info
+    )
 
 
 @router.delete('/me')

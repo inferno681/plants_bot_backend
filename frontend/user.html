@@ -45,7 +45,6 @@
             <label class="form-field">
               <span class="form-label">Уведомления в Telegram</span>
               <select id="telegram-notifications">
-                <option value="null">Не менять</option>
                 <option value="true">Включить</option>
                 <option value="false">Отключить</option>
               </select>
@@ -53,7 +52,6 @@
             <label class="form-field">
               <span class="form-label">Email уведомления</span>
               <select id="email-notifications">
-                <option value="null">Не менять</option>
                 <option value="true">Включить</option>
                 <option value="false">Отключить</option>
               </select>
@@ -77,15 +75,6 @@
         <div class="link-actions">
           <button class="button button--primary" id="resend-email-confirmation" type="button">Отправить письмо подтверждения</button>
         </div>
-        <form class="edit-form" id="email-confirm-form">
-          <label class="form-field">
-            <span class="form-label">Токен из письма</span>
-            <input id="email-confirm-token" type="text" autocomplete="off" placeholder="Вставьте токен" />
-          </label>
-          <div class="link-actions">
-            <button class="button button--ghost" id="confirm-email-token" type="submit">Подтвердить email</button>
-          </div>
-        </form>
       </div>
     </section>
 
@@ -102,30 +91,6 @@
           <button class="button button--ghost" id="logout-others" type="button">Выйти на других устройствах</button>
           <button class="button button--ghost" id="logout-all" type="button">Выйти везде</button>
         </div>
-      </div>
-    </section>
-
-    <section class="edit-panel">
-      <div class="edit-panel__header">
-        <div>
-          <p class="eyebrow">Документация API</p>
-        </div>
-        <div class="edit-status" id="doc-status" aria-live="polite"></div>
-      </div>
-      <div class="form-card">
-        <form class="edit-form" id="doc-login-form">
-          <label class="form-field">
-            <span class="form-label">Пароль документации</span>
-            <input id="doc-password" type="password" autocomplete="current-password" />
-          </label>
-          <div class="link-actions">
-            <button class="button button--ghost" id="doc-login-submit" type="submit">Получить токен docs</button>
-          </div>
-          <label class="form-field">
-            <span class="form-label">Access token</span>
-            <textarea id="doc-token" readonly rows="3" placeholder="Тут появится токен"></textarea>
-          </label>
-        </form>
       </div>
     </section>
 
@@ -204,6 +169,6 @@
   <script src="constants.js?v=4"></script>
   <script src="auth.js?v=4"></script>
   <script src="ui-utils.js?v=3"></script>
-  <script src="user.js?v=2"></script>
+  <script src="user.js?v=3"></script>
 </body>
 </html>

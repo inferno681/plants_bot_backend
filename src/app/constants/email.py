@@ -9,7 +9,7 @@ CONFIRMATION_EMAIL_TEMPLATES = MappingProxyType(
     }
 )
 CONFIRMATION_EMAIL_LINK = (
-    'https://plants-bot.com/email-confirmation?token={token}'
+    'https://plants-bot.com/email-confirmation.html?token={token}'
 )
 EMAIL_CONFIRMATION_SENT_MSG = 'Confirmation email sent'
 EMAIL_CONFIRMATION_MSG = 'Email confirmed'

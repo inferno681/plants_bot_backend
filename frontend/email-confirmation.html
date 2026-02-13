@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Подтверждение Email</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="page">
+    <header class="detail-header">
+      <div class="detail-header__group">
+        <a class="button button--ghost" href="index.html">↩ На главную</a>
+      </div>
+      <div class="detail-header__group">
+        <button class="button button--ghost" id="theme-toggle" type="button">Тема</button>
+      </div>
+    </header>
+
+    <section class="edit-panel">
+      <div class="edit-panel__header">
+        <div>
+          <p class="eyebrow">Email</p>
+          <h1 class="section-title">Подтверждение адреса</h1>
+        </div>
+        <div class="edit-status" id="confirm-status" aria-live="polite"></div>
+      </div>
+      <div class="form-card">
+        <p class="detail-subvalue" id="confirm-description">Проверяем токен подтверждения...</p>
+        <div class="link-actions">
+          <button class="button button--primary" id="retry-btn" type="button" hidden>Повторить</button>
+          <a class="button button--ghost" href="user.html">Профиль</a>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <script src="constants.js?v=4"></script>
+  <script src="ui-utils.js?v=3"></script>
+  <script src="email-confirm.js?v=1"></script>
+</body>
+</html>
