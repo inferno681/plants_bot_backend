@@ -3,7 +3,7 @@ from pymongo.asynchronous.client_session import AsyncClientSession
 
 from app.dependencies import (
     bot_auth_service_dep,
-    current_user_uid_sid_dep,
+    current_bot_uid_sid_dep,
     session_dependency,
     telegram_auth_service_dep,
 )
@@ -46,7 +46,7 @@ async def login(
 
 @router.post('/logout')
 async def logout(
-    session_info: UserSession = current_user_uid_sid_dep,
+    session_info: UserSession = current_bot_uid_sid_dep,
     bot_auth_service: BotAuthService = bot_auth_service_dep,
 ):
     """Logout endpoint."""

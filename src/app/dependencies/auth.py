@@ -23,7 +23,11 @@ async def get_current_user_id(
     token: str = oauth2_dependency,
 ) -> str:
     """Get current user id."""
-    return await user_service.get_current_user_id(token)
+    return (
+        await user_service.check_user_by_type(
+            token, {LoginType.web, LoginType.telegram}
+        )
+    ).uid
 
 
 async def get_current_user_uid_sid(
@@ -31,7 +35,9 @@ async def get_current_user_uid_sid(
     token: str = oauth2_dependency,
 ) -> UserSession:
     """Get current user uid sid."""
-    return await user_service.get_current_user_uid_sid(token)
+    return await user_service.check_user_by_type(
+        token, {LoginType.web, LoginType.telegram}
+    )
 
 
 async def refresh_request(
@@ -63,9 +69,7 @@ async def get_current_web_uid_sid(
     token: str = oauth2_dependency,
 ) -> UserSession:
     """Get current web user id."""
-    return await user_service.check_user_by_type(
-        token, {LoginType.web, LoginType.doc}
-    )
+    return await user_service.check_user_by_type(token, {LoginType.web})
 
 
 async def get_current_telegram_uid_sid(
@@ -74,6 +78,14 @@ async def get_current_telegram_uid_sid(
 ) -> UserSession:
     """Get current web user id."""
     return await user_service.check_user_by_type(token, {LoginType.telegram})
+
+
+async def get_current_bot_uid_sid(
+    user_service: Annotated[UserService, Depends(get_user_service)],
+    token: str = oauth2_dependency,
+) -> UserSession:
+    """Get current bot id."""
+    return await user_service.check_user_by_type(token, {LoginType.bot})
 
 
 current_user_id_dep = Depends(get_current_user_id)
@@ -87,3 +99,4 @@ refresh_request_dep = Depends(refresh_request)
 
 current_web_uid_sid_dep = Depends(get_current_web_uid_sid)
 current_telegram_uid_sid_dep = Depends(get_current_telegram_uid_sid)
+current_bot_uid_sid_dep = Depends(get_current_bot_uid_sid)
