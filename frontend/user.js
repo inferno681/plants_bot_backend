@@ -9,6 +9,27 @@ const authFetch = (...args) => auth.authFetch(...args);
 const ensureAuth = () => auth.ensureAuth();
 let authMode = 'web';
 
+const escapeHtml = (value) =>
+  String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+
+const safeLinkUrl = (value) => {
+  if (!value) return '#';
+  try {
+    const url = new URL(value, window.location.origin);
+    if (url.protocol === 'http:' || url.protocol === 'https:' || url.protocol === 'tg:') {
+      return url.href;
+    }
+  } catch (error) {
+    // ignore invalid urls
+  }
+  return '#';
+};
+
 const state = {
   user: null,
   link: null,
@@ -128,18 +149,19 @@ const buildDetails = (user) => {
     const card = document.createElement('article');
     card.className = 'detail-card';
     const isEmail = item.label === 'Email';
+    const actionType = item.actionType === 'unlink' ? 'unlink' : 'link';
     const metaText = item.meta
-      ? `<span class="detail-status-text">${item.meta}</span>`
+      ? `<span class="detail-status-text">${escapeHtml(item.meta)}</span>`
       : '';
-    const meta = item.meta && !isEmail ? `<div class="detail-subvalue">${item.meta}</div>` : '';
+    const meta = item.meta && !isEmail ? `<div class="detail-subvalue">${escapeHtml(item.meta)}</div>` : '';
     const action = item.action
-      ? `<button class="button button--ghost button--sm detail-action" data-action="${item.actionType}" type="button">${item.action}</button>`
+      ? `<button class="button button--ghost button--sm detail-action" data-action="${actionType}" type="button">${escapeHtml(item.action)}</button>`
       : '';
     card.innerHTML = `
       <div class="detail-row">
         <div>
-          <div class="label">${item.label}</div>
-          <div class="value">${item.value}</div>
+          <div class="label">${escapeHtml(item.label)}</div>
+          <div class="value">${escapeHtml(item.value)}</div>
         </div>
         <div class="detail-row__actions">
           ${isEmail ? metaText : ''}
@@ -248,7 +270,7 @@ const setLinkData = (link) => {
   if (elements.linkQr) elements.linkQr.src = qrUrl;
   if (elements.linkUrl) {
     elements.linkUrl.textContent = link.link || link.qr || '—';
-    elements.linkUrl.href = link.link || link.qr || '#';
+    elements.linkUrl.href = safeLinkUrl(link.link || link.qr || '#');
   }
   if (elements.linkCode) elements.linkCode.textContent = link.code || '—';
   elements.linkGenerate.hidden = false;

@@ -15,6 +15,27 @@ const ensureAuth = () => auth.ensureAuth();
 const { initTheme, toggleTheme, formatDate, formatPeriod, daysUntil } = window.UI;
 let authMode = 'web';
 
+const escapeHtml = (value) =>
+  String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+
+const safeImageUrl = (value) => {
+  if (!value) return null;
+  try {
+    const url = new URL(value, window.location.origin);
+    if (url.protocol === 'http:' || url.protocol === 'https:') {
+      return url.href;
+    }
+  } catch (error) {
+    // ignore invalid urls
+  }
+  return null;
+};
+
 const showLoginModal = () => {
   if (!elements.loginModal) return;
   if (elements.registerModal) elements.registerModal.hidden = true;
@@ -165,7 +186,7 @@ const mapPlantFromApi = (plant) => {
 
 const showNotice = (target, message, tone = 'muted') => {
   if (!target) return;
-  target.innerHTML = `<div class="notice notice--${tone}">${message}</div>`;
+  target.innerHTML = `<div class="notice notice--${tone}">${escapeHtml(message)}</div>`;
 };
 
 const buildUserCard = () => {
@@ -194,7 +215,7 @@ const buildStats = () => {
   elements.stats.innerHTML = blocks
     .map(
       (b) =>
-        `<div class="stat-card"><div class="label">${b.label}</div><div class="value">${b.value}</div></div>`,
+        `<div class="stat-card"><div class="label">${escapeHtml(b.label)}</div><div class="value">${escapeHtml(b.value)}</div></div>`,
     )
     .join('');
 };
@@ -232,26 +253,30 @@ const renderCards = () => {
   visible.forEach((plant) => {
     const { text, cls } = statusBadge(plant.status);
     const alertBadge = cls;
-    const image = plant.imageUrl
-      ? `<div class="card__image has-image" style="background-image: url('${plant.imageUrl}')"></div>`
-      : '<div class="card__image"></div>';
+    const imageUrl = safeImageUrl(plant.imageUrl);
 
     const card = document.createElement('article');
     card.className = 'card';
     card.innerHTML = `
-      ${image}
+      <div class="card__image${imageUrl ? ' has-image' : ''}"></div>
       <div class="card__body">
-        <h3 class="card__title">${plant.name}</h3>
-        <div class="card__subtitle">${plant.scientificName || '-'}</div>
+        <h3 class="card__title">${escapeHtml(plant.name)}</h3>
+        <div class="card__subtitle">${escapeHtml(plant.scientificName || '-')}</div>
         <div class="badges">
           <span class="badge ${alertBadge}">${text}</span>
         </div>
         <div class="card__dates">
-          <div class="date-chip">Полив: ${formatDate(plant.nextWateringAt)}</div>
-          <div class="date-chip">Подкормка: ${formatDate(plant.nextFertilizingAt)}</div>
+          <div class="date-chip">Полив: ${escapeHtml(formatDate(plant.nextWateringAt))}</div>
+          <div class="date-chip">Подкормка: ${escapeHtml(formatDate(plant.nextFertilizingAt))}</div>
         </div>
       </div>
     `;
+    if (imageUrl) {
+      const image = card.querySelector('.card__image');
+      if (image) {
+        image.style.backgroundImage = `url("${imageUrl}")`;
+      }
+    }
     card.dataset.id = plant.id;
     card.addEventListener('click', () => {
       window.location.href = `plant.html?id=${encodeURIComponent(plant.id)}`;
@@ -273,11 +298,11 @@ const renderTasks = () => {
     li.className = 'timeline__item';
     li.innerHTML = `
       <div>
-        <div class="title">${task.name}</div>
+        <div class="title">${escapeHtml(task.name)}</div>
         <div class="note">${task.type === 'watering_with_fertilizing' ? 'Полив + подкормка' : 'Полив'}</div>
       </div>
       <div class="pill pill--small ${task.type === 'watering' ? 'is-active' : ''}">
-        ${formatDate(task.date)}
+        ${escapeHtml(formatDate(task.date))}
       </div>
     `;
     li.addEventListener('click', () => {
@@ -461,15 +486,13 @@ const bootstrap = async () => {
     window.Telegram.WebApp.ready();
   }
   initTheme();
-  if (authMode === 'web' && !auth.getAccessToken()) {
-    showLoginModal();
-  }
   const ok = await ensureAuth();
   if (!ok) {
     renderCards();
     renderTasks();
     return;
   }
+  hideLoginModal();
   buildStats();
   renderCards();
   renderTasks();

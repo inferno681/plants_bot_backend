@@ -64,7 +64,7 @@ class WebAuthService(BaseAuthService):
         )
         if not user:
             self.log.info(UNREGISTERED_USER_LOG, login_data.email)
-            raise InvalidCredentialsError()
+            raise UserNotFoundError()
         if user.status != UserStatus.active:
             self.log.warning(INACTIVE_USER_LOGIN_ATTEMPT_LOG, user.id)
             raise UserNotFoundError()

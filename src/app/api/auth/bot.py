@@ -1,37 +1,17 @@
 from fastapi import APIRouter
-from pymongo.asynchronous.client_session import AsyncClientSession
 
-from app.dependencies import (
-    bot_auth_service_dep,
-    current_bot_uid_sid_dep,
-    session_dependency,
-    telegram_auth_service_dep,
-)
+from app.dependencies import bot_auth_service_dep, current_bot_uid_sid_dep
 from app.schemes import (
     ClientInfo,
     InitData,
     RefreshRequest,
-    TelegramAccountBase,
-    TelegramUser,
     Tokens,
     UserSession,
 )
-from app.services import BotAuthService, TelegramAuthService
+from app.services import BotAuthService
 from app.utils import client_info_dependency
 
 router = APIRouter()
-
-
-@router.post('/registration', response_model=TelegramUser)
-async def telegram_user_registration(
-    user_data: TelegramAccountBase,
-    session: AsyncClientSession = session_dependency,
-    telegram_auth_service: TelegramAuthService = telegram_auth_service_dep,
-):
-    """Telegram user registration (Bot action)"""
-    return await telegram_auth_service.registration_telegram_user(
-        user_data, session
-    )
 
 
 @router.post('/login', response_model=Tokens)

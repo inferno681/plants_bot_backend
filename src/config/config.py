@@ -3,7 +3,7 @@ from typing import Literal
 
 import yaml
 from dns.resolver import NXDOMAIN, NoAnswer, Timeout, resolve
-from pydantic import BaseModel, Field, SecretStr
+from pydantic import BaseModel, Field, SecretStr, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
@@ -142,35 +142,65 @@ class ImageSettings(BaseSettings):
 class Secrets(BaseSettings):
     """Secrets settings."""
 
-    bot_token: SecretStr = Field(default=SecretStr('token'), alias='BOT_TOKEN')
+    bot_token: SecretStr = Field(
+        default=SecretStr(''), alias='BOT_TOKEN'
+    )
 
     mongo_user: SecretStr = Field(
-        default=SecretStr('user'), alias='MONGO_INITDB_ROOT_USERNAME'
+        default=SecretStr(''), alias='MONGO_INITDB_ROOT_USERNAME'
     )
     mongo_password: SecretStr = Field(
-        default=SecretStr('password'), alias='MONGO_INITDB_ROOT_PASSWORD'
+        default=SecretStr(''), alias='MONGO_INITDB_ROOT_PASSWORD'
     )
     refresh_token_secret: SecretStr = Field(
-        default=SecretStr('secret'), alias='REFRESH_TOKEN_SECRET'
+        default=SecretStr(''), alias='REFRESH_TOKEN_SECRET'
     )
     access_token_secret: SecretStr = Field(
-        default=SecretStr('secret'), alias='ACCESS_TOKEN_SECRET'
+        default=SecretStr(''), alias='ACCESS_TOKEN_SECRET'
     )
     aws_access_key: SecretStr = Field(
-        default=SecretStr('minioadmin'), alias='AWS_ACCESS_KEY'
+        default=SecretStr(''), alias='AWS_ACCESS_KEY'
     )
     aws_secret_key: SecretStr = Field(
-        default=SecretStr('minioadmin'), alias='AWS_SECRET_KEY'
+        default=SecretStr(''), alias='AWS_SECRET_KEY'
     )
     redis_password: SecretStr = Field(
-        default=SecretStr('secret_password'), alias='REDIS_PASSWORD'
+        default=SecretStr(''), alias='REDIS_PASSWORD'
     )
     doc_password: SecretStr = Field(
-        default=SecretStr('secret_password'), alias='DOC_PASSWORD'
+        default=SecretStr(''), alias='DOC_PASSWORD'
     )
     email_token: SecretStr = Field(
-        default=SecretStr('secret_token'), alias='MAILERSEND_API_KEY'
+        default=SecretStr(''), alias='MAILERSEND_API_KEY'
     )
+
+    @model_validator(mode='after')
+    def check_required_secrets(self):
+        """Ensure all secrets are provided via environment."""
+        required = (
+            ('BOT_TOKEN', self.bot_token),
+            ('MONGO_INITDB_ROOT_USERNAME', self.mongo_user),
+            ('MONGO_INITDB_ROOT_PASSWORD', self.mongo_password),
+            ('REFRESH_TOKEN_SECRET', self.refresh_token_secret),
+            ('ACCESS_TOKEN_SECRET', self.access_token_secret),
+            ('AWS_ACCESS_KEY', self.aws_access_key),
+            ('AWS_SECRET_KEY', self.aws_secret_key),
+            ('REDIS_PASSWORD', self.redis_password),
+            ('DOC_PASSWORD', self.doc_password),
+            ('MAILERSEND_API_KEY', self.email_token),
+        )
+        missing = [
+            env_name
+            for env_name, secret in required
+            if not secret.get_secret_value().strip()
+        ]
+        if missing:
+            raise ValueError(
+                'Missing required secrets: {envs}'.format(
+                    envs=', '.join(missing)
+                )
+            )
+        return self
 
     model_config = SettingsConfigDict(
         env_file='.env', env_file_encoding='utf-8'

@@ -10,6 +10,27 @@ let authMode = 'web';
 let plantId = null;
 let selectedImageFile = null;
 
+const escapeHtml = (value) =>
+  String(value ?? '')
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#39;');
+
+const safeImageUrl = (value) => {
+  if (!value) return null;
+  try {
+    const url = new URL(value, window.location.origin);
+    if (url.protocol === 'http:' || url.protocol === 'https:') {
+      return url.href;
+    }
+  } catch (error) {
+    // ignore invalid urls
+  }
+  return null;
+};
+
 const elements = {
   heroImage: document.getElementById('hero-image'),
   name: document.getElementById('plant-name'),
@@ -111,8 +132,8 @@ const renderGrid = (plant) => {
     .map(
       (item) => `
         <article class="detail-card">
-          <div class="label">${item.label}</div>
-          <div class="value">${item.value}</div>
+          <div class="label">${escapeHtml(item.label)}</div>
+          <div class="value">${escapeHtml(item.value)}</div>
         </article>
       `,
     )
@@ -246,9 +267,10 @@ const renderPlant = (plant) => {
   elements.scientific.textContent = plant.scientific_name || '';
   elements.description.textContent = plant.description || 'Описание отсутствует.';
 
-  if (plant.image_url) {
+  const imageUrl = safeImageUrl(plant.image_url);
+  if (imageUrl) {
     elements.heroImage.classList.add('has-image');
-    elements.heroImage.style.backgroundImage = `url('${plant.image_url}')`;
+    elements.heroImage.style.backgroundImage = `url("${imageUrl}")`;
   } else {
     elements.heroImage.classList.remove('has-image');
     elements.heroImage.style.backgroundImage = '';
@@ -264,7 +286,7 @@ const showError = (message) => {
   elements.name.textContent = 'Ошибка';
   elements.description.textContent = message;
   elements.badges.innerHTML = '';
-  elements.grid.innerHTML = `<div class="detail-empty">${message}</div>`;
+  elements.grid.innerHTML = `<div class="detail-empty">${escapeHtml(message)}</div>`;
   setEditStatus(message, 'error');
 };
 

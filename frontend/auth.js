@@ -2,11 +2,10 @@
   const config = window.CONFIG || {};
   const ENDPOINTS = config.ENDPOINTS || {};
   const STORAGE_KEYS = config.STORAGE_KEYS || {};
-  const AUTH_STORAGE_KEY = STORAGE_KEYS.AUTH || 'authTokens';
-  const REFRESH_LOCK_KEY = `${AUTH_STORAGE_KEY}:refresh_lock`;
+  const LEGACY_AUTH_STORAGE_KEY = STORAGE_KEYS.AUTH || 'authTokens';
+  const REFRESH_LOCK_KEY = 'plants-auth:refresh_lock';
   const CHANNEL_NAME = 'plants-auth';
   const REFRESH_LOCK_TTL = 8000;
-  const LAST_REFRESH_KEY = `${AUTH_STORAGE_KEY}:last_refresh`;
 
   const auth = { accessToken: null, refreshToken: null };
   const tabId = `${Date.now()}-${Math.random().toString(16).slice(2)}`;
@@ -25,38 +24,14 @@
     }
   };
 
-  const applyTokens = (accessToken, refreshToken, { persist = true, broadcast = true } = {}) => {
+  const applyTokens = (accessToken, refreshToken, { broadcast = true } = {}) => {
     auth.accessToken = accessToken || null;
     auth.refreshToken = refreshToken || null;
-    if (persist) {
-      try {
-        localStorage.setItem(
-          AUTH_STORAGE_KEY,
-          JSON.stringify({ accessToken: auth.accessToken, refreshToken: auth.refreshToken }),
-        );
-      } catch (error) {
-        console.warn('Failed to save tokens', error);
-      }
-    }
     if (broadcast && channel) {
       channel.postMessage({
         type: 'tokens',
         tokens: { accessToken: auth.accessToken, refreshToken: auth.refreshToken },
       });
-    }
-  };
-
-  const loadTokens = () => {
-    try {
-      const stored = localStorage.getItem(AUTH_STORAGE_KEY);
-      if (!stored) return;
-      const parsed = safeParse(stored);
-      applyTokens(parsed?.accessToken || null, parsed?.refreshToken || null, {
-        persist: false,
-        broadcast: false,
-      });
-    } catch (error) {
-      console.warn('Failed to load tokens', error);
     }
   };
 
@@ -128,17 +103,10 @@
         resolve(ok);
       };
 
-      const handleStorage = (event) => {
-        if (event.key !== AUTH_STORAGE_KEY) return;
-        loadTokens();
-        finish(Boolean(auth.accessToken));
-      };
-
       const handleMessage = (event) => {
         if (event?.data?.type !== 'tokens') return;
         const tokens = event.data.tokens || {};
         applyTokens(tokens.accessToken || null, tokens.refreshToken || null, {
-          persist: false,
           broadcast: false,
         });
         finish(Boolean(auth.accessToken));
@@ -147,11 +115,9 @@
       const timeoutId = setTimeout(() => finish(false), timeoutMs);
       const cleanup = () => {
         clearTimeout(timeoutId);
-        window.removeEventListener('storage', handleStorage);
         if (channel) channel.removeEventListener('message', handleMessage);
       };
 
-      window.addEventListener('storage', handleStorage);
       if (channel) channel.addEventListener('message', handleMessage);
     });
 
@@ -182,7 +148,6 @@
     if (refreshPromise) return refreshPromise;
     refreshPromise = (async () => {
       const mode = authMode || computeAuthMode();
-      loadTokens();
       if (mode === 'telegram') {
         if (!isTelegramWebApp() || !auth.refreshToken) return false;
       }
@@ -210,11 +175,6 @@
 
           const data = await response.json();
           applyTokens(data.access_token || data.accessToken, data.refresh_token || data.refreshToken);
-          try {
-            localStorage.setItem(LAST_REFRESH_KEY, String(Date.now()));
-          } catch (error) {
-            // ignore
-          }
           return true;
         }
 
@@ -232,11 +192,6 @@
 
         const data = await response.json();
         applyTokens(data.access_token || data.accessToken, null);
-        try {
-          localStorage.setItem(LAST_REFRESH_KEY, String(Date.now()));
-        } catch (error) {
-          // ignore
-        }
         return true;
       } catch (error) {
         console.error('Refresh error', error);
@@ -386,17 +341,16 @@
   const init = () => {
     if (initialized) return;
     authMode = computeAuthMode();
-    loadTokens();
-    window.addEventListener('storage', (event) => {
-      if (event.key !== AUTH_STORAGE_KEY) return;
-      loadTokens();
-    });
+    try {
+      localStorage.removeItem(LEGACY_AUTH_STORAGE_KEY);
+    } catch (error) {
+      // ignore
+    }
     if (channel) {
       channel.addEventListener('message', (event) => {
         if (event?.data?.type !== 'tokens') return;
         const tokens = event.data.tokens || {};
         applyTokens(tokens.accessToken || null, tokens.refreshToken || null, {
-          persist: false,
           broadcast: false,
         });
       });
