@@ -15,7 +15,7 @@ def get_client_info(request: Request) -> ClientInfo:
 
     ua = request.headers.get('user-agent') or UNKNOWN_LITERAL
 
-    return ClientInfo(ip=ip, ua=ua)
+    return ClientInfo(ip=ip, user_agent=ua)
 
 
 client_info_dependency = Depends(get_client_info)

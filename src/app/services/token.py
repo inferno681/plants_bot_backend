@@ -27,6 +27,7 @@ logger = getLogger(__name__)
 
 class LoginType(StrEnum):
     """Login Type model."""
+
     doc = auto()
     telegram = auto()
     web = auto()
@@ -192,7 +193,7 @@ class SessionStore:
                 int(time.time()),
                 sid,
                 client_info.ip,
-                client_info.ua,
+                client_info.user_agent,
                 user_id,
                 user_type,
             ],
@@ -288,7 +289,7 @@ class SessionStore:
                     self.refresh_ttl,
                     int(time.time()),
                     client_info.ip,
-                    client_info.ua,
+                    client_info.user_agent,
                     user_type,
                 ],
             )
@@ -305,7 +306,7 @@ class SessionStore:
                     token_logs.REFRESH_REPLAY_DETECTED_LOG,
                     user_id,
                     client_info.ip,
-                    client_info.ua,
+                    client_info.user_agent,
                     user_type,
                 )
                 raise TokenReplayError()

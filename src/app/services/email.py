@@ -61,7 +61,7 @@ class EmailService:
             email=user.email,
             token=token,
             ip=client_info.ip,
-            user_agent=client_info.ua,
+            user_agent=client_info.user_agent,
         )
         await email_confirmation.insert()
         old_token = await self.redis.get(f'{CONFIRM_USER_PREFIX}{user_id}')
@@ -109,7 +109,7 @@ class EmailService:
 
         email_confirmation.is_used = True
         email_confirmation.confirmed_ip = client_info.ip
-        email_confirmation.confirmed_user_agent = client_info.ua
+        email_confirmation.confirmed_user_agent = client_info.user_agent
         await email_confirmation.save_changes()
 
         pipe = self.redis.pipeline()
@@ -121,7 +121,6 @@ class EmailService:
     async def _validate_confirmation(
         self, token: str
     ) -> tuple[PydanticObjectId, EmailConfirmation]:
-
         """Validate confirmation."""
         user_id = await self.redis.get(f'{CONFIRM_TOKEN_PREFIX}{token}')
         if not user_id:

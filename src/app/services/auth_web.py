@@ -84,7 +84,9 @@ class WebAuthService(BaseAuthService):
         """Login for documentation access."""
         if password != self.doc_pass:
             self.log.warning(
-                INVALID_DOC_PASSWORD_LOG, client_info.ip, client_info.ua
+                INVALID_DOC_PASSWORD_LOG,
+                client_info.ip,
+                client_info.user_agent,
             )
             raise InvalidCredentialsError()
         user = await User.find_one(User.id == DOC_USER)
