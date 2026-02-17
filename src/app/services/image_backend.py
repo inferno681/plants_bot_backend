@@ -2,11 +2,7 @@ from io import BytesIO
 from logging import getLogger
 from typing import Protocol
 
-from app.constants.image import (
-    PILLOW_REQUEUED_MSG,
-    UNKNOWN_IMAGE_BACKEND_MSG,
-    VIPS_REQUEUED_MSG,
-)
+from app.constants import ImageMessage
 from app.exceptions.image import InvalidImageError
 from app.logs.image import (
     IMAGE_EXIF_STRIP_ERROR_LOG,
@@ -22,6 +18,7 @@ logger = getLogger(__name__)
 
 class IImageBackend(Protocol):
     """Image backend protocol."""
+
     def open(self, file_bytes: bytes):
         """Load image from raw bytes."""
 
@@ -43,12 +40,13 @@ class IImageBackend(Protocol):
 
 class PillowBackend(IImageBackend):
     """Pillow backend."""
+
     def __init__(self, cfg: ImageSettings):
         """Initialize PillowBackend."""
         try:
             from PIL import Image, ImageOps
         except ImportError:
-            raise RuntimeError(PILLOW_REQUEUED_MSG)
+            raise RuntimeError(ImageMessage.pillow_requeued)
 
         self.cfg = cfg
         self.Image = Image
@@ -108,12 +106,13 @@ class PillowBackend(IImageBackend):
 
 class VipsBackend(IImageBackend):
     """Vips backend."""
+
     def __init__(self, cfg: ImageSettings):
         """Initialize VipsBackend."""
         try:
             import pyvips
         except ImportError:
-            raise RuntimeError(VIPS_REQUEUED_MSG)
+            raise RuntimeError(ImageMessage.vips_requeued)
 
         self.cfg = cfg
         self.vips = pyvips
@@ -173,4 +172,6 @@ def get_backend(cfg: ImageSettings):
         return PillowBackend(cfg)
     if cfg.backend == 'vips':
         return VipsBackend(cfg)
-    raise ValueError(UNKNOWN_IMAGE_BACKEND_MSG.format(name=cfg.backend))
+    raise ValueError(
+        ImageMessage.unknown_image_backend.format(name=cfg.backend)
+    )

@@ -2,7 +2,7 @@ from logging import getLogger
 
 from fastapi import FastAPI, Request
 
-from app.constants.auth import LOGOUT_MESSAGE
+from app.constants import AuthMessage
 from app.exceptions.auth import UserNotFoundError
 from app.logs.auth import (
     BOT_AUTH_SERVICE_START_LOG,
@@ -48,7 +48,7 @@ class BotAuthService:
     async def logout(self, bot_id: str, sid: str) -> str:
         """User logout."""
         await self.token_service.delete_sessions(user_id=bot_id, sid=sid)
-        return LOGOUT_MESSAGE
+        return AuthMessage.logout
 
     async def refresh_user_tokens(
         self, refresh_token: str, client_info: ClientInfo

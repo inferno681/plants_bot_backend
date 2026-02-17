@@ -2,10 +2,7 @@ from typing import Annotated
 
 from fastapi import Cookie, Depends, Header, HTTPException, status
 
-from app.constants.auth import (
-    CSRF_VALIDATION_FAILED_MSG,
-    MISSING_REFRESH_TOKEN,
-)
+from app.constants import AuthMessage
 from app.schemes import RefreshRequestCookie, UserSession
 from app.security import oauth2_dependency
 from app.services import (
@@ -48,7 +45,7 @@ async def refresh_request(
     """Refresh request."""
     if refresh_token is None:
         raise HTTPException(
-            status.HTTP_401_UNAUTHORIZED, MISSING_REFRESH_TOKEN
+            status.HTTP_401_UNAUTHORIZED, AuthMessage.missed_refresh_token
         )
     if (
         csrf_cookie is None
@@ -56,7 +53,7 @@ async def refresh_request(
         or csrf_cookie != csrf_header
     ):
         raise HTTPException(
-            status.HTTP_403_FORBIDDEN, CSRF_VALIDATION_FAILED_MSG
+            status.HTTP_403_FORBIDDEN, AuthMessage.csrf_validation_failed
         )
     return RefreshRequestCookie(
         refresh_token=refresh_token,

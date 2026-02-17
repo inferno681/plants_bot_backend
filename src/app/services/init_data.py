@@ -6,15 +6,7 @@ import urllib
 from enum import StrEnum, auto
 from logging import getLogger
 
-from app.constants.auth import (
-    INIT_DATA_EXPIRED_MESSAGE,
-    INVALID_AUTH_DATE_MESSAGE,
-    INVALID_INIT_DATA_USER_DATA_MSG,
-    MISSED_FIELDS_MSG,
-    NO_USER_DATA_MSG,
-    REQUIRED_INIT_DATA_FIELDS,
-    USER_ID_MISSED_INIT_DATA_MSG,
-)
+from app.constants import REQUIRED_INIT_DATA_FIELDS, AuthMessage
 from app.exceptions.auth import InvalidInitDataError, InvalidSignatureError
 from app.logs.auth import (
     INVALID_INIT_DATA_FORMAT_LOG,
@@ -115,7 +107,9 @@ class InitDataChecker:
             if field not in parsed or parsed.get(field) in (None, '')
         ]
         if missing:
-            errors.append(MISSED_FIELDS_MSG.format(fields=', '.join(missing)))
+            errors.append(
+                AuthMessage.missed_fields.format(fields=', '.join(missing))
+            )
 
     def _check_auth_date(
         self,
@@ -127,12 +121,12 @@ class InitDataChecker:
         try:
             auth_date = int(parsed.get('auth_date', 0))
         except ValueError:
-            errors.append(INVALID_AUTH_DATE_MESSAGE)
+            errors.append(AuthMessage.init_data_invalid_auth_date)
             return
 
         now = int(time.time())
         if auth_date > now + self.skew:
-            errors.append(INVALID_AUTH_DATE_MESSAGE)
+            errors.append(AuthMessage.init_data_invalid_auth_date)
             return
         max_age = (
             self.user_init_data_ttl
@@ -140,23 +134,23 @@ class InitDataChecker:
             else self.bot_init_data_ttl
         )
         if now - auth_date > max_age:
-            errors.append(INIT_DATA_EXPIRED_MESSAGE)
+            errors.append(AuthMessage.init_data_expired)
 
     def _check_user_data(self, parsed: dict, errors: list) -> dict:
         """Check user data."""
         try:
             user_data = json.loads(parsed.get('user', '{}'))
         except Exception:
-            errors.append(INVALID_INIT_DATA_USER_DATA_MSG)
+            errors.append(AuthMessage.init_data_invalid_user_data)
             return {}
 
         if not user_data:
-            errors.append(NO_USER_DATA_MSG)
+            errors.append(AuthMessage.init_data_no_user_data)
             return {}
 
         user_id = user_data.get('id')
         if not user_id:
-            errors.append(USER_ID_MISSED_INIT_DATA_MSG)
+            errors.append(AuthMessage.init_data_user_id_missed)
             return {}
 
         return user_data

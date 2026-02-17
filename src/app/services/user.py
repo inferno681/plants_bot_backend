@@ -3,8 +3,8 @@ from logging import getLogger
 from beanie import PydanticObjectId
 from fastapi import FastAPI, Request
 
+from app.constants import UserMessage
 from app.constants.auth import SID, SUB, TYPE
-from app.constants.user import USER_DELETE_MSG
 from app.exceptions.auth import UserNotFoundError, UserPermissionError
 from app.exceptions.email import EmailNotConfirmedError
 from app.logs.user import USER_DELETE_LOG, USER_SERVICE_START_LOG
@@ -85,7 +85,7 @@ class UserService:
         user.status = UserStatus.deleted
         await user.save_changes()
         self.log.info(USER_DELETE_LOG, str(user_id))
-        return {'message': USER_DELETE_MSG}
+        return {'message': UserMessage.user_delete}
 
 
 def init_user_service(

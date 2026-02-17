@@ -43,8 +43,6 @@ class PlantReadSchemeShort(BaseModel):
                 return 'needs_watering'
             elif self.next_watering_at == today + timedelta(days=1):
                 return 'watering_tomorrow'
-            else:
-                return 'healthy'
         return 'healthy'
 
 

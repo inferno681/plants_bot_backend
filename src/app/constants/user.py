@@ -1,1 +1,5 @@
-USER_DELETE_MSG = 'User deleted successfully.'
+from enum import StrEnum
+
+
+class UserMessage(StrEnum):
+    user_delete = 'User deleted successfully'

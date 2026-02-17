@@ -1,7 +1,7 @@
 from fastapi import APIRouter
 from pymongo.asynchronous.client_session import AsyncClientSession
 
-from app.constants.link import USER_LINK_MSG
+from app.constants import LinkMessage
 from app.dependencies import (
     get_bot_id_dep,
     link_service_dep,
@@ -91,4 +91,4 @@ async def link_telegram(
         )
         await web_auth_service.logout_all_sessions(str(old_id))
     await link_service.clear_link_code(str(new_id), link_request.code)
-    return {'message': USER_LINK_MSG}
+    return {'message': LinkMessage.user_link}

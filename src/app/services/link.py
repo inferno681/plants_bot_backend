@@ -18,7 +18,7 @@ from app.constants.link import (
     LINKING_CODE_SYMBOLS,
     MIN_TTL_SECONDS,
     QR_LINK,
-    USER_UNLINK_MSG,
+    LinkMessage,
 )
 from app.exceptions.auth import UserNotFoundError
 from app.exceptions.link import (
@@ -144,7 +144,7 @@ class LinkService:
         user.is_premium = None
         user.language_code = None
         await user.save_changes()
-        return {'message': USER_UNLINK_MSG}
+        return {'message': LinkMessage.user_unlink}
 
     @staticmethod
     def generate_link_code(length=CODE_LENGTH):

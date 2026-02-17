@@ -1,3 +1,7 @@
-PILLOW_REQUEUED_MSG = 'Pillow backend requested but Pillow is not installed'
-VIPS_REQUEUED_MSG = 'Vips backend requested but vips is not installed'
-UNKNOWN_IMAGE_BACKEND_MSG = 'Unknown backend: {name}'
+from enum import StrEnum
+
+
+class ImageMessage(StrEnum):
+    pillow_requeued = 'Pillow backend requested but Pillow is not installed'
+    vips_requeued = 'Vips backend requested but vips is not installed'
+    unknown_image_backend = 'Unknown backend: {name}'

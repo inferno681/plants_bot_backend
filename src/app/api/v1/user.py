@@ -1,10 +1,7 @@
 from beanie import PydanticObjectId
 from fastapi import APIRouter
 
-from app.constants.email import (
-    EMAIL_CONFIRMATION_MSG,
-    EMAIL_CONFIRMATION_SENT_MSG,
-)
+from app.constants import EmailMessage
 from app.dependencies import (
     current_user_id_dep,
     email_service_dep,
@@ -63,7 +60,7 @@ async def resend_confirmation_email(
     await email_service.send_confirmation_email(
         user_id=PydanticObjectId(user_id), client_info=client_info
     )
-    return {'message': EMAIL_CONFIRMATION_SENT_MSG}
+    return {'message': EmailMessage.email_confirmation_sent}
 
 
 @router.post('/email/confirm')
@@ -74,4 +71,4 @@ async def confirm_email(
 ):
     """Confirm email endpoint."""
     await email_service.confirm_email(token=token, client_info=client_info)
-    return {'message': EMAIL_CONFIRMATION_MSG}
+    return {'message': EmailMessage.email_confirmed}

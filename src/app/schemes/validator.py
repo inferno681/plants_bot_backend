@@ -4,7 +4,7 @@ from pydantic import GetCoreSchemaHandler, GetJsonSchemaHandler
 from pydantic.json_schema import JsonSchemaValue
 from pydantic_core import CoreSchema, core_schema
 
-from app.constants.auth import PASSWORD_REGEX, WEAK_PASSWORD
+from app.constants.auth import PASSWORD_REGEX, AuthMessage
 
 
 class PasswordStr(str):
@@ -24,7 +24,7 @@ class PasswordStr(str):
     def validate_password(cls, password: str) -> str:
         """Validate the provided password string."""
         if not PASSWORD_REGEX.match(password):
-            raise ValueError(WEAK_PASSWORD)
+            raise ValueError(AuthMessage.weak_password)
         return password
 
     @classmethod

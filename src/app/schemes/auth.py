@@ -7,10 +7,7 @@ from pydantic import (
     model_validator,
 )
 
-from app.constants.auth import (
-    INVALID_INIT_DATA_FORMAT_MESSAGE,
-    PASSWORD_CHANGE_SAME_AS_OLD,
-)
+from app.constants.auth import AuthMessage
 from app.schemes.user import Language
 from app.schemes.validator import PasswordStr
 
@@ -27,7 +24,7 @@ class InitData(BaseModel):
         if any('=' not in part for part in parts):
             raise HTTPException(
                 status.HTTP_422_UNPROCESSABLE_CONTENT,
-                detail=INVALID_INIT_DATA_FORMAT_MESSAGE,
+                detail=AuthMessage.init_data_invalid_format,
             )
         return init_data
 
@@ -55,7 +52,7 @@ class WebAccountPasswordChange(BaseModel):
     def check_diff(self):
         """Check password diff."""
         if self.old_password == self.new_password:
-            raise ValueError(PASSWORD_CHANGE_SAME_AS_OLD)
+            raise ValueError(AuthMessage.same_password_as_old)
         return self
 
 
