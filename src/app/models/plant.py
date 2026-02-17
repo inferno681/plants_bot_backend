@@ -1,11 +1,11 @@
 from datetime import date
-from enum import StrEnum, auto
 
 from beanie import PydanticObjectId
 from dateutil.relativedelta import relativedelta
 from pydantic import BaseModel, Field
 
 from app.constants.general import DAYS_IN_MONTH, MONTHS_IN_YEAR
+from app.enums import FertilizingType, FrequencyType
 from app.models.base import BaseDocument
 
 
@@ -18,14 +18,6 @@ class MonthDay(BaseModel):
     def as_date(self, year: int) -> date:
         """As date method."""
         return date(year, self.month, self.day)
-
-
-class FrequencyType(StrEnum):
-    """Frequency type enum."""
-
-    weekly = auto()
-    biweekly = auto()
-    monthly = auto()
 
 
 class WateringSchedule(BaseModel):
@@ -62,18 +54,11 @@ class WateringPeriod(BaseModel):
 
 class CurrentPeriod(BaseModel):
     """Current Period model."""
+
     period: WateringPeriod
     next_period: WateringPeriod
     start: date
     end: date
-
-
-class FertilizingType(StrEnum):
-    """Fertilizing frequency types enum."""
-
-    days = auto()
-    weeks = auto()
-    months = auto()
 
 
 class FertilizingPeriod(BaseModel):
@@ -155,4 +140,5 @@ class Plant(BaseDocument):
 
     class Settings(BaseDocument.Settings):
         """Settings for Plant model."""
+
         name = 'plants'

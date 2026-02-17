@@ -1,29 +1,11 @@
 from datetime import datetime
-from enum import StrEnum, auto
 from typing import Annotated
 
 from beanie import Indexed, PydanticObjectId
 from pydantic import model_validator
 
+from app.enums import DeliveryChannel, NotificationStatus
 from app.models.base import BaseDocument
-
-
-class NotificationStatus(StrEnum):
-    """Notification statuses."""
-
-    queued = auto()
-    processing = auto()
-    sent = auto()
-    retry_wait = auto()
-    dead = auto()
-    canceled = auto()
-
-
-class DeliveryChannel(StrEnum):
-    """Delivery Channel model."""
-    telegram = auto()
-    email = auto()
-    web = auto()
 
 
 class Notification(BaseDocument):
@@ -71,4 +53,5 @@ class Notification(BaseDocument):
 
     class Settings(BaseDocument.Settings):
         """Settings for Notification model."""
+
         name = 'notifications'

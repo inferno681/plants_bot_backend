@@ -1,21 +1,13 @@
 from datetime import datetime
-from enum import StrEnum, auto
 
 from beanie import PydanticObjectId
 from pydantic import EmailStr, model_validator
 from pymongo import ASCENDING, IndexModel
 
+from app.enums import UserStatus
 from app.exceptions.auth import MissingPasswordError, NoContactsError
 from app.models.base import BaseDocument
 from app.schemes.user import Language
-
-
-class UserStatus(StrEnum):
-    """User statuses"""
-
-    active = auto()
-    merged = auto()
-    deleted = auto()
 
 
 class User(BaseDocument):
@@ -43,6 +35,7 @@ class User(BaseDocument):
 
     class Settings(BaseDocument.Settings):
         """Settings for User model."""
+
         name = 'users'
         indexes = [
             IndexModel(
