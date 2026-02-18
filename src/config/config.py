@@ -165,9 +165,6 @@ class Secrets(BaseSettings):
     redis_password: SecretStr = Field(
         default=SecretStr(''), alias='REDIS_PASSWORD'
     )
-    doc_password: SecretStr = Field(
-        default=SecretStr(''), alias='DOC_PASSWORD'
-    )
     email_token: SecretStr = Field(
         default=SecretStr(''), alias='MAILERSEND_API_KEY'
     )
@@ -185,7 +182,6 @@ class Secrets(BaseSettings):
             ('AWS_ACCESS_KEY', self.aws_access_key),
             ('AWS_SECRET_KEY', self.aws_secret_key),
             ('REDIS_PASSWORD', self.redis_password),
-            ('DOC_PASSWORD', self.doc_password),
             ('MAILERSEND_API_KEY', self.email_token),
         )
         missing = [

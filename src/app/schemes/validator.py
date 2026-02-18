@@ -23,7 +23,9 @@ class PasswordStr(str):
     @classmethod
     def validate_password(cls, password: str) -> str:
         """Validate the provided password string."""
-        if not PASSWORD_REGEX.match(password):
+        if len(password) > 1024:
+            raise ValueError(AuthMessage.weak_password)
+        if not PASSWORD_REGEX.fullmatch(password):
             raise ValueError(AuthMessage.weak_password)
         return password
 

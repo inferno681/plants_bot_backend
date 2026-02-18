@@ -25,8 +25,6 @@ class AuthMessage(StrEnum):
 
     missed_fields = 'Missing fields: {fields}'
 
-    invalid_doc_password = 'Invalid documentation password'
-
     missed_refresh_token = 'Missing refresh token'
     csrf_validation_failed = 'CSRF validation failed'
     weak_password = (
@@ -64,3 +62,8 @@ SID = 'sid'
 IAT = 'iat'
 TYPE = 'type'
 USER = 'user'
+
+FAKE_HASH = (
+    '$argon2id$v=19$m=65536,t=3,p=4$fDFYb2jf5Wja'
+    '/YaHx29v+Q$+QHgoDvPcCmMAjjSDUeZlw2Sg9KCS+qbh3HrSrcI12A'
+)

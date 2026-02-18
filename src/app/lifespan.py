@@ -36,7 +36,6 @@ def init_auth(app: FastAPI, redis: Redis):
     services.init_web_auth_service(
         app=app,
         token_service=token_service,
-        doc_pass=config.secrets.doc_password.get_secret_value(),
         pepper=config.secrets.pepper.get_secret_value(),
     )
     init_data_checker = services.InitDataChecker(
