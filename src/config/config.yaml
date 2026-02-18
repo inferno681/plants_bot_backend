@@ -44,7 +44,7 @@ auth:
   refresh_token_ttl: 14400
   max_sessions_per_user: 10
 
-  user_init_data_ttl: 86400
+  user_init_data_ttl: 300
   init_data_skew: 60
   bot_init_data_ttl: 300
 

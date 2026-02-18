@@ -2,8 +2,6 @@ import re
 from enum import StrEnum
 from typing import Literal
 
-from bson import ObjectId
-
 
 class AuthMessage(StrEnum):
     invalid_token = 'Invalid token'
@@ -52,8 +50,6 @@ SESSION_PREFIX = 'session:'
 USER_SESSIONS_PREFIX = 'user_sessions:'
 UNKNOWN_LITERAL = 'unknown'
 
-
-DOC_USER = ObjectId('697a9f7f7cae65704fd51a12')
 
 REQUIRED_FIELDS_BOT_INIT_DATA = ('bot_id', 'auth_date', 'hash')
 

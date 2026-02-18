@@ -35,7 +35,12 @@ async def doc_login(
     web_auth_service: WebAuthService = web_auth_service_dep,
 ):
     """Documentation user login endpoint."""
-    tokens = await web_auth_service.login_doc(form_data.password, client_info)
+    tokens = await web_auth_service.login(
+        WebAccountLogin.model_validate(
+            {'email': form_data.username, 'password': form_data.password}
+        ),
+        client_info,
+    )
     return WebTokens(access_token=tokens.access_token)
 
 

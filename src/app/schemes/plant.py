@@ -26,7 +26,7 @@ class PlantReadSchemeShort(BaseModel):
     next_watering_at: date | None = None
     next_fertilizing_at: date | None = None
 
-    model_config = ConfigDict(from_attributes=True)
+    model_config = ConfigDict(from_attributes=True, validate_default=True)
 
     @field_validator('id', mode='before')
     @classmethod

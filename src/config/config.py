@@ -142,9 +142,7 @@ class ImageSettings(BaseSettings):
 class Secrets(BaseSettings):
     """Secrets settings."""
 
-    bot_token: SecretStr = Field(
-        default=SecretStr(''), alias='BOT_TOKEN'
-    )
+    bot_token: SecretStr = Field(default=SecretStr(''), alias='BOT_TOKEN')
 
     mongo_user: SecretStr = Field(
         default=SecretStr(''), alias='MONGO_INITDB_ROOT_USERNAME'
@@ -173,6 +171,7 @@ class Secrets(BaseSettings):
     email_token: SecretStr = Field(
         default=SecretStr(''), alias='MAILERSEND_API_KEY'
     )
+    pepper: SecretStr = Field(default=SecretStr(''), alias='PASSWORD_PEPPER')
 
     @model_validator(mode='after')
     def check_required_secrets(self):
