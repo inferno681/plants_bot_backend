@@ -1,0 +1,61 @@
+server {
+
+    server_name ${DOMAIN};
+    server_tokens off;
+    client_body_timeout 10s;
+    client_header_timeout 10s;
+    keepalive_timeout 15s;
+    send_timeout 10s;
+
+    limit_conn conn_limit 20;
+
+    location / {
+        root ${FRONT_ROOT};
+        index index.html;
+        try_files $uri $uri/ /index.html;
+    }
+
+
+    location /auth/ {
+
+        limit_req zone=auth_limit burst=15 nodelay;
+
+        proxy_pass http://${API_HOST}:${API_PORT}/auth/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location /api/ {
+
+        limit_req zone=api_limit burst=20 nodelay;
+
+        proxy_pass http://${API_HOST}:${API_PORT}/api/;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+
+    location /docs {
+
+         limit_req zone=strict_limit burst=5;
+
+        proxy_pass http://${DOC_HOST}:${DOC_PORT}/docs;
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+    }
+
+    location /openapi.json {
+
+       limit_req zone=strict_limit burst=5;
+
+      proxy_set_header Host $http_host;
+      proxy_pass http://${DOC_HOST}:${DOC_PORT}/openapi.json;
+    }
+
+}
