@@ -182,6 +182,7 @@ class Secrets(BaseSettings):
             ('AWS_ACCESS_KEY', self.aws_access_key),
             ('AWS_SECRET_KEY', self.aws_secret_key),
             ('REDIS_PASSWORD', self.redis_password),
+            ('PASSWORD_PEPPER', self.pepper),
             ('MAILERSEND_API_KEY', self.email_token),
         )
         missing = [
