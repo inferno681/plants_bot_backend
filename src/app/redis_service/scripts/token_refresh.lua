@@ -47,5 +47,6 @@ redis.call(
 )
 
 redis.call("ZADD", KEYS[2], ARGV[5], ARGV[2])
+redis.call("EXPIRE", KEYS[2], tonumber(ARGV[4]))
 
 return ARGV[2]

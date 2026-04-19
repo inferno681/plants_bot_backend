@@ -33,6 +33,7 @@ redis.call(
     "created_at", now
 )
 redis.call("ZADD", key, now, sid)
+redis.call("EXPIRE", key, ttl)
 
 local removed_info = {}
 
